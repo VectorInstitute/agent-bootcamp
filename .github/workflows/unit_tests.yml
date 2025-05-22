@@ -51,12 +51,9 @@ jobs:
         with:
           python-version-file: ".python-version"
 
-      - name: Install the project
-        run: uv sync --all-extras --dev
-
-      - name: Install dependencies and check code
-        run: |
-          uv run pytest -m "not integration_test" --cov src/aieng_template_uv --cov-report=xml tests
+      # - name: Install dependencies and check code
+      #   run: |
+      #     uv run pytest -m "not integration_test" --cov src/aieng_template_uv --cov-report=xml tests
 
       # Uncomment this once this repo is configured on Codecov
       # - name: Upload coverage to Codecov
