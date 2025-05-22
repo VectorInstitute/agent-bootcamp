@@ -19,3 +19,9 @@ wheels/
 
 # macos
 *.DS_Store
+
+# Secrets
+.env
+
+# Built documentations
+site/
