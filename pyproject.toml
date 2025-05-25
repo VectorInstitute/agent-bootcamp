@@ -7,11 +7,14 @@ authors = [ {name = "Vector AI Engineering", email = "ai_engineering@vectorinsti
 license = "Apache-2.0"
 repository = "https://github.com/VectorInstitute/aieng-template-uv"
 requires-python = ">=3.12"
-dependencies = []
-
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+dependencies = [
+    "elasticsearch[async]>=9.0.1",
+    "gradio>=5.31.0",
+    "openai>=1.82.0",
+    "openai-agents>=0.0.16",
+    "pydantic>=2.11.5",
+    "pytest-asyncio>=0.25.2",
+]
 
 [dependency-groups]
 dev = [
@@ -41,26 +44,18 @@ docs = [
 default-groups = ["dev", "docs"]
 
 [tool.mypy]
-ignore_missing_imports = true
 install_types = true
 pretty = true
 namespace_packages = true
 explicit_package_bases = true
-non_interactive = true
 warn_unused_configs = true
-allow_any_generics = false
 allow_subclassing_any = false
-allow_untyped_calls = false
-allow_untyped_defs = false
-allow_incomplete_defs = false
 check_untyped_defs = true
 allow_untyped_decorators = false
 warn_redundant_casts = true
-warn_unused_ignores = true
 warn_return_any = true
-implicit_reexport = false
 strict_equality = true
-extra_checks = true
+
 
 [tool.ruff]
 include = ["*.py", "pyproject.toml", "*.ipynb"]
@@ -103,8 +98,11 @@ ignore = [
 ]
 
 # Ignore import violations in all `__init__.py` files.
+# Ignore missing docstring in `__init__.py` files
 [tool.ruff.lint.per-file-ignores]
-"__init__.py" = ["E402", "F401", "F403", "F811"]
+"__init__.py" = ["E402", "F401", "F403", "F811", "D104"]
+
+
 
 [tool.ruff.lint.pep8-naming]
 ignore-names = ["X*", "setUp"]
