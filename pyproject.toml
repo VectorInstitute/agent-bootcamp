@@ -10,9 +10,12 @@ requires-python = ">=3.12"
 dependencies = [
     "elasticsearch[async]>=9.0.1",
     "gradio>=5.31.0",
+    "langfuse>=2.60.7",
+    "nest-asyncio>=1.6.0",
     "openai>=1.82.0",
     "openai-agents>=0.0.16",
     "pydantic>=2.11.5",
+    "pydantic-ai[logfire]>=0.2.10",
     "pytest-asyncio>=0.25.2",
 ]
 

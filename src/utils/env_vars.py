@@ -9,6 +9,19 @@ class Configs(pydantic.BaseModel):
     es_api_key: str
     es_host: str
 
+    # Langfuse
+    langfuse_public_key: str
+    langfuse_secret_key: str
+    langfuse_host: str = "https://cloud.langfuse.com"
+
+    def _check_langfuse(self):
+        """Ensure that Langfuse pk and sk are in the right place."""
+        if not self.langfuse_public_key.startswith("pk-lf-"):
+            raise ValueError("LANGFUSE_PUBLIC_KEY should start with pk-lf-")
+
+        if not self.langfuse_secret_key.startswith("sk-lf-"):
+            raise ValueError("LANGFUSE_SECRET_KEY should start with sk-lf-")
+
     @staticmethod
     def from_env_var() -> "Configs":
         """Initialize from env vars."""
@@ -20,4 +33,6 @@ class Configs(pydantic.BaseModel):
             _key = k.lower()
             data[_key] = v
 
-        return Configs(**data)
+        config = Configs(**data)
+        config._check_langfuse()
+        return config

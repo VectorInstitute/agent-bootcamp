@@ -1,4 +1,7 @@
-"""Reason-and-Act Knowledge Retrieval Agent via the OpenAI Agent SDK."""
+"""Reason-and-Act Knowledge Retrieval Agent via the OpenAI Agent SDK.
+
+Log traces to LangFuse for observability and evaluation.
+"""
 
 import logging
 
@@ -11,6 +14,7 @@ from openai import AsyncOpenAI
 from src.utils import (
     AsyncESKnowledgeBase,
     Configs,
+    get_langfuse_tracer,
     oai_agent_items_to_gradio_messages,
     pretty_print,
 )
@@ -18,8 +22,8 @@ from src.utils import (
 
 SYSTEM_MESSAGE = """\
 Answer the question using the search tool. \
-You must explain your reasons for invoking the tool. \
-Be sure to mention the sources. \
+EACH TIME before invoking the function, you must explain your reasons for doing so. \
+Be sure to mention the sources in your response. \
 If the search did not return intended results, try again. \
 Do not make up information."""
 
@@ -32,6 +36,7 @@ async def _main(question: str, gr_messages: list[ChatMessage]):
         async_es_client,
         es_collection_name="enwiki-20250501",
     )
+    tracer = get_langfuse_tracer()
 
     main_agent = agents.Agent(
         name="Wikipedia Agent",
@@ -44,7 +49,9 @@ async def _main(question: str, gr_messages: list[ChatMessage]):
     gr_messages.append(ChatMessage(role="user", content=question))
     yield gr_messages
 
-    responses = await agents.Runner.run(main_agent, input=question)
+    with tracer.start_as_current_span("Agents-SDK-Trace"):
+        responses = await agents.Runner.run(main_agent, input=question)
+
     gr_messages += oai_agent_items_to_gradio_messages(responses.new_items)
     pretty_print(gr_messages)
     yield gr_messages
