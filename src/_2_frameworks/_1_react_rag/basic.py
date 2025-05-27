@@ -32,12 +32,14 @@ async def _main(query: str):
         instructions=INSTRUCTIONS,
         tools=[function_tool(async_knowledgebase.search_knowledgebase)],
         model=OpenAIChatCompletionsModel(
-            model="gpt-4o", openai_client=async_openai_client
+            model="gpt-4o-mini", openai_client=async_openai_client
         ),
     )
 
     response = await Runner.run(wikipedia_agent, input=query)
     pretty_print(response.final_output)
+    pretty_print(response.raw_responses)
+    pretty_print(response.new_items)
 
     await async_es_client.close()
 

@@ -9,16 +9,9 @@ import gradio as gr
 from elasticsearch import AsyncElasticsearch
 from gradio.components.chatbot import ChatMessage
 from openai import AsyncOpenAI
-from openai.types.chat import (
-    ChatCompletionSystemMessageParam,
-    ChatCompletionToolParam,
-)
+from openai.types.chat import ChatCompletionSystemMessageParam, ChatCompletionToolParam
 
-from src.utils import (
-    AsyncESKnowledgeBase,
-    Configs,
-    gradio_messages_to_oai_chat,
-)
+from src.utils import AsyncESKnowledgeBase, Configs, gradio_messages_to_oai_chat
 
 
 MAX_TURNS = 5
@@ -132,4 +125,16 @@ if __name__ == "__main__":
         chat_message = gr.Textbox(lines=1, label="Ask a question")
         chat_message.submit(_main, [chat_message, chatbot], [chatbot])
 
+    app.launch(server_name="0.0.0.0")
+    app.launch(server_name="0.0.0.0")
+    app.launch(server_name="0.0.0.0")
+    app.launch(server_name="0.0.0.0")
+    app.launch(server_name="0.0.0.0")
+    app.launch(server_name="0.0.0.0")
+    app.launch(server_name="0.0.0.0")
+    app.launch(server_name="0.0.0.0")
+    app.launch(server_name="0.0.0.0")
+    app.launch(server_name="0.0.0.0")
+    app.launch(server_name="0.0.0.0")
+    app.launch(server_name="0.0.0.0")
     app.launch(server_name="0.0.0.0")
