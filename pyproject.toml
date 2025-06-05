@@ -8,6 +8,7 @@ license = "Apache-2.0"
 repository = "https://github.com/VectorInstitute/aieng-template-uv"
 requires-python = ">=3.12"
 dependencies = [
+    "datasets>=3.6.0",
     "elasticsearch[async]>=9.0.1",
     "gradio>=5.31.0",
     "langfuse>=2.60.7",
@@ -22,7 +23,6 @@ dependencies = [
 [dependency-groups]
 dev = [
     "codecov>=2.1.13",
-    "mypy>=1.14.1",
     "nbqa>=1.9.1",
     "pip-audit>=2.7.3",
     "pre-commit>=4.1.0",
@@ -45,20 +45,6 @@ docs = [
 # Default dependency groups to be installed
 [tool.uv]
 default-groups = ["dev", "docs"]
-
-[tool.mypy]
-install_types = true
-pretty = true
-namespace_packages = true
-explicit_package_bases = true
-warn_unused_configs = true
-allow_subclassing_any = false
-check_untyped_defs = true
-allow_untyped_decorators = false
-warn_redundant_casts = true
-warn_return_any = true
-strict_equality = true
-
 
 [tool.ruff]
 include = ["*.py", "pyproject.toml", "*.ipynb"]
@@ -98,6 +84,7 @@ ignore = [
     "PLR2004", # Replace magic number with named constant
     "PLR0913", # Too many arguments
     "COM812", # Missing trailing comma
+    "N999", # Number in module names.
 ]
 
 # Ignore import violations in all `__init__.py` files.
