@@ -14,8 +14,8 @@ from src.utils.langfuse.shared_client import langfuse
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--source_dataset")
-parser.add_argument("--langfuse_dataset_name")
+parser.add_argument("--source_dataset", required=True)
+parser.add_argument("--langfuse_dataset_name", required=True)
 parser.add_argument("--limit", type=int)
 
 
