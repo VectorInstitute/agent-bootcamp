@@ -9,7 +9,7 @@ from elasticsearch import AsyncElasticsearch
 from langfuse.client import DatasetItemClient, StatefulTraceClient
 from openai import AsyncOpenAI
 from opentelemetry import trace as otlp_trace
-from rich.progress import track
+from rich.progress import Progress, SpinnerColumn, TextColumn, track
 
 from src.utils import (
     AsyncESKnowledgeBase,
@@ -70,12 +70,23 @@ class EvaluatorResponse(pydantic.BaseModel):
 
 async def run_agent_with_trace(
     agent: agents.Agent, query: str
-) -> "tuple[StatefulTraceClient, str]":
-    """Run OpenAI Agent on query, returning response and trace."""
+) -> "tuple[StatefulTraceClient, str | None]":
+    """Run OpenAI Agent on query, returning response and trace.
+
+    Returns None if agent exceeds max_turn limit.
+    """
     with tracer.start_as_current_span("OpenAI-Agent-Trace") as span:
         span.set_attribute("langfuse.tag", "dataset-run")
 
-        result = await agents.Runner.run(agent, query)
+        try:
+            result = await agents.Runner.run(agent, query)
+            if "|" in result.final_output:
+                answer = result.final_output.split("|")[-1].strip()
+            else:
+                answer = result.final_output
+
+        except agents.MaxTurnsExceeded:
+            answer = None
 
         # Get the Langfuse trace_id to link the dataset run item to the agent trace
         current_span = otlp_trace.get_current_span()
@@ -84,21 +95,16 @@ async def run_agent_with_trace(
         formatted_trace_id = otlp_trace.format_trace_id(trace_id)
 
         langfuse_trace = langfuse_client.trace(
-            id=formatted_trace_id, input=query, output=result.final_output
+            id=formatted_trace_id, input=query, output=answer
         )
 
-    if "|" in result.final_output:
-        short_answer = result.final_output.split("|")[-1]
-    else:
-        short_answer = result.final_output
-
-    return langfuse_trace, short_answer
+    return langfuse_trace, answer
 
 
 async def run_evaluator_agent(evaluator_query: EvaluatorQuery) -> EvaluatorResponse:
     """Evaluate using evaluator agent."""
     evaluator_agent = agents.Agent(
-        "Evaluator Agent",
+        name="Evaluator Agent",
         instructions=EVALUATOR_INSTRUCTIONS,
         output_type=EvaluatorResponse,
     )
@@ -109,19 +115,26 @@ async def run_evaluator_agent(evaluator_query: EvaluatorQuery) -> EvaluatorRespo
 
 async def run_and_evaluate(
     main_agent: agents.Agent, lf_dataset_item: "DatasetItemClient"
-) -> "tuple[StatefulTraceClient, EvaluatorResponse]":
-    """Run main agent and evaluator agent on one dataset instance."""
+) -> "tuple[StatefulTraceClient, EvaluatorResponse | None]":
+    """Run main agent and evaluator agent on one dataset instance.
+
+    Returns None if main agent returned a None answer.
+    """
     expected_output = lf_dataset_item.expected_output
     assert expected_output is not None
 
-    langfuse_trace, short_answer = await run_agent_with_trace(
+    langfuse_trace, answer = await run_agent_with_trace(
         main_agent, query=lf_dataset_item.input["text"]
     )
+
+    if answer is None:
+        return langfuse_trace, None
+
     evaluator_response = await run_evaluator_agent(
         EvaluatorQuery(
             question=lf_dataset_item.input["text"],
             ground_truth=expected_output["text"],
-            proposed_response=short_answer,
+            proposed_response=answer,
         )
     )
 
@@ -166,10 +179,19 @@ if __name__ == "__main__":
     ):
         # Link the trace to the dataset item for analysis
         _dataset_item.link(_trace, run_name=args.run_name)
-        _trace.score(
-            name="is_answer_correct",
-            value=_eval_output.is_answer_correct,
-            comment=_eval_output.explanation,
-        )
+        if _eval_output is not None:
+            _trace.score(
+                name="is_answer_correct",
+                value=_eval_output.is_answer_correct,
+                comment=_eval_output.explanation,
+            )
+
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        transient=True,
+    ) as progress:
+        task = progress.add_task("Finalizing Langfuse annotations...", total=None)
+        langfuse_client.flush()
 
     asyncio.run(async_es_client.close())
