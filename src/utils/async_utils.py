@@ -6,6 +6,7 @@ from typing import Any, Coroutine, TypeVar
 
 from rich.progress import Progress
 
+
 T = TypeVar("T")
 
 
