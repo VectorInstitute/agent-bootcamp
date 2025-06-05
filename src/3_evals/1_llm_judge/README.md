@@ -39,3 +39,28 @@ uv run -m src.3_evals.1_llm_judge.run_eval \
 --langfuse_dataset_name search-dataset \
 --run_name enwiki_elasticsearch
 ```
+
+Example output:
+
+```bash
+...
+Running agent and evaluating ━━━━━━━━━━━━━━━━━━━━━━╺━━━━━━━━━━━━━━━━━  56% 0:00:05
+             OpenAI-Agent-Trace
+               OpenAI Agents trace: Agent workflow
+                 Agent run: 'Wikipedia Agent'
+21:22:24.963       Function: search_knowledgebase
+21:22:24.964         search
+21:22:24.988 OpenAI Agents trace: Agent workflow
+21:22:24.989   Agent run: 'Evaluator Agent'
+21:22:24.990     Responses API with 'gpt-4o'
+             OpenAI-Agent-Trace
+               OpenAI Agents trace: Agent workflow
+                 Agent run: 'Wikipedia Agent'
+21:22:25.037       Function: search_knowledgebase
+Running agent and evaluating ━━━━━━━━━━━━━━━━━━━━━━╺━━━━━━━━━━━━━━━━━  56% 0:00:05
+21:22:25.039         search
+...
+21:22:34.278     Responses API with 'gpt-4o'
+Running agent and evaluating ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 100% 0:00:00
+Uploading scores ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 100% 0:00:01
+```
