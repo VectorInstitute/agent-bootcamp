@@ -8,10 +8,12 @@ license = "Apache-2.0"
 repository = "https://github.com/VectorInstitute/aieng-template-uv"
 requires-python = ">=3.12"
 dependencies = [
+    "beautifulsoup4>=4.13.4",
     "datasets>=3.6.0",
     "elasticsearch[async]>=9.0.1",
     "gradio>=5.31.0",
     "langfuse>=2.60.7",
+    "lxml>=5.4.0",
     "nest-asyncio>=1.6.0",
     "openai>=1.82.0",
     "openai-agents>=0.0.16",

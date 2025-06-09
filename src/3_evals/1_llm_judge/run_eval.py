@@ -144,12 +144,16 @@ async def run_and_evaluate(
 parser = argparse.ArgumentParser()
 parser.add_argument("--langfuse_dataset_name", required=True)
 parser.add_argument("--run_name", required=True)
+parser.add_argument("--limit", type=int)
 
 
 if __name__ == "__main__":
     args = parser.parse_args()
 
-    lf_dataset = langfuse_client.get_dataset(args.langfuse_dataset_name)
+    lf_dataset_items = langfuse_client.get_dataset(args.langfuse_dataset_name).items
+    if args.limit is not None:
+        lf_dataset_items = lf_dataset_items[: args.limit]
+
     configs = Configs.from_env_var()
     async_es_client = AsyncElasticsearch(configs.es_host, api_key=configs.es_api_key)
     async_openai_client = AsyncOpenAI()
@@ -167,13 +171,13 @@ if __name__ == "__main__":
             model="gpt-4o-mini", openai_client=async_openai_client
         ),
     )
-    coros = [run_and_evaluate(main_agent, _item) for _item in lf_dataset.items]
+    coros = [run_and_evaluate(main_agent, _item) for _item in lf_dataset_items]
     results = asyncio.run(
         gather_with_progress(coros, description="Running agent and evaluating")
     )
 
     for _dataset_item, (_trace, _eval_output) in track(
-        zip(lf_dataset.items, results),
+        zip(lf_dataset_items, results),
         total=len(results),
         description="Uploading scores",
     ):
