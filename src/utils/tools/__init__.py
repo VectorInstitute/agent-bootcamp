@@ -1,1 +1,2 @@
 from .kb_elastic_search import AsyncESKnowledgeBase
+from .kb_weaviate import AsyncWeaviateKnowledgeBase
