@@ -3,6 +3,7 @@
 import pytest
 import pytest_asyncio
 import weaviate
+from weaviate.classes.init import Auth
 
 from src.utils import AsyncWeaviateKnowledgeBase, Configs, pretty_print
 
@@ -16,14 +17,13 @@ def configs():
 @pytest_asyncio.fixture()
 async def weaviate_kb(configs):
     """Weaviate knowledgebase for testing."""
-    async_client = weaviate.use_async_with_local(
-        host=configs.weaviate_host,
-        port=configs.weaviate_port,
-        grpc_port=configs.weaviate_grpc_port,
+    async_client = weaviate.use_async_with_weaviate_cloud(
+        cluster_url=configs.weaviate_url,
+        auth_credentials=Auth.api_key(configs.weaviate_api_key),
     )
 
     yield AsyncWeaviateKnowledgeBase(
-        async_client=async_client, collection_name="enwiki_20250520_50k"
+        async_client=async_client, collection_name="enwiki_20250520_dry_run"
     )
 
     await async_client.close()

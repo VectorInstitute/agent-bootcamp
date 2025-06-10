@@ -8,9 +8,8 @@ class Configs(pydantic.BaseModel):
 
     es_api_key: str
     es_host: str
-    weaviate_host: str
-    weaviate_port: int
-    weaviate_grpc_port: int
+    weaviate_url: str
+    weaviate_api_key: str
 
     # Langfuse
     langfuse_public_key: str
