@@ -12,8 +12,7 @@ from openai import AsyncOpenAI
 from openai.types.chat import ChatCompletionSystemMessageParam, ChatCompletionToolParam
 from weaviate.classes.init import Auth
 
-from src.utils import Configs, gradio_messages_to_oai_chat
-from utils.tools.kb_weaviate import AsyncWeaviateKnowledgeBase
+from src.utils import AsyncWeaviateKnowledgeBase, Configs, gradio_messages_to_oai_chat
 
 
 MAX_TURNS = 5
