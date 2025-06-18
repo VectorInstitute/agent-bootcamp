@@ -25,3 +25,8 @@ wheels/
 
 # Built documentations
 site/
+
+# Terraform deployment configuration
+deploy/*.tfstate
+deploy/.terraform
+deploy/.terraform.lock.hcl
