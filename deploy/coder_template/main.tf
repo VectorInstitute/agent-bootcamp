@@ -1,173 +1,225 @@
 terraform {
-  required_providers {
-    coder = {
-      source = "coder/coder"
+    required_providers {
+        coder = {
+            source = "coder/coder"
+        }
+        google = {
+            source = "hashicorp/google"
+        }
     }
-    google = {
-      source = "hashicorp/google"
-    }
-  }
+}
+
+locals {
+    # Ensure Coder username is a valid Linux username
+    username = "coder"
+    gcp_project_id = "coder-evaluation"
+    gcp_zone = "us-central1-a"
+    github_repo = "https://github.com/VectorInstitute/agent-bootcamp"
+    github_branch = "master"
+    repo_name = "agent-bootcamp"
+    container_image = "us-central1-docker.pkg.dev/coder-evaluation/agent-bootcamp/agent-workspace:latest"
 }
 
 provider "coder" {}
 
-variable "project_id" {
-  description = "Which Google Compute Project should your workspace live in?"
-}
-
 provider "google" {
-  zone    = "us-central1-a"
-  project = var.project_id
+    zone    = local.gcp_zone
+    project = local.gcp_project_id
 }
 
-data "google_compute_default_service_account" "default" {}
-
+data "coder_provisioner" "me" {}
 data "coder_workspace" "me" {}
 data "coder_workspace_owner" "me" {}
 
-resource "google_compute_disk" "root" {
-  name  = "coder-${data.coder_workspace.me.id}-root"
-  type  = "pd-ssd"
-  zone  = "us-central1-a"
-  image = "debian-cloud/debian-11"
-  lifecycle {
-    ignore_changes = [name, image]
-  }
-}
-
 resource "coder_agent" "main" {
-  auth           = "google-instance-identity"
-  arch           = "amd64"
-  os             = "linux"
-  startup_script = <<-EOT
-    set -e
+    auth           = "google-instance-identity"
+    arch           = "amd64"
+    os             = "linux"
+    startup_script = <<-EOT
+        #!/bin/bash
+        set -e
 
-    # Add any commands that should be executed at workspace startup (e.g install requirements, start a program, etc) here
-  EOT
+        export PATH="/home/${local.username}/.local/bin:$PATH"
 
-  metadata {
-    key          = "cpu"
-    display_name = "CPU Usage"
-    interval     = 5
-    timeout      = 5
-    script       = <<-EOT
-      #!/bin/bash
-      set -e
-      top -bn1 | grep "Cpu(s)" | awk '{print $2 + $4 "%"}'
+        echo "Changing permissions of /home/${local.username} folder"
+        sudo chown -R ${local.username}:${local.username} /home/${local.username}
+
+        echo "Installing Code Server"
+
+        # Install and start code-server
+        sudo curl -fsSL https://code-server.dev/install.sh | sh -s -- --method=standalone --prefix=/tmp/code-server
+        /tmp/code-server/bin/code-server --auth none --port 13337 >/tmp/code-server.log 2>&1 &
+
+        echo "Cloning git repository and checking out the dev branch"
+
+        echo "Running project init script"
+
+        if [ -f ".coder/init.sh" ] ; then
+            sh .coder/init.sh
+            else
+            echo "No init script"
+        fi
+
+        echo "Startup script ran successfully!"
+
     EOT
-  }
-  metadata {
-    key          = "memory"
-    display_name = "Memory Usage"
-    interval     = 5
-    timeout      = 5
-    script       = <<-EOT
-      #!/bin/bash
-      set -e
-      free -m | awk 'NR==2{printf "%.2f%%\t", $3*100/$2 }'
-    EOT
-  }
-  metadata {
-    key          = "disk"
-    display_name = "Disk Usage"
-    interval     = 600 # every 10 minutes
-    timeout      = 30  # df can take a while on large filesystems
-    script       = <<-EOT
-      #!/bin/bash
-      set -e
-      df /home/coder | awk '$NF=="/"{printf "%s", $5}'
-    EOT
-  }
+
+    env = {
+        GIT_AUTHOR_NAME     = coalesce(data.coder_workspace_owner.me.full_name, data.coder_workspace_owner.me.name)
+        GIT_AUTHOR_EMAIL    = "${data.coder_workspace_owner.me.email}"
+        GIT_COMMITTER_NAME  = coalesce(data.coder_workspace_owner.me.full_name, data.coder_workspace_owner.me.name)
+        GIT_COMMITTER_EMAIL = "${data.coder_workspace_owner.me.email}"
+    }
 }
 
-# See https://registry.coder.com/modules/coder/code-server
-module "code-server" {
-  count  = data.coder_workspace.me.start_count
-  source = "registry.coder.com/coder/code-server/coder"
+# See https://registry.terraform.io/modules/terraform-google-modules/container-vm
+module "gce-container" {
+    source  = "terraform-google-modules/container-vm/google"
+    version = "3.0.0"
 
-  # This ensures that the latest non-breaking version of the module gets downloaded, you can also pin the module version to prevent breaking changes in production.
-  version = "~> 1.0"
+    container = {
+        image   = local.container_image
+        command = ["sh"]
+        args    = ["-c", coder_agent.main.init_script]
+        securityContext = {
+            privileged : true
+        }
+        # Declare volumes to be mounted
+        # This is similar to how Docker volumes are mounted
+        volumeMounts = [
+        {
+            mountPath = "/cache"
+            name      = "tempfs-0"
+            readOnly  = false
+        },
+        {
+            mountPath = "/home/${local.username}"
+            name      = "data-disk-0"
+            readOnly  = false
+        },
+        ]
+    }
+    # Declare the volumes
+    volumes = [
+        {
+        name = "tempfs-0"
 
-  agent_id = coder_agent.main.id
-  order    = 1
+        emptyDir = {
+            medium = "Memory"
+        }
+        },
+        {
+        name = "data-disk-0"
+
+        gcePersistentDisk = {
+            pdName = "data-disk-0"
+            fsType = "ext4"
+        }
+        },
+    ]
 }
 
-# See https://registry.coder.com/modules/coder/jetbrains-gateway
-module "jetbrains_gateway" {
-  count  = data.coder_workspace.me.start_count
-  source = "registry.coder.com/coder/jetbrains-gateway/coder"
-
-  # JetBrains IDEs to make available for the user to select
-  jetbrains_ides = ["IU", "PY", "WS", "PS", "RD", "CL", "GO", "RM"]
-  default        = "IU"
-
-  # Default folder to open when starting a JetBrains IDE
-  folder = "/home/coder"
-
-  # This ensures that the latest non-breaking version of the module gets downloaded, you can also pin the module version to prevent breaking changes in production.
-  version = "~> 1.0"
-
-  agent_id   = coder_agent.main.id
-  agent_name = "main"
-  order      = 2
+resource "google_compute_disk" "pd" {
+    project = local.gcp_project_id
+    name    = "coder-${data.coder_workspace.me.id}-data-disk"
+    type    = "pd-ssd"
+    zone    = local.gcp_zone
+    size    = 10
 }
 
 resource "google_compute_instance" "dev" {
-  zone         = "us-central1-a"
-  count        = data.coder_workspace.me.start_count
-  name         = "coder-${lower(data.coder_workspace_owner.me.name)}-${lower(data.coder_workspace.me.name)}-root"
-  machine_type = "e2-small"
-  network_interface {
-    network = "default"
-    access_config {
-      // Ephemeral public IP
+    zone         = local.gcp_zone
+    count        = data.coder_workspace.me.start_count
+    name         = "coder-${lower(data.coder_workspace_owner.me.name)}-${lower(data.coder_workspace.me.name)}"
+    machine_type = "e2-small"
+    network_interface {
+        network = "default"
+        access_config {
+            // Ephemeral public IP
+        }
     }
-  }
-  boot_disk {
-    auto_delete = false
-    source      = google_compute_disk.root.name
-  }
-  service_account {
-    email  = data.google_compute_default_service_account.default.email
-    scopes = ["cloud-platform"]
-  }
-  # The startup script runs as root with no $HOME environment set up, so instead of directly
-  # running the agent init script, create a user (with a homedir, default shell and sudo
-  # permissions) and execute the init script as that user.
-  metadata_startup_script = <<EOMETA
-#!/usr/bin/env sh
-set -eux
-
-# If user does not exist, create it and set up passwordless sudo
-if ! id -u "${local.linux_user}" >/dev/null 2>&1; then
-  useradd -m -s /bin/bash "${local.linux_user}"
-  echo "${local.linux_user} ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/coder-user
-fi
-
-exec sudo -u "${local.linux_user}" sh -c '${coder_agent.main.init_script}'
-EOMETA
+    boot_disk {
+        initialize_params {
+            image = module.gce-container.source_image
+        }
+    }
+    attached_disk {
+        source      = google_compute_disk.pd.self_link
+        device_name = "data-disk-0"
+        mode        = "READ_WRITE"
+    }
+    service_account {
+        email  = "coder-service-account@coder-evaluation.iam.gserviceaccount.com"
+        scopes = ["cloud-platform"]
+    }
+    metadata = {
+        "gce-container-declaration" = module.gce-container.metadata_value
+    }
+    labels = {
+        container-vm = module.gce-container.vm_container_label
+    }
 }
 
-locals {
-  # Ensure Coder username is a valid Linux username
-  linux_user = lower(substr(data.coder_workspace_owner.me.name, 0, 32))
+resource "coder_agent_instance" "dev" {
+    count       = data.coder_workspace.me.start_count
+    agent_id    = coder_agent.main.id
+    instance_id = google_compute_instance.dev[0].instance_id
+    }
+
+    resource "coder_metadata" "workspace_info" {
+    count       = data.coder_workspace.me.start_count
+    resource_id = google_compute_instance.dev[0].id
+
+    item {
+        key   = "image"
+        value = module.gce-container.container.image
+    }
 }
 
-resource "coder_metadata" "workspace_info" {
-  count       = data.coder_workspace.me.start_count
-  resource_id = google_compute_instance.dev[0].id
+resource "coder_app" "jupyter" {
+    agent_id     = coder_agent.main.id
+    slug         = "jupyter"
+    display_name = "JupyterLab"
+    url          = "http://localhost:8888"
+    icon         = "/icon/jupyter.svg"
+    share        = "owner"
+    subdomain    = true
 
-  item {
-    key   = "type"
-    value = google_compute_instance.dev[0].machine_type
-  }
+    healthcheck {
+        url       = "http://localhost:8888/api"
+        interval  = 5
+        threshold = 10
+    }
 }
 
-resource "coder_metadata" "home_info" {
-  resource_id = google_compute_disk.root.id
+resource "coder_app" "code-server" {
+    agent_id     = coder_agent.main.id
+    slug         = "code-server"
+    display_name = "code-server"
+    url          = "http://localhost:13337/?folder=/home/${local.username}/${local.repo_name}"
+    icon         = "/icon/code.svg"
+    subdomain    = false
+    share        = "owner"
 
-  item {
-    key   = "size"
-    value = "${google_compute_disk.root.size} GiB"
-  }
+    healthcheck {
+        url       = "http://localhost:13337/healthz"
+        interval  = 5
+        threshold = 6
+    }
+}
+
+resource "coder_app" "streamlit-app" {
+    agent_id     = coder_agent.main.id
+    slug         = "streamlit-app"
+    display_name = "Search and Chat"
+    url          = "http://localhost:8501"
+    icon         = "https://icon.icepanel.io/Technology/svg/Streamlit.svg"
+    subdomain    = false
+    share        = "owner"
+
+    healthcheck {
+        url       = "http://localhost:8501/healthz"
+        interval  = 5
+        threshold = 6
+    }
 }
