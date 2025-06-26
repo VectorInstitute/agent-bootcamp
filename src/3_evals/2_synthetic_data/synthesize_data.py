@@ -13,11 +13,10 @@ import random
 
 import agents
 import pydantic
+from dotenv import load_dotenv
 from rich.progress import track
 
 from src.utils import (
-    AsyncESKnowledgeBase,
-    Configs,
     gather_with_progress,
     get_langfuse_tracer,
     pretty_print,
@@ -26,6 +25,8 @@ from src.utils.data import get_dataset, get_dataset_url_hash
 from src.utils.langfuse.shared_client import langfuse
 from src.utils.tools.news_events import NewsEvent, get_news_events
 
+
+load_dotenv(verbose=True)
 
 SYSTEM_MESSAGE = """\
 Example questions: \
@@ -132,7 +133,7 @@ if __name__ == "__main__":
         ),
         # Hint: replace this tool with your own knowledge base search tool.
         tools=[agents.WebSearchTool()],
-        model="gpt-4o",
+        model="gpt-4.1-mini",
     )
 
     news_events_by_category = asyncio.run(get_news_events())

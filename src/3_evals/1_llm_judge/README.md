@@ -37,7 +37,7 @@ Example data:
 source .env
 uv run -m src.3_evals.1_llm_judge.run_eval \
 --langfuse_dataset_name search-dataset \
---run_name enwiki_elasticsearch
+--run_name enwiki_weaviate
 ```
 
 Example output:

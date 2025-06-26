@@ -6,11 +6,15 @@ langfuse.com/docs/integrations/openaiagentssdk/example-evaluating-openai-agents
 
 import argparse
 
+from dotenv import load_dotenv
 from rich.progress import track
 
 from src.utils.data import get_dataset, get_dataset_url_hash
 from src.utils.env_vars import Configs
 from src.utils.langfuse.shared_client import langfuse
+
+
+load_dotenv(verbose=True)
 
 
 parser = argparse.ArgumentParser()

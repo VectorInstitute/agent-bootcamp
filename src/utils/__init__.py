@@ -8,5 +8,4 @@ from .gradio.messages import (
 )
 from .langfuse.oai_sdk_setup import get_langfuse_tracer
 from .pretty_printing import pretty_print
-from .tools.kb_elastic_search import AsyncESKnowledgeBase
-from .tools.kb_weaviate import AsyncWeaviateKnowledgeBase
+from .tools.kb_weaviate import AsyncWeaviateKnowledgeBase, get_weaviate_async_client

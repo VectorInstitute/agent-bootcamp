@@ -14,6 +14,6 @@ uv run -m src.3_evals.2_synthetic_data.synthesize_data \
 source .env
 uv run -m src.3_evals.1_llm_judge.run_eval \
 --langfuse_dataset_name search-dataset-synthetic-20250609 \
---run_name enwiki_elasticsearch \
+--run_name enwiki_weaviate \
 --limit 18
 ```

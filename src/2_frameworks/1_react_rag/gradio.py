@@ -1,20 +1,30 @@
 """Reason-and-Act Knowledge Retrieval Agent via the OpenAI Agent SDK."""
 
+import asyncio
+import contextlib
 import logging
+import signal
+import sys
 
 import agents
 import gradio as gr
-from elasticsearch import AsyncElasticsearch
+from dotenv import load_dotenv
 from gradio.components.chatbot import ChatMessage
 from openai import AsyncOpenAI
 
 from src.utils import (
-    AsyncESKnowledgeBase,
+    AsyncWeaviateKnowledgeBase,
     Configs,
+    get_weaviate_async_client,
     oai_agent_items_to_gradio_messages,
     pretty_print,
 )
 
+
+load_dotenv(verbose=True)
+
+
+logging.basicConfig(level=logging.INFO)
 
 SYSTEM_MESSAGE = """\
 Answer the question using the search tool. \
@@ -23,16 +33,37 @@ Be sure to mention the sources. \
 If the search did not return intended results, try again. \
 Do not make up information."""
 
+configs = Configs.from_env_var()
+async_weaviate_client = get_weaviate_async_client(
+    http_host=configs.weaviate_http_host,
+    http_port=configs.weaviate_http_port,
+    http_secure=configs.weaviate_http_secure,
+    grpc_host=configs.weaviate_grpc_host,
+    grpc_port=configs.weaviate_grpc_port,
+    grpc_secure=configs.weaviate_grpc_secure,
+    api_key=configs.weaviate_api_key,
+)
+async_openai_client = AsyncOpenAI()
+async_knowledgebase = AsyncWeaviateKnowledgeBase(
+    async_weaviate_client,
+    collection_name="enwiki_20250520",
+)
+
+
+async def _cleanup_clients() -> None:
+    """Close async clients."""
+    await async_weaviate_client.close()
+    await async_openai_client.close()
+
+
+def _handle_sigint(signum: int, frame: object) -> None:
+    """Handle SIGINT signal to gracefully shutdown."""
+    with contextlib.suppress(Exception):
+        asyncio.get_event_loop().run_until_complete(_cleanup_clients())
+    sys.exit(0)
+
 
 async def _main(question: str, gr_messages: list[ChatMessage]):
-    configs = Configs.from_env_var()
-    async_es_client = AsyncElasticsearch(configs.es_host, api_key=configs.es_api_key)
-    async_openai_client = AsyncOpenAI()
-    async_knowledgebase = AsyncESKnowledgeBase(
-        async_es_client,
-        es_collection_name="enwiki-20250501",
-    )
-
     main_agent = agents.Agent(
         name="Wikipedia Agent",
         instructions=SYSTEM_MESSAGE,
@@ -49,16 +80,16 @@ async def _main(question: str, gr_messages: list[ChatMessage]):
     pretty_print(gr_messages)
     yield gr_messages
 
-    await async_es_client.close()
-
 
 if __name__ == "__main__":
-    Configs.from_env_var()
-    logging.basicConfig(level=logging.INFO)
-
     with gr.Blocks(title="OAI Agent SDK ReAct") as app:
         chatbot = gr.Chatbot(type="messages", label="Agent")
         chat_message = gr.Textbox(lines=1, label="Ask a question")
         chat_message.submit(_main, [chat_message, chatbot], [chatbot])
 
-    app.launch(server_name="0.0.0.0")
+    signal.signal(signal.SIGINT, _handle_sigint)
+
+    try:
+        app.launch(server_name="0.0.0.0")
+    finally:
+        asyncio.run(_cleanup_clients())

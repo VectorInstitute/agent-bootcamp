@@ -5,7 +5,6 @@ This folder contains an example of a basic Reason-and-Act (ReAct) agent for know
 ## Run
 
 ```bash
-source .env
 uv run -m src.1_basics.1_react_rag.main
 uv run -m src.1_basics.1_react_rag.gradio
 ```

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Fetch and parse Wikipedia Current Events into structured data using Pydantic."""
+
 from __future__ import annotations
 
 import argparse

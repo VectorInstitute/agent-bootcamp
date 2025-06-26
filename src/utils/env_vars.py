@@ -6,10 +6,14 @@ import pydantic
 class Configs(pydantic.BaseModel):
     """Type-friendly collection of env var configs."""
 
-    es_api_key: str
-    es_host: str
-    weaviate_url: str
+    # Weaviate
+    weaviate_http_host: str
+    weaviate_grpc_host: str
     weaviate_api_key: str
+    weaviate_http_port: int = 443
+    weaviate_grpc_port: int = 443
+    weaviate_http_secure: bool = True
+    weaviate_grpc_secure: bool = True
 
     # Langfuse
     langfuse_public_key: str

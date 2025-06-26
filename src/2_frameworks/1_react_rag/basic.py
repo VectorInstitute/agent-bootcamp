@@ -4,10 +4,18 @@ import asyncio
 import logging
 
 from agents import Agent, OpenAIChatCompletionsModel, Runner, function_tool
-from elasticsearch import AsyncElasticsearch
+from dotenv import load_dotenv
 from openai import AsyncOpenAI
 
-from src.utils import AsyncESKnowledgeBase, Configs, pretty_print
+from src.utils import (
+    AsyncWeaviateKnowledgeBase,
+    Configs,
+    get_weaviate_async_client,
+    pretty_print,
+)
+
+
+load_dotenv(verbose=True)
 
 
 INSTRUCTIONS = """\
@@ -20,11 +28,19 @@ Do not make up information. \
 
 async def _main(query: str):
     configs = Configs.from_env_var()
-    async_es_client = AsyncElasticsearch(configs.es_host, api_key=configs.es_api_key)
+    async_weaviate_client = get_weaviate_async_client(
+        http_host=configs.weaviate_http_host,
+        http_port=configs.weaviate_http_port,
+        http_secure=configs.weaviate_http_secure,
+        grpc_host=configs.weaviate_grpc_host,
+        grpc_port=configs.weaviate_grpc_port,
+        grpc_secure=configs.weaviate_grpc_secure,
+        api_key=configs.weaviate_api_key,
+    )
     async_openai_client = AsyncOpenAI()
-    async_knowledgebase = AsyncESKnowledgeBase(
-        async_es_client,
-        es_collection_name="enwiki-20250501",
+    async_knowledgebase = AsyncWeaviateKnowledgeBase(
+        async_weaviate_client,
+        collection_name="enwiki_20250520",
     )
 
     wikipedia_agent = Agent(
@@ -37,11 +53,13 @@ async def _main(query: str):
     )
 
     response = await Runner.run(wikipedia_agent, input=query)
-    pretty_print(response.final_output)
+
     pretty_print(response.raw_responses)
     pretty_print(response.new_items)
+    pretty_print(response.final_output)
 
-    await async_es_client.close()
+    await async_weaviate_client.close()
+    await async_openai_client.close()
 
 
 if __name__ == "__main__":

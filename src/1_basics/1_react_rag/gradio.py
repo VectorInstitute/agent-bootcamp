@@ -3,19 +3,45 @@
 With reference to huggingface.co/spaces/gradio/langchain-agent
 """
 
+import asyncio
+import contextlib
 import json
+import signal
+import sys
 
 import gradio as gr
-import weaviate
+from dotenv import load_dotenv
 from gradio.components.chatbot import ChatMessage
 from openai import AsyncOpenAI
 from openai.types.chat import ChatCompletionSystemMessageParam, ChatCompletionToolParam
-from weaviate.classes.init import Auth
 
-from src.utils import AsyncWeaviateKnowledgeBase, Configs, gradio_messages_to_oai_chat
+from src.utils import (
+    AsyncWeaviateKnowledgeBase,
+    Configs,
+    get_weaviate_async_client,
+    gradio_messages_to_oai_chat,
+)
 
+
+load_dotenv(verbose=True)
 
 MAX_TURNS = 5
+
+configs = Configs.from_env_var()
+async_weaviate_client = get_weaviate_async_client(
+    http_host=configs.weaviate_http_host,
+    http_port=configs.weaviate_http_port,
+    http_secure=configs.weaviate_http_secure,
+    grpc_host=configs.weaviate_grpc_host,
+    grpc_port=configs.weaviate_grpc_port,
+    grpc_secure=configs.weaviate_grpc_secure,
+    api_key=configs.weaviate_api_key,
+)
+async_openai_client = AsyncOpenAI()
+async_knowledgebase = AsyncWeaviateKnowledgeBase(
+    async_weaviate_client,
+    collection_name="enwiki_20250520",
+)
 
 tools: list["ChatCompletionToolParam"] = [
     {
@@ -51,21 +77,32 @@ system_message: "ChatCompletionSystemMessageParam" = {
 }
 
 
+async def _cleanup_clients() -> None:
+    """Close async clients."""
+    await async_weaviate_client.close()
+    await async_openai_client.close()
+
+
+def _handle_sigint(signum: int, frame: object) -> None:
+    """Handle SIGINT signal to gracefully shutdown."""
+    with contextlib.suppress(Exception):
+        asyncio.get_event_loop().run_until_complete(_cleanup_clients())
+    sys.exit(0)
+
+
 async def _main(question: str, gr_message_history: list[ChatMessage]):
-    configs = Configs.from_env_var()
-    async_client = weaviate.use_async_with_weaviate_cloud(
-        configs.weaviate_url, auth_credentials=Auth.api_key(configs.weaviate_api_key)
-    )
-    async_openai_client = AsyncOpenAI()
-    async_knowledgebase = AsyncWeaviateKnowledgeBase(
-        async_client,
-        collection_name="enwiki_20250520_dry_run",
-    )
+    gr_message_history = [
+        ChatMessage(**msg) if isinstance(msg, dict) else msg
+        for msg in gr_message_history
+    ]
 
     gr_message_history.append(ChatMessage(role="user", content=question))
     yield gr_message_history
 
-    oai_messages = [system_message, *gradio_messages_to_oai_chat(gr_message_history)]
+    oai_messages = [
+        system_message,
+        *gradio_messages_to_oai_chat(gr_message_history),
+    ]
 
     for _ in range(MAX_TURNS):
         completion = await async_openai_client.chat.completions.create(
@@ -119,8 +156,6 @@ async def _main(question: str, gr_message_history: list[ChatMessage]):
         else:
             break
 
-    await async_client.close()
-
 
 if __name__ == "__main__":
     with gr.Blocks() as app:
@@ -128,4 +163,9 @@ if __name__ == "__main__":
         chat_message = gr.Textbox(lines=1, label="Ask a question")
         chat_message.submit(_main, [chat_message, chatbot], [chatbot])
 
-    app.launch(server_name="0.0.0.0")
+    signal.signal(signal.SIGINT, _handle_sigint)
+
+    try:
+        app.launch(server_name="0.0.0.0")
+    finally:
+        asyncio.run(_cleanup_clients())

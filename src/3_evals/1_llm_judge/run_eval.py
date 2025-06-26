@@ -5,19 +5,23 @@ import asyncio
 
 import agents
 import pydantic
-from elasticsearch import AsyncElasticsearch
+from dotenv import load_dotenv
 from langfuse.client import DatasetItemClient, StatefulTraceClient
 from openai import AsyncOpenAI
 from opentelemetry import trace as otlp_trace
 from rich.progress import Progress, SpinnerColumn, TextColumn, track
 
 from src.utils import (
-    AsyncESKnowledgeBase,
+    AsyncWeaviateKnowledgeBase,
     Configs,
     gather_with_progress,
     get_langfuse_tracer,
+    get_weaviate_async_client,
 )
 from src.utils.langfuse.shared_client import langfuse as langfuse_client
+
+
+load_dotenv(verbose=True)
 
 
 SYSTEM_MESSAGE = """\
@@ -155,12 +159,21 @@ if __name__ == "__main__":
         lf_dataset_items = lf_dataset_items[: args.limit]
 
     configs = Configs.from_env_var()
-    async_es_client = AsyncElasticsearch(configs.es_host, api_key=configs.es_api_key)
-    async_openai_client = AsyncOpenAI()
-    async_knowledgebase = AsyncESKnowledgeBase(
-        async_es_client,
-        es_collection_name="enwiki-20250501",
+    async_weaviate_client = get_weaviate_async_client(
+        http_host=configs.weaviate_http_host,
+        http_port=configs.weaviate_http_port,
+        http_secure=configs.weaviate_http_secure,
+        grpc_host=configs.weaviate_grpc_host,
+        grpc_port=configs.weaviate_grpc_port,
+        grpc_secure=configs.weaviate_grpc_secure,
+        api_key=configs.weaviate_api_key,
     )
+    async_openai_client = AsyncOpenAI()
+    async_knowledgebase = AsyncWeaviateKnowledgeBase(
+        async_weaviate_client,
+        collection_name="enwiki_20250520",
+    )
+
     tracer = get_langfuse_tracer()
 
     main_agent = agents.Agent(
@@ -198,4 +211,4 @@ if __name__ == "__main__":
         task = progress.add_task("Finalizing Langfuse annotations...", total=None)
         langfuse_client.flush()
 
-    asyncio.run(async_es_client.close())
+    asyncio.run(async_weaviate_client.close())

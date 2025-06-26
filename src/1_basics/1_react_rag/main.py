@@ -4,14 +4,21 @@ import asyncio
 import json
 from typing import TYPE_CHECKING
 
-from elasticsearch import AsyncElasticsearch
+from dotenv import load_dotenv
 from openai import AsyncOpenAI
 
-from src.utils import AsyncESKnowledgeBase, Configs, pretty_print
+from src.utils import (
+    AsyncWeaviateKnowledgeBase,
+    Configs,
+    get_weaviate_async_client,
+    pretty_print,
+)
 
 
 if TYPE_CHECKING:
     from openai.types.chat import ChatCompletionMessageParam, ChatCompletionToolParam
+
+load_dotenv(verbose=True)
 
 MAX_TURNS = 5
 
@@ -40,11 +47,19 @@ tools: list["ChatCompletionToolParam"] = [
 
 async def _main():
     configs = Configs.from_env_var()
-    async_es_client = AsyncElasticsearch(configs.es_host, api_key=configs.es_api_key)
+    async_weaviate_client = get_weaviate_async_client(
+        http_host=configs.weaviate_http_host,
+        http_port=configs.weaviate_http_port,
+        http_secure=configs.weaviate_http_secure,
+        grpc_host=configs.weaviate_grpc_host,
+        grpc_port=configs.weaviate_grpc_port,
+        grpc_secure=configs.weaviate_grpc_secure,
+        api_key=configs.weaviate_api_key,
+    )
     async_openai_client = AsyncOpenAI()
-    async_knowledgebase = AsyncESKnowledgeBase(
-        async_es_client,
-        es_collection_name="enwiki-20250501",
+    async_knowledgebase = AsyncWeaviateKnowledgeBase(
+        async_weaviate_client,
+        collection_name="enwiki_20250520",
     )
 
     messages: list[ChatCompletionMessageParam] = [
@@ -62,48 +77,69 @@ async def _main():
             "content": "When was the 4K (first generation) Apple TV released?",
         },
     ]
-    for _ in range(MAX_TURNS):
-        completion = await async_openai_client.chat.completions.create(
-            model="gpt-4.1-nano",
-            messages=messages,
-            tools=tools,
-        )
 
-        # Add message to conversation history
-        message = completion.choices[0].message
-        messages.append(message.model_dump())  # type: ignore[arg-type]
-
-        tool_calls = message.tool_calls
-
-        # Execute function calls if requested.
-        if tool_calls is not None:
-            for tool_call in tool_calls:
-                pretty_print(tool_call)
-                arguments = json.loads(tool_call.function.arguments)
-                results = await async_knowledgebase.search_knowledgebase(
-                    arguments["keyword"]
+    try:
+        while True:
+            for _ in range(MAX_TURNS):
+                completion = await async_openai_client.chat.completions.create(
+                    model="gpt-4.1-nano",
+                    messages=messages,
+                    tools=tools,
                 )
 
-                messages.append(
-                    {
-                        "role": "tool",
-                        "tool_call_id": tool_call.id,
-                        "content": json.dumps(
-                            [_result.model_dump() for _result in results]
-                        ),
-                    }
+                # Add message to conversation history
+                message = completion.choices[0].message
+                messages.append(message.model_dump())  # type: ignore[arg-type]
+
+                tool_calls = message.tool_calls
+
+                # Execute function calls if requested.
+                if tool_calls is not None:
+                    for tool_call in tool_calls:
+                        pretty_print(tool_call)
+                        arguments = json.loads(tool_call.function.arguments)
+                        results = await async_knowledgebase.search_knowledgebase(
+                            arguments["keyword"]
+                        )
+
+                        messages.append(
+                            {
+                                "role": "tool",
+                                "tool_call_id": tool_call.id,
+                                "content": json.dumps(
+                                    [_result.model_dump() for _result in results]
+                                ),
+                            }
+                        )
+
+                # Otherwise, print final response and stop.
+                else:
+                    pretty_print(message.content)
+                    break
+
+                pretty_print(messages)
+
+            # Get new user input
+            try:
+                timeout_secs = 60
+                user_input = await asyncio.wait_for(
+                    asyncio.to_thread(input, "Ask a question: "),
+                    timeout=timeout_secs,
                 )
+            except asyncio.TimeoutError:
+                print(f"No response received within {timeout_secs} seconds. Exiting.")
+                break
 
-        # Otherwise, print final response and stop.
-        else:
-            pretty_print(message)
-            break
+            # Break if user_input is empty or a quit command
+            if not user_input.strip() or user_input.lower() in {"quit", "exit"}:
+                print("Exiting.")
+                break
 
-        pretty_print(messages)
-        input()
-
-    await async_es_client.close()
+            messages.append({"role": "user", "content": user_input})
+    finally:
+        await async_weaviate_client.close()
+        await async_openai_client.close()
 
 
 if __name__ == "__main__":
-    asyncio.get_event_loop().run_until_complete(_main())
+    asyncio.run(_main())
