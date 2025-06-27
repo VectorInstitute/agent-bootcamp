@@ -208,12 +208,12 @@ resource "coder_app" "code-server" {
     }
 }
 
-resource "coder_app" "streamlit-app" {
+resource "coder_app" "gradio-app" {
     agent_id     = coder_agent.main.id
-    slug         = "streamlit-app"
-    display_name = "Search and Chat"
+    slug         = "gradio-app"
+    display_name = "Gradio"
     url          = "http://localhost:8501"
-    icon         = "https://icon.icepanel.io/Technology/svg/Streamlit.svg"
+    icon         = "https://icon.icepanel.io/Technology/svg/Gradio.svg"
     subdomain    = false
     share        = "owner"
 

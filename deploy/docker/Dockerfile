@@ -1,8 +1,8 @@
-FROM ghcr.io/astral-sh/uv:python3.10-bookworm-slim
+FROM ubuntu:22.04
 
 # Install system dependencies
-RUN apt-get update \
-    && apt-get install -y \
+RUN apt-get update
+RUN apt-get install -y \
     sudo \
     curl \
     git \
@@ -10,8 +10,14 @@ RUN apt-get update \
     unzip \
     ca-certificates \
     build-essential \
-    && rm -rf /var/lib/apt/lists/*
+    golang \
+    procps \
+    python3.10 \
+    python3-pip \
+    python3-venv
 
+RUN python3 -m pip install jupyter uv gradio
+ 
 ARG USER=coder
 RUN useradd --groups sudo --no-create-home --shell /bin/bash ${USER} \
     && echo "${USER} ALL=(ALL) NOPASSWD:ALL" >/etc/sudoers.d/${USER} \
