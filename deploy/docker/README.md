@@ -43,6 +43,16 @@ gcloud builds submit --region=us-central1 --tag us-central1-docker.pkg.dev/coder
 
 After the build is complete, you can find the docker image in the repository in Google Cloud Artifact Registry.
 
+### 5. (Temporary) Upload a zip of the git repo to a Docker bucket
+
+```sh
+cd ~/agent-bootcamp/.. # This path must point to the parent folder of a clone of the git repo
+zip -r agent-bootcamp-git.zip agent-bootcamp
+gsutil rm gs://agent-bootcamp/agent-bootcamp-git.zip
+gsutil cp agent-bootcamp-git.zip gs://agent-bootcamp/agent-bootcamp-git.zip
+
+
+
 ## References
 
 - [Build and push a Docker image with Cloud Build](https://cloud.google.com/build/docs/build-push-docker-image)

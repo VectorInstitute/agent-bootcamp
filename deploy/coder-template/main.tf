@@ -57,7 +57,7 @@ resource "coder_agent" "main" {
         unzip /tmp/agent-bootcamp-git.zip
 
         cd /home/${local.username}/agent-bootcamp/
-        sudo bash deploy/coder-template/init.sh
+        bash deploy/coder-template/init.sh
 
         echo "Startup script ran successfully!"
 
