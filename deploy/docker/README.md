@@ -24,12 +24,6 @@ gcloud config set project <gcp-project-id>
 Skip this step if you already have an artifact repository in Google Cloud Artifact Registry that you can use.
 
 ```sh
-gcloud artifacts repositories create <repository-name> --repository-format=docker --location=<location> --description="Docker repository"
-```
-
-Example:
-
-```sh
 gcloud artifacts repositories create agent-bootcamp --repository-format=docker --location=us-central1 --description="Docker repository for Vector Agentic AI Bootcamp"
 ```
 

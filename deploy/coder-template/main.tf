@@ -50,15 +50,14 @@ resource "coder_agent" "main" {
         sudo curl -fsSL https://code-server.dev/install.sh | sh -s -- --method=standalone --prefix=/tmp/code-server
         /tmp/code-server/bin/code-server --auth none --port 13337 >/tmp/code-server.log 2>&1 &
 
-        echo "Cloning git repository and checking out the dev branch"
-
         echo "Running project init script"
 
-        if [ -f ".coder/init.sh" ] ; then
-            sh .coder/init.sh
-            else
-            echo "No init script"
-        fi
+        # TODO: Fix this ugly hack, find a better way to grab the agent-bootcamp git repo
+        gsutil cp gs://agent-bootcamp/agent-bootcamp-git.zip /tmp/
+        unzip /tmp/agent-bootcamp-git.zip
+
+        cd /home/${local.username}/agent-bootcamp/
+        sudo bash deploy/coder-template/init.sh
 
         echo "Startup script ran successfully!"
 
@@ -118,6 +117,13 @@ module "gce-container" {
         },
     ]
 }
+
+resource "google_storage_bucket_iam_member" "allow_sa_read_bucket" {
+    bucket = "agent-bootcamp"
+    role   = "roles/storage.objectViewer"
+    member = "serviceAccount:coder-service-account@coder-evaluation.iam.gserviceaccount.com"
+}
+
 
 resource "google_compute_disk" "pd" {
     project = local.gcp_project_id
