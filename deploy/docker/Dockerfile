@@ -26,9 +26,14 @@ RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.
 RUN apt-get update && sudo apt-get install -y google-cloud-cli
 
 ARG USER=coder
-RUN useradd --groups sudo --no-create-home --shell /bin/bash ${USER} \
+RUN useradd --groups sudo --create-home --groups sudo --shell /bin/bash ${USER} \
     && echo "${USER} ALL=(ALL) NOPASSWD:ALL" >/etc/sudoers.d/${USER} \
     && chmod 0440 /etc/sudoers.d/${USER}
 
 USER ${USER}
 WORKDIR /home/${USER}
+
+# Add the agent-bootcamp repo code
+# TODO: Fix this ugly hack, find a better way to grab the agent-bootcamp git repo
+RUN gsutil cp gs://agent-bootcamp/agent-bootcamp-git.zip /tmp/
+RUN unzip /tmp/agent-bootcamp-git.zip

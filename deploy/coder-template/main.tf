@@ -44,18 +44,12 @@ resource "coder_agent" "main" {
         echo "Changing permissions of /home/${local.username} folder"
         sudo chown -R ${local.username}:${local.username} /home/${local.username}
 
-        echo "Installing Code Server"
-
         # Install and start code-server
+        echo "Installing Code Server"
         sudo curl -fsSL https://code-server.dev/install.sh | sh -s -- --method=standalone --prefix=/tmp/code-server
         /tmp/code-server/bin/code-server --auth none --port 13337 >/tmp/code-server.log 2>&1 &
 
         echo "Running project init script"
-
-        # TODO: Fix this ugly hack, find a better way to grab the agent-bootcamp git repo
-        gsutil cp gs://agent-bootcamp/agent-bootcamp-git.zip /tmp/
-        unzip /tmp/agent-bootcamp-git.zip
-
         cd /home/${local.username}/agent-bootcamp/
         bash deploy/coder-template/init.sh
 
