@@ -19,19 +19,20 @@ RUN apt-get install -y \
 # Install python libraries
 RUN python3 -m pip install jupyter uv gradio
 
-# Install the gcloud CLI
+# Now, activate the coder user account, set as ${USER} here
+USER ${USER}
+WORKDIR /home/${USER}
+
+# Setup user account but not activate it yet
+RUN mkdir -p /home/${USER}/.config/gcloud && \
+    chown -R ${USER}:${USER} /home/${USER}/.config
+
+# Install the gcloud CLI, still as superuser
 RUN apt-get install -y apt-transport-https ca-certificates gnupg
 RUN curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo gpg --dearmor -o /usr/share/keyrings/cloud.google.gpg
 RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
 RUN apt-get update && sudo apt-get install -y google-cloud-cli
 
-ARG USER=coder
-RUN useradd --groups sudo --create-home --groups sudo --shell /bin/bash ${USER} \
-    && echo "${USER} ALL=(ALL) NOPASSWD:ALL" >/etc/sudoers.d/${USER} \
-    && chmod 0440 /etc/sudoers.d/${USER}
-
-USER ${USER}
-WORKDIR /home/${USER}
 
 # Add the agent-bootcamp repo code
 # TODO: Fix this ugly hack, find a better way to grab the agent-bootcamp git repo
