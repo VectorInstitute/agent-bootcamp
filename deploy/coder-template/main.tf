@@ -39,6 +39,7 @@ resource "coder_agent" "main" {
         #!/bin/bash
         set -e
 
+        useradd -m -s /bin/bash ${local.username}
         export PATH="/home/${local.username}/.local/bin:$PATH"
 
         echo "Changing permissions of /home/${local.username} folder"
