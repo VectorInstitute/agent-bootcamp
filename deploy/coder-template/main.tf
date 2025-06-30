@@ -39,20 +39,30 @@ resource "coder_agent" "main" {
         #!/bin/bash
         set -e
 
-        useradd -m -s /bin/bash ${local.username}
         export PATH="/home/${local.username}/.local/bin:$PATH"
 
         echo "Changing permissions of /home/${local.username} folder"
         sudo chown -R ${local.username}:${local.username} /home/${local.username}
 
-        # Install and start code-server
-        echo "Installing Code Server"
-        sudo curl -fsSL https://code-server.dev/install.sh | sh -s -- --method=standalone --prefix=/tmp/code-server
+        # Unzip the agent-bootcamp-git.zip file here *only* if the agent-bootcamp directory does not already exist
+        [ ! -d "agent-bootcamp" ] && unzip /tmp/agent-bootcamp-git.zip
+
+        # Run project init steps
+        cd agent-bootcamp
+        uv venv .venv
+        source .venv/bin/activate
+        uv sync --dev
+
+        # Start VS code-server
+        echo "Starting VS code-server"
         /tmp/code-server/bin/code-server --auth none --port 13337 >/tmp/code-server.log 2>&1 &
 
-        echo "Running project init script"
-        cd /home/${local.username}/agent-bootcamp/
-        bash deploy/coder-template/init.sh
+        # Create a Jupyter kernel for the project
+        uv run ipython kernel install --user --name="agent-bootcamp"
+
+        # Start Jupyter JupyterLab
+        echo "Starting Jupyter lab"
+        nohup bash -c "uv run jupyter lab --ip='*' --port=8888 --no-browser --ServerApp.token=''" &> /tmp/jupyter.log &
 
         echo "Startup script ran successfully!"
 
@@ -204,22 +214,6 @@ resource "coder_app" "code-server" {
 
     healthcheck {
         url       = "http://localhost:13337/healthz"
-        interval  = 5
-        threshold = 6
-    }
-}
-
-resource "coder_app" "gradio-app" {
-    agent_id     = coder_agent.main.id
-    slug         = "gradio-app"
-    display_name = "Gradio"
-    url          = "http://localhost:8501"
-    icon         = "https://icon.icepanel.io/Technology/svg/Gradio.svg"
-    subdomain    = false
-    share        = "owner"
-
-    healthcheck {
-        url       = "http://localhost:8501/healthz"
         interval  = 5
         threshold = 6
     }

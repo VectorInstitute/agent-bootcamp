@@ -37,6 +37,9 @@ RUN curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo gpg --dear
 RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
 RUN apt-get update && sudo apt-get install -y google-cloud-cli
 
+# Install VS code-server
+RUN curl -fsSL https://code-server.dev/install.sh | sh -s -- --method=standalone --prefix=/tmp/code-server
+
 # Add the agent-bootcamp repo code
 # TODO: Fix this ugly hack, find a better way to grab the agent-bootcamp git repo
 RUN apt-get update && apt-get install -y ca-certificates curl && \
