@@ -1,23 +1,23 @@
-FROM ubuntu:22.04
+FROM ubuntu:24.04
 
 # Install system dependencies
-RUN apt-get update
-RUN apt-get install -y \
+RUN apt-get update && \
+    apt-get install -y \
     sudo \
     curl \
     git \
+    jq \
     tar \
     unzip \
     ca-certificates \
     build-essential \
     golang \
     procps \
-    python3.10 \
+    python3 \
     python3-pip \
-    python3-venv
+    python3-venv \
+    && rm -rf /var/lib/apt/lists/*
 
-# Install python libraries
-RUN python3 -m pip install jupyter uv gradio
 
 # Setup the coder user account
 ARG USER=coder

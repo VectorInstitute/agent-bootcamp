@@ -1,0 +1,12 @@
+project = "my-gcp-project" # This must match your GCP project id
+region = "us-central1"
+zone = "us-central1-a"
+machine_type = "e2-medium"
+pd_size = 10
+github_repo = "github_repo_url"
+github_branch = "main"
+github_app_id = "primary-github"
+container_image = "docker_image:tag"
+jupyterlab = "true"
+codeserver = "true"
+streamlit = "true"
