@@ -29,7 +29,7 @@ journalctl -u coder.service -b
 
 # Since Coder is running as a systemd service, we need to set environment variables in the coder.service.d directory
 mkdir -p /etc/systemd/system/coder.service.d
-echo -e "[Service]\nEnvironment=CODER_OAUTH2_GITHUB_ALLOW_SIGNUPS=true" > /etc/systemd/system/coder.service.d/override.conf
+echo -e '[Service]\nEnvironment=CODER_OAUTH2_GITHUB_ALLOW_SIGNUPS=true\nEnvironment=CODER_EXTERNAL_AUTH_0_ID="primary-github"\nEnvironment=CODER_EXTERNAL_AUTH_0_TYPE=github\nEnvironment=CODER_EXTERNAL_AUTH_0_CLIENT_ID=<CLIENT_ID>\nEnvironment=CODER_EXTERNAL_AUTH_0_CLIENT_SECRET=<CLIENT_SECRET>\nEnvironment=CODER_EXTERNAL_AUTH_0_SCOPES="repo,workflow,admin:public_key"' > /etc/systemd/system/coder.service.d/override.conf
 
 # Reload systemd to apply the changes
 systemctl daemon-reload

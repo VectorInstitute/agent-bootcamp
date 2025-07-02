@@ -15,9 +15,10 @@ locals {
     gcp_project_id = "coder-evaluation"
     gcp_zone = "us-central1-a"
     github_repo = "https://github.com/VectorInstitute/agent-bootcamp"
-    github_branch = "master"
+    github_branch = "main"
     repo_name = "agent-bootcamp"
     container_image = "us-central1-docker.pkg.dev/coder-evaluation/agent-bootcamp/agent-workspace:latest"
+    github_app_id = "primary-github"
 }
 
 provider "coder" {}
@@ -27,9 +28,14 @@ provider "google" {
     project = local.gcp_project_id
 }
 
+data "google_compute_default_service_account" "default" {}
+
 data "coder_provisioner" "me" {}
 data "coder_workspace" "me" {}
 data "coder_workspace_owner" "me" {}
+data "coder_external_auth" "github" {
+   id = local.github_app_id
+}
 
 resource "coder_agent" "main" {
     auth           = "google-instance-identity"
@@ -42,13 +48,20 @@ resource "coder_agent" "main" {
         export PATH="/home/${local.username}/.local/bin:$PATH"
 
         echo "Changing permissions of /home/${local.username} folder"
-        sudo chown -R ${local.username}:${local.username} /home/${local.username}
+        sudo chmod -R a+rwx /home/${local.username}
 
-        # Unzip the agent-bootcamp-git.zip file here *only* if the agent-bootcamp directory does not already exist
-        [ ! -d "agent-bootcamp" ] && unzip /tmp/agent-bootcamp-git.zip
+        # Clone the GitHub repository
+        cd "/home/${local.username}"
+
+        if [ ! -d "${local.repo_name}" ] ; then
+            git clone ${local.github_repo}
+        fi
+
+        cd ${local.repo_name}
+        git checkout ${local.github_branch}
 
         # Run project init steps
-        cd agent-bootcamp
+        
         uv venv .venv
         source .venv/bin/activate
         uv sync --dev
@@ -74,6 +87,30 @@ resource "coder_agent" "main" {
         GIT_COMMITTER_NAME  = coalesce(data.coder_workspace_owner.me.full_name, data.coder_workspace_owner.me.name)
         GIT_COMMITTER_EMAIL = "${data.coder_workspace_owner.me.email}"
     }
+
+    metadata {
+        display_name = "CPU Usage"
+        key          = "0_cpu_usage"
+        script       = "coder stat cpu"
+        interval     = 10
+        timeout      = 1
+    }
+
+    metadata {
+        display_name = "RAM Usage"
+        key          = "1_ram_usage"
+        script       = "coder stat mem"
+        interval     = 10
+        timeout      = 1
+    }
+}
+
+module "github-upload-public-key" {
+  count            = data.coder_workspace.me.start_count
+  source           = "registry.coder.com/coder/github-upload-public-key/coder"
+  version          = "1.0.15"
+  agent_id         = coder_agent.main.id
+  external_auth_id = data.coder_external_auth.github.id
 }
 
 # See https://registry.terraform.io/modules/terraform-google-modules/container-vm
@@ -123,13 +160,6 @@ module "gce-container" {
     ]
 }
 
-resource "google_storage_bucket_iam_member" "allow_sa_read_bucket" {
-    bucket = "agent-bootcamp"
-    role   = "roles/storage.objectViewer"
-    member = "serviceAccount:coder-service-account@coder-evaluation.iam.gserviceaccount.com"
-}
-
-
 resource "google_compute_disk" "pd" {
     project = local.gcp_project_id
     name    = "coder-${data.coder_workspace.me.id}-data-disk"
@@ -160,7 +190,7 @@ resource "google_compute_instance" "dev" {
         mode        = "READ_WRITE"
     }
     service_account {
-        email  = "coder-service-account@coder-evaluation.iam.gserviceaccount.com"
+        email  = data.google_compute_default_service_account.default.email
         scopes = ["cloud-platform"]
     }
     metadata = {
