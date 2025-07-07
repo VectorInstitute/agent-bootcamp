@@ -62,22 +62,11 @@ resource "coder_agent" "main" {
     source .venv/bin/activate
     uv sync --dev
 
-    # Start VS code-server
-    echo "Starting VS code-server"
-    /tmp/code-server/bin/code-server --auth none --port 13337 >/tmp/code-server.log 2>&1 &
-
-    # Create a Jupyter kernel for the project
-    uv run ipython kernel install --user --name="agent-bootcamp"
-
-    # Start Jupyter JupyterLab
-    echo "Starting Jupyter lab"
-    nohup bash -c "uv run jupyter lab --ip='*' --port=8888 --no-browser --ServerApp.token=''" &> /tmp/jupyter.log &
-
     echo "Startup script ran successfully!"
 
   EOT
 
-	env = {
+  env = {
 			GIT_AUTHOR_NAME     = coalesce(data.coder_workspace_owner.me.full_name, data.coder_workspace_owner.me.name)
 			GIT_AUTHOR_EMAIL    = "${data.coder_workspace_owner.me.email}"
 			GIT_COMMITTER_NAME  = coalesce(data.coder_workspace_owner.me.full_name, data.coder_workspace_owner.me.name)
@@ -213,6 +202,17 @@ resource "coder_metadata" "workspace_info" {
   }
 }
 
+module "vscode-web" {
+  count          = tobool(var.codeserver) ? data.coder_workspace.me.start_count : 0
+  source         = "registry.coder.com/coder/vscode-web/coder"
+  version        = "1.3.0"
+  agent_id       = coder_agent.main.id
+  extensions     = ["ms-python.python", "ms-python.vscode-pylance"]
+  install_prefix = "/home/coder/.vscode-web"
+  folder         = "/home/coder/${local.repo_name}"
+  accept_license = true
+}
+
 resource "coder_app" "jupyter" {
   count        = tobool(var.jupyterlab) ? 1 : 0
   agent_id     = coder_agent.main.id
@@ -227,23 +227,6 @@ resource "coder_app" "jupyter" {
     url       = "http://localhost:8888/api"
     interval  = 5
     threshold = 10
-  }
-}
-
-resource "coder_app" "code-server" {
-  count        = tobool(var.codeserver) ? 1 : 0
-  agent_id     = coder_agent.main.id
-  slug         = "code-server"
-  display_name = "code-server"
-  url          = "http://localhost:13337/?folder=/home/${local.username}/${local.repo_name}"
-  icon         = "/icon/code.svg"
-  subdomain    = false
-  share        = "owner"
-
-  healthcheck {
-    url       = "http://localhost:13337/healthz"
-    interval  = 5
-    threshold = 6
   }
 }
 

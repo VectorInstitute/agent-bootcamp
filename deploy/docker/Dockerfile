@@ -31,9 +31,6 @@ RUN mkdir /home/${USER} && \
 RUN mkdir -p /home/${USER}/.config/gcloud && \
     chown -R ${USER}:${USER} /home/${USER}/.config
 
-# Install VS code-server
-RUN curl -fsSL https://code-server.dev/install.sh | sh -s -- --method=standalone --prefix=/tmp/code-server
-
 # We want the following commands to run as a regular user, so activate the coder account
 USER ${USER}
 WORKDIR /home/${USER}
