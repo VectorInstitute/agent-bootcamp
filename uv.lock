@@ -89,7 +89,7 @@ dev = [
 ]
 docs = [
     { name = "ipykernel", specifier = ">=6.29.5" },
-    { name = "ipython", specifier = ">=8.31.0" },
+    { name = "ipython", specifier = ">=9.4.0" },
     { name = "jinja2", specifier = ">=3.1.6" },
     { name = "mkdocs", specifier = ">=1.6.0" },
     { name = "mkdocs-material", specifier = ">=9.6.15" },

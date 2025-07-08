@@ -47,7 +47,7 @@ docs = [
     "mkdocstrings>=0.24.1",
     "mkdocstrings-python>=1.16.12",
     "ipykernel>=6.29.5",
-    "ipython>=8.31.0",
+    "ipython>=9.4.0",
 ]
 
 # Default dependency groups to be installed
