@@ -26,6 +26,7 @@ from src.utils import (
 load_dotenv(verbose=True)
 
 MAX_TURNS = 5
+AGENT_LLM_NAME = "gemini-2.5-flash"
 
 configs = Configs.from_env_var()
 async_weaviate_client = get_weaviate_async_client(
@@ -106,7 +107,7 @@ async def _main(question: str, gr_message_history: list[ChatMessage]):
 
     for _ in range(MAX_TURNS):
         completion = await async_openai_client.chat.completions.create(
-            model="gpt-4.1-nano",
+            model=AGENT_LLM_NAME,
             messages=oai_messages,
             tools=tools,
         )

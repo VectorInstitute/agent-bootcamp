@@ -3,7 +3,7 @@
 import asyncio
 import logging
 
-from agents import Agent, OpenAIChatCompletionsModel, Runner, function_tool
+from agents import Agent, OpenAIChatCompletionsModel, Runner, function_tool, RunConfig
 from dotenv import load_dotenv
 from openai import AsyncOpenAI
 
@@ -17,6 +17,8 @@ from src.utils import (
 
 load_dotenv(verbose=True)
 
+AGENT_LLM_NAME = "gemini-2.5-flash"
+no_tracing_config = RunConfig(tracing_disabled=True)
 
 INSTRUCTIONS = """\
 Answer the question using the search tool. \
@@ -48,11 +50,15 @@ async def _main(query: str):
         instructions=INSTRUCTIONS,
         tools=[function_tool(async_knowledgebase.search_knowledgebase)],
         model=OpenAIChatCompletionsModel(
-            model="gpt-4o-mini", openai_client=async_openai_client
+            model=AGENT_LLM_NAME, openai_client=async_openai_client
         ),
     )
 
-    response = await Runner.run(wikipedia_agent, input=query)
+    response = await Runner.run(
+        wikipedia_agent,
+        input=query,
+        run_config=no_tracing_config,
+    )
 
     pretty_print(response.raw_responses)
     pretty_print(response.new_items)

@@ -21,6 +21,7 @@ if TYPE_CHECKING:
 load_dotenv(verbose=True)
 
 MAX_TURNS = 5
+AGENT_LLM_NAME = "gemini-2.5-flash"
 
 tools: list["ChatCompletionToolParam"] = [
     {
@@ -62,7 +63,7 @@ async def _main():
         collection_name="enwiki_20250520",
     )
 
-    messages: list[ChatCompletionMessageParam] = [
+    messages: list = [
         {
             "role": "system",
             "content": (
@@ -74,7 +75,7 @@ async def _main():
         },
         {
             "role": "user",
-            "content": "When was the 4K (first generation) Apple TV released?",
+            "content": "When was the Apple TV+ streaming service launched?",
         },
     ]
 
@@ -82,14 +83,14 @@ async def _main():
         while True:
             for _ in range(MAX_TURNS):
                 completion = await async_openai_client.chat.completions.create(
-                    model="gpt-4.1-nano",
+                    model=AGENT_LLM_NAME,
                     messages=messages,
                     tools=tools,
                 )
 
                 # Add message to conversation history
                 message = completion.choices[0].message
-                messages.append(message.model_dump())  # type: ignore[arg-type]
+                messages.append(message)
 
                 tool_calls = message.tool_calls
 
