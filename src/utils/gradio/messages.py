@@ -14,14 +14,18 @@ if TYPE_CHECKING:
 
 
 def gradio_messages_to_oai_chat(
-    messages: list[ChatMessage],
+    messages: list[ChatMessage | dict],
 ) -> list["ChatCompletionMessageParam"]:
     """Translate Gradio chat message history to OpenAI format."""
     output: list["ChatCompletionMessageParam"] = []
     for message in messages:
+        if isinstance(message, dict):
+            output.append(message) # type: ignore[arg-type]
+            continue
+
         message_content = message.content
-        if isinstance(message_content, str):
-            output.append({"role": message.role, "content": message_content})  # type: ignore[arg-type,misc]
+        assert isinstance(message_content, str), message_content
+        output.append({"role": message.role, "content": message_content})  # type: ignore[arg-type,misc]
 
     return output
 

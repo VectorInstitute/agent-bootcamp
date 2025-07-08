@@ -19,7 +19,6 @@ from src.utils import (
     AsyncWeaviateKnowledgeBase,
     Configs,
     get_weaviate_async_client,
-    gradio_messages_to_oai_chat,
 )
 
 
@@ -73,7 +72,8 @@ system_message: "ChatCompletionSystemMessageParam" = {
         "You must explain your reasons for invoking the tool. "
         "Be sure to mention the sources. "
         "If the search did not return intended results, try again. "
-        "Do not make up information."
+        "Do not make up information. You must use the search tool "
+        "for all facts that might change over time."
     ),
 }
 
@@ -91,19 +91,9 @@ def _handle_sigint(signum: int, frame: object) -> None:
     sys.exit(0)
 
 
-async def _main(question: str, gr_message_history: list[ChatMessage]):
-    gr_message_history = [
-        ChatMessage(**msg) if isinstance(msg, dict) else msg
-        for msg in gr_message_history
-    ]
-
-    gr_message_history.append(ChatMessage(role="user", content=question))
-    yield gr_message_history
-
-    oai_messages = [
-        system_message,
-        *gradio_messages_to_oai_chat(gr_message_history),
-    ]
+async def react_rag(query: str, history: list[ChatMessage]):
+    """Handles ReAct RAG chat for knowledgebase-augmented agents."""
+    oai_messages = [system_message, {"role": "user", "content": query}]
 
     for _ in range(MAX_TURNS):
         completion = await async_openai_client.chat.completions.create(
@@ -112,61 +102,66 @@ async def _main(question: str, gr_message_history: list[ChatMessage]):
             tools=tools,
         )
 
-        # Add assistant output
+        # Print assistant output
         message = completion.choices[0].message
-        oai_messages.append(message)  # type: ignore[arg-type]
-        gr_message_history.append(
-            ChatMessage(
-                content=message.content or "",
-                role="assistant",
-            )
-        )
-        yield gr_message_history
+        oai_messages.append(message)
 
-        # Execute function calls if requested.
+        # Execute tool calls and send results back to LLM if requested.
+        # Otherwise, stop, as the conversation would have been finished.
         tool_calls = message.tool_calls
-        if tool_calls is not None:
-            for tool_call in tool_calls:
-                arguments = json.loads(tool_call.function.arguments)
-                results = await async_knowledgebase.search_knowledgebase(
-                    arguments["keyword"]
+        if tool_calls is None:
+            history.append(
+                ChatMessage(
+                    content=message.content or "",
+                    role="assistant",
                 )
-                results_serialized = json.dumps(
-                    [_result.model_dump() for _result in results]
-                )
-
-                oai_messages.append(
-                    {
-                        "role": "tool",
-                        "tool_call_id": tool_call.id,
-                        "content": results_serialized,
-                    }
-                )
-                gr_message_history.append(
-                    ChatMessage(
-                        role="assistant",
-                        content=results_serialized,
-                        metadata={
-                            "title": f"Used tool {tool_call.function.name}",
-                            "log": f"Arguments: {arguments}",
-                        },
-                    )
-                )
-                yield gr_message_history
-
-        else:
+            )
+            yield history
             break
 
+        for tool_call in tool_calls:
+            arguments = json.loads(tool_call.function.arguments)
+            results = await async_knowledgebase.search_knowledgebase(
+                arguments["keyword"]
+            )
+            results_serialized = json.dumps(
+                [_result.model_dump() for _result in results]
+            )
+
+            oai_messages.append(
+                {
+                    "role": "tool",
+                    "tool_call_id": tool_call.id,
+                    "content": results_serialized,
+                }
+            )
+            history.append(
+                ChatMessage(
+                    role="assistant",
+                    content=results_serialized,
+                    metadata={
+                        "title": f"Used tool {tool_call.function.name}",
+                        "log": f"Arguments: {arguments}",
+                    },
+                )
+            )
+            yield history
+
+
+demo = gr.ChatInterface(
+    react_rag,
+    title="1.1 ReAct Agent for Retrieval-Augmented Generation",
+    type="messages",
+    examples=[
+        "At which university did the SVP Software Engineering"
+        " at Apple (as of June 2025) earn their engineering degree?",
+    ],
+)
 
 if __name__ == "__main__":
-    with gr.Blocks() as app:
-        chatbot = gr.Chatbot(type="messages", label="Agent")
-        chat_message = gr.Textbox(lines=1, label="Ask a question")
-        chat_message.submit(_main, [chat_message, chatbot], [chatbot])
-
     signal.signal(signal.SIGINT, _handle_sigint)
 
     try:
-        app.launch(server_name="0.0.0.0")
+        demo.launch(server_name="0.0.0.0")
     finally:
         asyncio.run(_cleanup_clients())

@@ -16,7 +16,7 @@ from src.utils import (
 
 
 if TYPE_CHECKING:
-    from openai.types.chat import ChatCompletionMessageParam, ChatCompletionToolParam
+    from openai.types.chat import ChatCompletionToolParam
 
 load_dotenv(verbose=True)
 
@@ -68,14 +68,17 @@ async def _main():
             "role": "system",
             "content": (
                 "Answer the question using the search tool. "
+                "You must explain your reasons for invoking the tool. "
                 "Be sure to mention the sources. "
                 "If the search did not return intended results, try again. "
-                "Do not make up information."
+                "Do not make up information. You must use the search tool "
+                "for all facts that might change over time."
             ),
         },
         {
             "role": "user",
-            "content": "When was the Apple TV+ streaming service launched?",
+            "content": "At which university did the SVP Software Engineering"
+            " at Apple (as of June 2025) earn their engineering degree?",
         },
     ]
 
