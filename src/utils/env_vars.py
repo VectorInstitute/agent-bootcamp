@@ -1,5 +1,7 @@
 """Interface for storing and accessing config env vars."""
 
+from os import environ
+
 import pydantic
 
 
@@ -31,8 +33,6 @@ class Configs(pydantic.BaseModel):
     @staticmethod
     def from_env_var() -> "Configs":
         """Initialize from env vars."""
-        from os import environ
-
         # Add only config line items defined in Configs.
         data: dict[str, str] = {}
         for k, v in environ.items():
