@@ -11,16 +11,13 @@ from langfuse._client.datasets import DatasetItemClient
 from openai import AsyncOpenAI
 from opentelemetry import trace as otlp_trace
 from rich.progress import Progress, SpinnerColumn, TextColumn, track
-
 from src.utils import (
     AsyncWeaviateKnowledgeBase,
     Configs,
-    gather_with_progress,
     get_weaviate_async_client,
     setup_langfuse_tracer,
 )
 from src.utils.langfuse.shared_client import langfuse as langfuse_client
-
 
 load_dotenv(verbose=True)
 logger = logging.getLogger(__name__)
@@ -153,8 +150,7 @@ async def _main() -> None:
         api_key=configs.weaviate_api_key,
     )
     async_knowledgebase = AsyncWeaviateKnowledgeBase(
-        async_weaviate_client,
-        collection_name="enwiki_20250520",
+        async_weaviate_client, collection_name="enwiki_20250520"
     )
 
     async_openai_client = AsyncOpenAI()
@@ -185,31 +181,16 @@ async def _main() -> None:
             ),
         )
 
-        coros = [
-            run_and_evaluate(main_agent, evaluator_agent, _item)
-            for _item in lf_dataset_items
-        ]
-        results: list[
-            EvaluatorResponse | Exception | None
-        ] = await gather_with_progress(
-            coros, description="Running agent and evaluating"
-        )
-
-        for _dataset_item, _eval_output in track(
-            zip(lf_dataset_items, results),
-            total=len(results),
-            description="Uploading scores",
+        for _item in track(
+            lf_dataset_items,
+            total=len(lf_dataset_items),
+            description="Running agent and evaluating",
         ):
-            # Link the trace to the dataset item for analysis
-            with _dataset_item.run(run_name=args.run_name) as _dataset_item_span:
-                if isinstance(_eval_output, (Exception, asyncio.CancelledError)):
-                    logger.error(
-                        "Error running agent on dataset item "
-                        f"{_dataset_item.id}: {_eval_output}",
-                        exc_info=_eval_output,
-                    )
-                elif _eval_output is not None:
-                    _dataset_item_span.score(
+            _eval_output = await run_and_evaluate(main_agent, evaluator_agent, _item)
+
+            with _item.run(run_name=args.run_name) as span:
+                if _eval_output is not None:
+                    span.score(
                         name="is_answer_correct",
                         value=_eval_output.is_answer_correct,
                         comment=_eval_output.explanation,
