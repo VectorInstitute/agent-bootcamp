@@ -14,12 +14,13 @@ import random
 import agents
 import pydantic
 from dotenv import load_dotenv
+from openai import AsyncOpenAI
 from rich.progress import track
 
 from src.utils import (
     gather_with_progress,
-    get_langfuse_tracer,
     pretty_print,
+    setup_langfuse_tracer,
 )
 from src.utils.data import get_dataset, get_dataset_url_hash
 from src.utils.langfuse.shared_client import langfuse
@@ -79,7 +80,9 @@ async def generate_synthetic_test_cases(
         name="Structured Output Agent",
         instructions="Extract the structured output from the given text.",
         output_type=list[_SyntheticTestCase],
-        model="gpt-4o-mini",
+        model=agents.OpenAIChatCompletionsModel(
+            model="gemini-2.5-flash", openai_client=async_openai_client
+        ),
     )
 
     with agents.trace("generate_synthetic_test_cases"):
@@ -99,9 +102,14 @@ async def generate_synthetic_test_cases(
 
 if __name__ == "__main__":
     args = parser.parse_args()
-    tracer = get_langfuse_tracer()
+
+    setup_langfuse_tracer()
+
     generator = random.Random(0)
     dataset_name_hash = get_dataset_url_hash(args.langfuse_dataset_name)
+
+    async_openai_client = AsyncOpenAI()
+    agents.set_tracing_disabled(disabled=True)
 
     # Create langfuse dataset and upload.
     langfuse.create_dataset(
@@ -133,7 +141,9 @@ if __name__ == "__main__":
         ),
         # Hint: replace this tool with your own knowledge base search tool.
         tools=[agents.WebSearchTool()],
-        model="gpt-4.1-mini",
+        model=agents.OpenAIChatCompletionsModel(
+            model="gemini-2.5-flash", openai_client=async_openai_client
+        ),
     )
 
     news_events_by_category = asyncio.run(get_news_events())

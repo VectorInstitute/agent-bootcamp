@@ -33,22 +33,6 @@ Be sure to mention the sources. \
 If the search did not return intended results, try again. \
 Do not make up information."""
 
-configs = Configs.from_env_var()
-async_weaviate_client = get_weaviate_async_client(
-    http_host=configs.weaviate_http_host,
-    http_port=configs.weaviate_http_port,
-    http_secure=configs.weaviate_http_secure,
-    grpc_host=configs.weaviate_grpc_host,
-    grpc_port=configs.weaviate_grpc_port,
-    grpc_secure=configs.weaviate_grpc_secure,
-    api_key=configs.weaviate_api_key,
-)
-async_openai_client = AsyncOpenAI()
-async_knowledgebase = AsyncWeaviateKnowledgeBase(
-    async_weaviate_client,
-    collection_name="enwiki_20250520",
-)
-
 
 async def _cleanup_clients() -> None:
     """Close async clients."""
@@ -69,7 +53,8 @@ async def _main(question: str, gr_messages: list[ChatMessage]):
         instructions=SYSTEM_MESSAGE,
         tools=[agents.function_tool(async_knowledgebase.search_knowledgebase)],
         model=agents.OpenAIChatCompletionsModel(
-            model="gpt-4o-mini", openai_client=async_openai_client
+            model="gemini-2.5-flash-lite-preview-06-17",
+            openai_client=async_openai_client,
         ),
     )
     gr_messages.append(ChatMessage(role="user", content=question))
@@ -82,6 +67,24 @@ async def _main(question: str, gr_messages: list[ChatMessage]):
 
 
 if __name__ == "__main__":
+    configs = Configs.from_env_var()
+    async_weaviate_client = get_weaviate_async_client(
+        http_host=configs.weaviate_http_host,
+        http_port=configs.weaviate_http_port,
+        http_secure=configs.weaviate_http_secure,
+        grpc_host=configs.weaviate_grpc_host,
+        grpc_port=configs.weaviate_grpc_port,
+        grpc_secure=configs.weaviate_grpc_secure,
+        api_key=configs.weaviate_api_key,
+    )
+    async_knowledgebase = AsyncWeaviateKnowledgeBase(
+        async_weaviate_client,
+        collection_name="enwiki_20250520",
+    )
+
+    async_openai_client = AsyncOpenAI()
+    agents.set_tracing_disabled(disabled=True)
+
     with gr.Blocks(title="OAI Agent SDK ReAct") as app:
         chatbot = gr.Chatbot(type="messages", label="Agent")
         chat_message = gr.Textbox(lines=1, label="Ask a question")

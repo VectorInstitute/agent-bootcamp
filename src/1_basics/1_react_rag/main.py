@@ -2,6 +2,7 @@
 
 import asyncio
 import json
+import sys
 from typing import TYPE_CHECKING
 
 from dotenv import load_dotenv
@@ -82,14 +83,14 @@ async def _main():
         while True:
             for _ in range(MAX_TURNS):
                 completion = await async_openai_client.chat.completions.create(
-                    model="gpt-4.1-nano",
+                    model="gemini-2.5-flash-lite-preview-06-17",
                     messages=messages,
                     tools=tools,
                 )
 
                 # Add message to conversation history
                 message = completion.choices[0].message
-                messages.append(message.model_dump())  # type: ignore[arg-type]
+                messages.append(message)  # type: ignore[arg-type]
 
                 tool_calls = message.tool_calls
 
@@ -121,13 +122,13 @@ async def _main():
 
             # Get new user input
             try:
-                timeout_secs = 60
+                timeout_secs = 300
                 user_input = await asyncio.wait_for(
                     asyncio.to_thread(input, "Ask a question: "),
                     timeout=timeout_secs,
                 )
             except asyncio.TimeoutError:
-                print(f"No response received within {timeout_secs} seconds. Exiting.")
+                print(f"\nNo response received within {timeout_secs} seconds. Exiting.")
                 break
 
             # Break if user_input is empty or a quit command
@@ -139,6 +140,7 @@ async def _main():
     finally:
         await async_weaviate_client.close()
         await async_openai_client.close()
+        sys.exit(0)
 
 
 if __name__ == "__main__":

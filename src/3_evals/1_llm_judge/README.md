@@ -34,7 +34,6 @@ Example data:
 ## Run LLM-as-a-Judge Evaluation
 
 ```bash
-source .env
 uv run -m src.3_evals.1_llm_judge.run_eval \
 --langfuse_dataset_name search-dataset \
 --run_name enwiki_weaviate

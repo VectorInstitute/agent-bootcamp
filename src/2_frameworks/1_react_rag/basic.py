@@ -3,7 +3,13 @@
 import asyncio
 import logging
 
-from agents import Agent, OpenAIChatCompletionsModel, Runner, function_tool
+from agents import (
+    Agent,
+    OpenAIChatCompletionsModel,
+    Runner,
+    function_tool,
+    set_tracing_disabled,
+)
 from dotenv import load_dotenv
 from openai import AsyncOpenAI
 
@@ -37,18 +43,21 @@ async def _main(query: str):
         grpc_secure=configs.weaviate_grpc_secure,
         api_key=configs.weaviate_api_key,
     )
-    async_openai_client = AsyncOpenAI()
     async_knowledgebase = AsyncWeaviateKnowledgeBase(
         async_weaviate_client,
         collection_name="enwiki_20250520",
     )
+
+    async_openai_client = AsyncOpenAI()
+    set_tracing_disabled(disabled=True)
 
     wikipedia_agent = Agent(
         name="Wikipedia Agent",
         instructions=INSTRUCTIONS,
         tools=[function_tool(async_knowledgebase.search_knowledgebase)],
         model=OpenAIChatCompletionsModel(
-            model="gpt-4o-mini", openai_client=async_openai_client
+            model="gemini-2.5-flash-lite-preview-06-17",
+            openai_client=async_openai_client,
         ),
     )
 

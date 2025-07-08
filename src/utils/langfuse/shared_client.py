@@ -1,9 +1,9 @@
 """Shared instance of langfuse client."""
 
-from langfuse import Langfuse
+from langfuse import get_client
 
 
 __all__ = ["langfuse"]
 
 
-langfuse = Langfuse()
+langfuse = get_client()

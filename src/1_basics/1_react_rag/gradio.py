@@ -27,21 +27,6 @@ load_dotenv(verbose=True)
 
 MAX_TURNS = 5
 
-configs = Configs.from_env_var()
-async_weaviate_client = get_weaviate_async_client(
-    http_host=configs.weaviate_http_host,
-    http_port=configs.weaviate_http_port,
-    http_secure=configs.weaviate_http_secure,
-    grpc_host=configs.weaviate_grpc_host,
-    grpc_port=configs.weaviate_grpc_port,
-    grpc_secure=configs.weaviate_grpc_secure,
-    api_key=configs.weaviate_api_key,
-)
-async_openai_client = AsyncOpenAI()
-async_knowledgebase = AsyncWeaviateKnowledgeBase(
-    async_weaviate_client,
-    collection_name="enwiki_20250520",
-)
 
 tools: list["ChatCompletionToolParam"] = [
     {
@@ -106,9 +91,10 @@ async def _main(question: str, gr_message_history: list[ChatMessage]):
 
     for _ in range(MAX_TURNS):
         completion = await async_openai_client.chat.completions.create(
-            model="gpt-4.1-nano",
+            model="gemini-2.5-flash-lite-preview-06-17",
             messages=oai_messages,
             tools=tools,
+            reasoning_effort=None,
         )
 
         # Add assistant output
@@ -158,6 +144,22 @@ async def _main(question: str, gr_message_history: list[ChatMessage]):
 
 
 if __name__ == "__main__":
+    configs = Configs.from_env_var()
+    async_weaviate_client = get_weaviate_async_client(
+        http_host=configs.weaviate_http_host,
+        http_port=configs.weaviate_http_port,
+        http_secure=configs.weaviate_http_secure,
+        grpc_host=configs.weaviate_grpc_host,
+        grpc_port=configs.weaviate_grpc_port,
+        grpc_secure=configs.weaviate_grpc_secure,
+        api_key=configs.weaviate_api_key,
+    )
+    async_openai_client = AsyncOpenAI()
+    async_knowledgebase = AsyncWeaviateKnowledgeBase(
+        async_weaviate_client,
+        collection_name="enwiki_20250520",
+    )
+
     with gr.Blocks() as app:
         chatbot = gr.Chatbot(type="messages", label="Agent")
         chat_message = gr.Textbox(lines=1, label="Ask a question")
