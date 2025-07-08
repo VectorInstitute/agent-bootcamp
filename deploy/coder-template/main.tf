@@ -50,11 +50,12 @@ resource "coder_agent" "main" {
     cd "/home/${local.username}"
 
     if [ ! -d "${local.repo_name}" ] ; then
-        git clone ${var.github_repo}
+      git clone ${var.github_repo}
+      cd ${local.repo_name}
+      git checkout ${var.github_branch}
+    else
+      cd ${local.repo_name}
     fi
-
-    cd ${local.repo_name}
-    git checkout ${var.github_branch}
 
     # Run project init steps
     
@@ -208,7 +209,7 @@ module "vscode-web" {
   version        = "1.3.0"
   agent_id       = coder_agent.main.id
   extensions     = ["ms-python.python", "ms-python.vscode-pylance"]
-  install_prefix = "/home/coder/.vscode-web"
+  install_prefix = "/tmp/.vscode-web"
   folder         = "/home/coder/${local.repo_name}"
   accept_license = true
 }
