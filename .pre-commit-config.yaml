@@ -44,7 +44,7 @@ repos:
     hooks:
     - id: nbqa-ruff
       args: [--fix, --exit-non-zero-on-fix]
-      
+
 ci:
     autofix_commit_msg: |
         [pre-commit.ci] Add auto fixes from pre-commit.com hooks

@@ -11,6 +11,7 @@ from langfuse._client.datasets import DatasetItemClient
 from openai import AsyncOpenAI
 from opentelemetry import trace as otlp_trace
 from rich.progress import Progress, SpinnerColumn, TextColumn, track
+
 from src.utils import (
     AsyncWeaviateKnowledgeBase,
     Configs,
@@ -18,6 +19,7 @@ from src.utils import (
     setup_langfuse_tracer,
 )
 from src.utils.langfuse.shared_client import langfuse as langfuse_client
+
 
 load_dotenv(verbose=True)
 logger = logging.getLogger(__name__)
