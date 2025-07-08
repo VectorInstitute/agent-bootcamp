@@ -121,8 +121,8 @@ async def _main():
                 pretty_print(messages)
 
             # Get new user input
+            timeout_secs = 60
             try:
-                timeout_secs = 60
                 user_input = await asyncio.wait_for(
                     asyncio.to_thread(input, "Ask a question: "),
                     timeout=timeout_secs,
