@@ -27,14 +27,17 @@ from src.utils import (
 
 load_dotenv(verbose=True)
 
+
 logging.basicConfig(level=logging.INFO)
 
 SYSTEM_MESSAGE = """\
 Answer the question using the search tool. \
-EACH TIME before invoking the function, you must explain your reasons for doing so. \
-Be sure to mention the sources in your response. \
+You must explain your reasons for invoking the tool. \
+Be sure to *quote* the sources. \
 If the search did not return intended results, try again. \
 Do not make up information."""
+
+AGENT_LLM_NAME = "gemini-2.5-flash"
 
 configs = Configs.from_env_var()
 async_weaviate_client = get_weaviate_async_client(
@@ -74,7 +77,7 @@ async def _main(question: str, gr_messages: list[ChatMessage]):
         instructions=SYSTEM_MESSAGE,
         tools=[agents.function_tool(async_knowledgebase.search_knowledgebase)],
         model=agents.OpenAIChatCompletionsModel(
-            model="gpt-4o-mini", openai_client=async_openai_client
+            model=AGENT_LLM_NAME, openai_client=async_openai_client
         ),
     )
     gr_messages.append(ChatMessage(role="user", content=question))

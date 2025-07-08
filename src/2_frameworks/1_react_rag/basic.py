@@ -22,9 +22,11 @@ no_tracing_config = RunConfig(tracing_disabled=True)
 
 INSTRUCTIONS = """\
 Answer the question using the search tool. \
+You must explain your reasons for invoking the tool. \
 Be sure to mention the sources. \
 If the search did not return intended results, try again. \
-Do not make up information. \
+Do not make up information. You must use the search tool \
+for all facts that might change over time.
 """
 
 
