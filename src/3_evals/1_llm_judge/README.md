@@ -11,8 +11,8 @@ Run in the following steps:
 ## Create and Populate Dataset
 
 ```bash
-source .env
-uv run -m src.3_evals.1_llm_judge.upload_data \
+uv run --env-file .env \
+-m src.3_evals.1_llm_judge.upload_data \
 --source_dataset hf://junzhang1207/search-dataset@2349ba4:train \
 --langfuse_dataset_name search-dataset \
 --limit 18
@@ -34,8 +34,8 @@ Example data:
 ## Run LLM-as-a-Judge Evaluation
 
 ```bash
-source .env
-uv run -m src.3_evals.1_llm_judge.run_eval \
+uv run --env-file .env \
+-m src.3_evals.1_llm_judge.run_eval \
 --langfuse_dataset_name search-dataset \
 --run_name enwiki_weaviate
 ```

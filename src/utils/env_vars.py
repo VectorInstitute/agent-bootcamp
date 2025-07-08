@@ -1,5 +1,7 @@
 """Interface for storing and accessing config env vars."""
 
+from os import environ
+
 import pydantic
 
 
@@ -31,14 +33,20 @@ class Configs(pydantic.BaseModel):
     @staticmethod
     def from_env_var() -> "Configs":
         """Initialize from env vars."""
-        from os import environ
-
         # Add only config line items defined in Configs.
         data: dict[str, str] = {}
         for k, v in environ.items():
             _key = k.lower()
             data[_key] = v
 
-        config = Configs(**data)
-        config._check_langfuse()
-        return config
+        try:
+            config = Configs(**data)
+            config._check_langfuse()
+            return config
+
+        except pydantic.ValidationError as e:
+            raise ValueError(
+                "Some ENV VARs are missing. See above for details. "
+                "Try to load your .env file as follows: \n"
+                "```\nuv run --env-file .env -m ...\n```"
+            ) from e

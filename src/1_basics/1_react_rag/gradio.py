@@ -27,21 +27,6 @@ load_dotenv(verbose=True)
 MAX_TURNS = 5
 AGENT_LLM_NAME = "gemini-2.5-flash"
 
-configs = Configs.from_env_var()
-async_weaviate_client = get_weaviate_async_client(
-    http_host=configs.weaviate_http_host,
-    http_port=configs.weaviate_http_port,
-    http_secure=configs.weaviate_http_secure,
-    grpc_host=configs.weaviate_grpc_host,
-    grpc_port=configs.weaviate_grpc_port,
-    grpc_secure=configs.weaviate_grpc_secure,
-    api_key=configs.weaviate_api_key,
-)
-async_openai_client = AsyncOpenAI()
-async_knowledgebase = AsyncWeaviateKnowledgeBase(
-    async_weaviate_client,
-    collection_name="enwiki_20250520",
-)
 
 tools: list["ChatCompletionToolParam"] = [
     {
@@ -92,7 +77,7 @@ def _handle_sigint(signum: int, frame: object) -> None:
 
 
 async def react_rag(query: str, history: list[ChatMessage]):
-    """Handles ReAct RAG chat for knowledgebase-augmented agents."""
+    """Handle ReAct RAG chat for knowledgebase-augmented agents."""
     oai_messages = [system_message, {"role": "user", "content": query}]
 
     for _ in range(MAX_TURNS):
@@ -100,6 +85,7 @@ async def react_rag(query: str, history: list[ChatMessage]):
             model=AGENT_LLM_NAME,
             messages=oai_messages,
             tools=tools,
+            reasoning_effort=None,
         )
 
         # Print assistant output
@@ -159,6 +145,22 @@ demo = gr.ChatInterface(
 )
 
 if __name__ == "__main__":
+    configs = Configs.from_env_var()
+    async_weaviate_client = get_weaviate_async_client(
+        http_host=configs.weaviate_http_host,
+        http_port=configs.weaviate_http_port,
+        http_secure=configs.weaviate_http_secure,
+        grpc_host=configs.weaviate_grpc_host,
+        grpc_port=configs.weaviate_grpc_port,
+        grpc_secure=configs.weaviate_grpc_secure,
+        api_key=configs.weaviate_api_key,
+    )
+    async_openai_client = AsyncOpenAI()
+    async_knowledgebase = AsyncWeaviateKnowledgeBase(
+        async_weaviate_client,
+        collection_name="enwiki_20250520",
+    )
+
     signal.signal(signal.SIGINT, _handle_sigint)
 
     try:

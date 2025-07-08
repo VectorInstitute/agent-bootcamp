@@ -2,6 +2,7 @@
 
 import asyncio
 import json
+import sys
 from typing import TYPE_CHECKING
 
 from dotenv import load_dotenv
@@ -131,7 +132,7 @@ async def _main():
                     timeout=timeout_secs,
                 )
             except asyncio.TimeoutError:
-                print(f"No response received within {timeout_secs} seconds. Exiting.")
+                print(f"\nNo response received within {timeout_secs} seconds. Exiting.")
                 break
 
             # Break if user_input is empty or a quit command
@@ -143,6 +144,7 @@ async def _main():
     finally:
         await async_weaviate_client.close()
         await async_openai_client.close()
+        sys.exit(0)
 
 
 if __name__ == "__main__":

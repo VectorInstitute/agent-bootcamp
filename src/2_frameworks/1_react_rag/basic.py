@@ -3,7 +3,7 @@
 import asyncio
 import logging
 
-from agents import Agent, OpenAIChatCompletionsModel, Runner, function_tool, RunConfig
+from agents import Agent, OpenAIChatCompletionsModel, RunConfig, Runner, function_tool
 from dotenv import load_dotenv
 from openai import AsyncOpenAI
 
@@ -22,7 +22,7 @@ no_tracing_config = RunConfig(tracing_disabled=True)
 
 INSTRUCTIONS = """\
 Answer the question using the search tool. \
-You must explain your reasons for invoking the tool. \
+Always plan your actions before invoking the tool. \
 Be sure to mention the sources. \
 If the search did not return intended results, try again. \
 Do not make up information. You must use the search tool \
@@ -41,11 +41,12 @@ async def _main(query: str):
         grpc_secure=configs.weaviate_grpc_secure,
         api_key=configs.weaviate_api_key,
     )
-    async_openai_client = AsyncOpenAI()
     async_knowledgebase = AsyncWeaviateKnowledgeBase(
         async_weaviate_client,
         collection_name="enwiki_20250520",
     )
+
+    async_openai_client = AsyncOpenAI()
 
     wikipedia_agent = Agent(
         name="Wikipedia Agent",
@@ -71,7 +72,10 @@ async def _main(query: str):
 
 
 if __name__ == "__main__":
-    query = "Does the Apple TV Remote use IR?"
+    query = (
+        "At which university did the SVP Software Engineering"
+        " at Apple (as of June 2025) earn their engineering degree?"
+    )
 
     logging.basicConfig(level=logging.INFO)
     asyncio.run(_main(query))

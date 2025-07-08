@@ -2,7 +2,7 @@
 
 import asyncio
 import types
-from typing import Any, Coroutine, TypeVar
+from typing import Any, Coroutine, Sequence, TypeVar
 
 from rich.progress import Progress
 
@@ -18,7 +18,7 @@ async def indexed(index: int, coro: Coroutine[None, None, T]) -> tuple[int, T]:
 async def gather_with_progress(
     coros: "list[types.CoroutineType[Any, Any, T]]",
     description: str = "Running tasks",
-) -> list[T]:
+) -> Sequence[T | Exception]:
     """
     Run a list of coroutines concurrently, display a rich.Progress bar as each finishes.
 

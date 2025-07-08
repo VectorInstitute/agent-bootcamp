@@ -28,10 +28,12 @@ logging.basicConfig(level=logging.INFO)
 
 SYSTEM_MESSAGE = """\
 Answer the question using the search tool. \
-You must explain your reasons for invoking the tool. \
-Be sure to *quote* the sources. \
+Always plan your actions before invoking the tool. \
+Be sure to mention the sources. \
 If the search did not return intended results, try again. \
-Do not make up information."""
+Do not make up information. You must use the search tool \
+for all facts that might change over time.
+"""
 
 AGENT_LLM_NAME = "gemini-2.5-flash"
 
@@ -83,15 +85,39 @@ async def _main(question: str, gr_messages: list[ChatMessage]):
     yield gr_messages
 
 
+demo = gr.ChatInterface(
+    _main,
+    title="2.1 OAI Agent SDK ReAct",
+    type="messages",
+    examples=[
+        "At which university did the SVP Software Engineering"
+        " at Apple (as of June 2025) earn their engineering degree?",
+    ],
+)
+
+
 if __name__ == "__main__":
-    with gr.Blocks(title="OAI Agent SDK ReAct") as app:
-        chatbot = gr.Chatbot(type="messages", label="Agent")
-        chat_message = gr.Textbox(lines=1, label="Ask a question")
-        chat_message.submit(_main, [chat_message, chatbot], [chatbot])
+    configs = Configs.from_env_var()
+    async_weaviate_client = get_weaviate_async_client(
+        http_host=configs.weaviate_http_host,
+        http_port=configs.weaviate_http_port,
+        http_secure=configs.weaviate_http_secure,
+        grpc_host=configs.weaviate_grpc_host,
+        grpc_port=configs.weaviate_grpc_port,
+        grpc_secure=configs.weaviate_grpc_secure,
+        api_key=configs.weaviate_api_key,
+    )
+    async_knowledgebase = AsyncWeaviateKnowledgeBase(
+        async_weaviate_client,
+        collection_name="enwiki_20250520",
+    )
+
+    async_openai_client = AsyncOpenAI()
+    agents.set_tracing_disabled(disabled=True)
 
     signal.signal(signal.SIGINT, _handle_sigint)
 
     try:
-        app.launch(server_name="0.0.0.0")
+        demo.launch(server_name="0.0.0.0")
     finally:
         asyncio.run(_cleanup_clients())
