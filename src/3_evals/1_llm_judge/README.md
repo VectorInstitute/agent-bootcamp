@@ -13,7 +13,7 @@ Run in the following steps:
 ```bash
 uv run --env-file .env \
 -m src.3_evals.1_llm_judge.upload_data \
---source_dataset hf://junzhang1207/search-dataset@2349ba4:train \
+--source_dataset hf://vector-institute/hotpotqa@d997ecf:train \
 --langfuse_dataset_name search-dataset \
 --limit 18
 ```
