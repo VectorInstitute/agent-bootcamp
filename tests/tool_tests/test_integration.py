@@ -66,8 +66,10 @@ async def test_weaviate_kb(weaviate_kb: AsyncWeaviateKnowledgeBase) -> None:
 
 
 @pytest.mark.asyncio
-async def test_weaviate_kb_tool(weaviate_kb: AsyncWeaviateKnowledgeBase) -> None:
-    """Test weaviate knowledgebase tool integration."""
+async def test_weaviate_kb_tool_and_llm(
+    weaviate_kb: AsyncWeaviateKnowledgeBase,
+) -> None:
+    """Test weaviate knowledgebase tool integration and LLM API."""
     query = "What is Toronto known for?"
     search_results = await weaviate_kb.search_knowledgebase(query)
     assert len(search_results) > 0

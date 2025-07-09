@@ -43,6 +43,103 @@ A minimal Reason-and-Act (ReAct) agent for knowledge retrieval, implemented with
   Showcases the generation of synthetic evaluation data for testing agents.
 
 
+# Reference Implementation Repository for AI Agent Bootcamp
+
+## Setting
+
+Build a knowledge retrieval agent.
+
+## Symposis
+
+**Basics**: Build a ReAct-styled ("Reason-and-Act") agent without using agent frameworks.
+
+**Frameworks**: Build agents with frameworks to reduce boilerplate code.
+
+**Evals**: Agent observability, test data synthesis, and automated evaluation.
+
+## Tooling
+
+- **openai-agents** as the AI Agent framework.
+- **langfuse** for agent observability and evaluation.
+- **uv** for dependency management
+- **gradio** for an interactive prototype.
+- **weaviate** as the search engine for the local knowledge base.
+
+
+## Getting Started
+
+Set your API keys in `.env`. Use `.env.example` as a template.
+
+```bash
+cp -v .env.example .env
+```
+
+Run integration tests to validate that your API keys are set up correctly.
+
+```bash
+PYTHONPATH="." uv run pytest -sv tests/tool_tests/test_integration.py
+```
+
+## Reference Implementations
+
+### 1. Basics
+
+Interactive knowledge base demo. Access the gradio interface in your browser (see forwarded ports.)
+
+```bash
+uv run --env-file .env -m src.1_basics.0_search_demo.gradio
+```
+
+Basic Reason-and-Act Agent- command line version. To exit, press `Control-\`.
+
+```bash
+uv run --env-file .env -m src.1_basics.1_react_rag.main
+```
+
+Interactive web version of the Gradio Reason-and-Act Agent.
+
+```bash
+uv run --env-file .env -m src.1_basics.1_react_rag.gradio
+```
+
+
+### 2. Frameworks
+
+Reason-and-Act Agent without the boilerplate- using the OpenAI Agent SDK.
+
+```bash
+uv run --env-file .env -m src.2_frameworks.1_react_rag.basic
+uv run --env-file .env -m src.2_frameworks.1_react_rag.gradio
+uv run --env-file .env -m src.2_frameworks.1_react_rag.langfuse_gradio
+```
+
+Multi-agent examples, also via the OpenAI Agent SDK.
+
+```bash
+uv run --env-file .env -m src.2_frameworks.2_multi_agent.gradio
+```
+
+### 3. Evals
+
+Synthetic data.
+
+```bash
+uv run -m src.3_evals.2_synthetic_data.synthesize_data \
+--source_dataset hf://vector-institute/hotpotqa@d997ecf:train \
+--langfuse_dataset_name search-dataset-synthetic-20250709-1a \
+--limit 3
+```
+
+Run LLM-as-a-judge Evaluation on synthetic data
+
+```bash
+uv run \
+--env-file .env \
+-m src.3_evals.1_llm_judge.run_eval \
+--langfuse_dataset_name search-dataset-synthetic-20250609 \
+--run_name enwiki_weaviate \
+--limit 18
+```
 
 ## Requirements
 
@@ -53,39 +150,52 @@ A minimal Reason-and-Act (ReAct) agent for knowledge retrieval, implemented with
 Clone the repository:
 
 ```bash
-git clone https://github.com/VectorInstitute/agent-bootcamp
-cd agent-bootcamp
+uv sync
+source .venv/bin/activate
 ```
 
-### Setup Instructions
+In order to install dependencies for testing (codestyle, unit tests, integration tests),
+run:
 
-1. **Install [uv](https://github.com/astral-sh/uv):**
+```bash
+uv sync --dev
+source .venv/bin/activate
+```
 
-    ```bash
-    pip install uv
-    ```
+In order to exclude installation of packages from a specific group (e.g. docs),
+run:
 
-2. **Create and activate a virtual environment:**
+```bash
+uv sync --no-group docs
+```
 
-    ```bash
-    uv venv .venv
-    source .venv/bin/activate
-    ```
+If you're coming from `poetry` then you'll notice that the virtual environment
+is actually stored in the project root folder and is by default named as `.venv`.
+The other important note is that while `poetry` uses a "flat" layout of the project,
+`uv` opts for the the "src" layout. (For more info, see [here](https://packaging.python.org/en/latest/discussions/src-layout-vs-flat-layout/))
 
-3. **Install dependencies:**
+### Poetry to UV
 
-    ```bash
-    uv sync --dev
-    ```
+The table below provides the `uv` equivalent counterparts for some of the more
+common `poetry` commands.
 
-4. **Configure environment variables:**
+| Poetry                                               | UV                                          |
+|------------------------------------------------------|---------------------------------------------|
+| `poetry new <project-name>`  # creates new project   | `uv init <project-name>`                    |
+| `poetry install`  # installs existing project        | `uv sync`                                   |
+| `poetry install --with docs,test`                    | `uv sync --group docs --group test`         |
+| `poetry add numpy`                                   | `uv add numpy`                              |
+| `poetry add pytest pytest-asyncio --groups dev`      | `uv add pytest pytest-asyncio --groups dev` |
+| `poetry remove numpy`                                | `uv remove numpy`                           |
+| `poetry lock`                                        | `uv lock`                                   |
+| `poetry run <cmd>`  # runs cmd with the project venv | `uv run <cmd>`                              |
+| `poetry build`                                       | `uv build`                                  |
+| `poetry publish`                                     | `uv publish`                                |
+| `poetry cache clear pypi --all`                      | `uv cache clean`                            |
 
-    ```bash
-    cp .env.example .env
-    # Edit .env and add all required environment variables
-    ```
+For the full list of `uv` commands, you can visit the official [docs](https://docs.astral.sh/uv/reference/cli/#uv).
 
-You are now ready to explore the Agent Bootcamp reference implementations!
+### Tidbit
 
----
-For more details on each module, see the respective README files linked above.
+If you're curious about what "uv" stands for, it appears to have been more or
+less chosen [randomly](https://github.com/astral-sh/uv/issues/1349#issuecomment-1986451785).

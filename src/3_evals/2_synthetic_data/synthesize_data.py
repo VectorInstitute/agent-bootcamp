@@ -153,11 +153,9 @@ if __name__ == "__main__":
     )
 
     df = get_dataset(args.source_dataset, limit=90)
-    rows_news_only = [
-        row.to_dict() for _, row in df[df["area"] == "Knowledge"].iterrows()
-    ]
+    rows_news_only = [row.to_dict() for _, row in df.iterrows()]
     rows_filtered = [
-        {k: v for k, v in row.items() if k not in ("id", "category", "area")}
+        {k: v for k, v in row.items() if k in ("question", "expected_answer")}
         for row in rows_news_only
     ]
 

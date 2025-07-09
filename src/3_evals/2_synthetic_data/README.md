@@ -2,7 +2,7 @@
 
 ```bash
 uv run -m src.3_evals.2_synthetic_data.synthesize_data \
---source_dataset hf://junzhang1207/search-dataset@2349ba4:train \
+--source_dataset hf://vector-institute/hotpotqa@d997ecf:train \
 --langfuse_dataset_name search-dataset-synthetic-20250609 \
 --limit 18
 ```
