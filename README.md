@@ -2,11 +2,6 @@
 
 ----------------------------------------------------------------------------------------
 
-[![code checks](https://github.com/VectorInstitute/agent-bootcamp/actions/workflows/code_checks.yml/badge.svg)](https://github.com/VectorInstitute/agent-bootcamp/actions/workflows/code_checks.yml)
-[![docs](https://github.com/VectorInstitute/agent-bootcamp/actions/workflows/docs.yml/badge.svg)](https://github.com/VectorInstitute/agent-bootcamp/actions/workflows/docs.yml)
-[![codecov](https://codecov.io/github/VectorInstitute/agent-bootcamp/graph/badge.svg?token=83MYFZ3UPA)](https://codecov.io/github/VectorInstitute/agent-bootcamp)
-[![license](https://img.shields.io/github/license/VectorInstitute/agent-bootcamp.svg)](https://github.com/VectorInstitute/agent-bootcamp/blob/main/LICENSE)
-
 This is a collection of reference implementations for Vector Institute's **Agent Bootcamp**, taking place between June and September 2025. The repository demonstrates modern agentic workflows for retrieval-augmented generation (RAG), evaluation, and orchestration using the latest Python tools and frameworks.
 
 ## Reference Implementations
