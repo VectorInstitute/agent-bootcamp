@@ -18,11 +18,12 @@ from openai import AsyncOpenAI
 from src.utils import (
     AsyncWeaviateKnowledgeBase,
     Configs,
-    get_langfuse_tracer,
     get_weaviate_async_client,
     oai_agent_items_to_gradio_messages,
     pretty_print,
+    setup_langfuse_tracer,
 )
+from src.utils.langfuse.shared_client import langfuse_client
 
 
 load_dotenv(verbose=True)
@@ -72,7 +73,7 @@ def _handle_sigint(signum: int, frame: object) -> None:
 
 
 async def _main(question: str, gr_messages: list[ChatMessage]):
-    tracer = get_langfuse_tracer()
+    setup_langfuse_tracer()
 
     main_agent = agents.Agent(
         name="Wikipedia Agent",
@@ -85,8 +86,10 @@ async def _main(question: str, gr_messages: list[ChatMessage]):
     gr_messages.append(ChatMessage(role="user", content=question))
     yield gr_messages
 
-    with tracer.start_as_current_span("Agents-SDK-Trace"):
+    with langfuse_client.start_as_current_span(name="Agents-SDK-Trace") as span:
+        span.update(input=question)
         responses = await agents.Runner.run(main_agent, input=question)
+        span.update(output=responses.final_output)
 
     gr_messages += oai_agent_items_to_gradio_messages(responses.new_items)
     pretty_print(gr_messages)

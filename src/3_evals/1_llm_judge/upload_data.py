@@ -12,7 +12,7 @@ from rich.progress import track
 from src.utils.data import get_dataset, get_dataset_url_hash
 from src.utils.env_vars import Configs
 from src.utils.langfuse.otlp_env_setup import set_up_langfuse_otlp_env_vars
-from src.utils.langfuse.shared_client import langfuse
+from src.utils.langfuse.shared_client import langfuse_client
 
 
 load_dotenv(verbose=True)
@@ -33,8 +33,8 @@ if __name__ == "__main__":
     dataset_url_hash = get_dataset_url_hash(args.source_dataset)
 
     # Create a dataset in Langfuse
-    assert langfuse.auth_check()
-    langfuse.create_dataset(
+    assert langfuse_client.auth_check()
+    langfuse_client.create_dataset(
         name=args.langfuse_dataset_name,
         description=f"[{dataset_url_hash}] Data from {args.source_dataset}",
         metadata={
@@ -51,7 +51,7 @@ if __name__ == "__main__":
         total=len(df),
         description="Uploading to Langfuse",
     ):
-        langfuse.create_dataset_item(
+        langfuse_client.create_dataset_item(
             dataset_name=args.langfuse_dataset_name,
             input={"text": row["question"]},
             expected_output={"text": row["expected_answer"]},

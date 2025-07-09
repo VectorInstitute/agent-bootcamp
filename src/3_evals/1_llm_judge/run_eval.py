@@ -2,8 +2,6 @@
 
 import argparse
 import asyncio
-import logging
-from typing import Sequence
 
 import agents
 import pydantic
@@ -17,15 +15,14 @@ from src.utils import (
     AsyncWeaviateKnowledgeBase,
     Configs,
     gather_with_progress,
-    get_langfuse_tracer,
     get_weaviate_async_client,
-    set_up_logging,
+    setup_langfuse_tracer,
 )
-from src.utils.langfuse.shared_client import langfuse as langfuse_client
+from src.utils.langfuse.shared_client import langfuse_client
 
 
 load_dotenv(verbose=True)
-set_up_logging()
+
 
 SYSTEM_MESSAGE = """\
 Answer the question using the search tool. \
@@ -75,15 +72,15 @@ class EvaluatorResponse(pydantic.BaseModel):
     is_answer_correct: bool
 
 
-async def run_agent_with_trace(agent: agents.Agent, query: str) -> str | None:
+async def run_agent_with_trace(
+    agent: agents.Agent, query: str
+) -> "tuple[StatefulTraceClient, str | None]":
     """Run OpenAI Agent on query, returning response and trace.
 
     Returns None if agent exceeds max_turn limit.
     """
-    with langfuse_client.start_as_current_span(
-        name="OpenAI-Agent-Trace", input=query
-    ) as span:
-        span.update(tags=["dataset-run"])
+    with tracer.start_as_current_span("OpenAI-Agent-Trace") as span:
+        span.set_attribute("langfuse.tag", "dataset-run")
 
         try:
             result = await agents.Runner.run(agent, query)
@@ -101,24 +98,28 @@ async def run_agent_with_trace(agent: agents.Agent, query: str) -> str | None:
         trace_id = span_context.trace_id
         formatted_trace_id = otlp_trace.format_trace_id(trace_id)
 
-        span.update(user_id=formatted_trace_id, output=answer)
+        langfuse_trace = langfuse_client.trace(
+            id=formatted_trace_id, input=query, output=answer
+        )
 
-    return answer
+    return langfuse_trace, answer
 
 
-async def run_evaluator_agent(
-    evaluator_agent: agents.Agent, evaluator_query: EvaluatorQuery
-) -> EvaluatorResponse:
+async def run_evaluator_agent(evaluator_query: EvaluatorQuery) -> EvaluatorResponse:
     """Evaluate using evaluator agent."""
+    evaluator_agent = agents.Agent(
+        name="Evaluator Agent",
+        instructions=EVALUATOR_INSTRUCTIONS,
+        output_type=EvaluatorResponse,
+    )
+
     result = await agents.Runner.run(evaluator_agent, input=evaluator_query.get_query())
     return result.final_output_as(EvaluatorResponse)
 
 
 async def run_and_evaluate(
-    main_agent: agents.Agent,
-    evaluator_agent: agents.Agent,
-    lf_dataset_item: "DatasetItemClient",
-) -> EvaluatorResponse | None:
+    main_agent: agents.Agent, lf_dataset_item: "DatasetItemClient"
+) -> "tuple[StatefulTraceClient, EvaluatorResponse | None]":
     """Run main agent and evaluator agent on one dataset instance.
 
     Returns None if main agent returned a None answer.
@@ -126,23 +127,36 @@ async def run_and_evaluate(
     expected_output = lf_dataset_item.expected_output
     assert expected_output is not None
 
-    answer = await run_agent_with_trace(main_agent, query=lf_dataset_item.input["text"])
+    langfuse_trace, answer = await run_agent_with_trace(
+        main_agent, query=lf_dataset_item.input["text"]
+    )
 
     if answer is None:
-        return None
+        return langfuse_trace, None
 
-    return await run_evaluator_agent(
-        evaluator_agent,
+    evaluator_response = await run_evaluator_agent(
         EvaluatorQuery(
             question=lf_dataset_item.input["text"],
             ground_truth=expected_output["text"],
             proposed_response=answer,
-        ),
+        )
     )
 
+    return langfuse_trace, evaluator_response
 
-async def _main() -> None:
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--langfuse_dataset_name", required=True)
+parser.add_argument("--run_name", required=True)
+parser.add_argument("--limit", type=int)
+
+
+if __name__ == "__main__":
     args = parser.parse_args()
+
+    lf_dataset_items = langfuse_client.get_dataset(args.langfuse_dataset_name).items
+    if args.limit is not None:
+        lf_dataset_items = lf_dataset_items[: args.limit]
 
     configs = Configs.from_env_var()
     async_weaviate_client = get_weaviate_async_client(
@@ -154,79 +168,46 @@ async def _main() -> None:
         grpc_secure=configs.weaviate_grpc_secure,
         api_key=configs.weaviate_api_key,
     )
+    async_openai_client = AsyncOpenAI()
     async_knowledgebase = AsyncWeaviateKnowledgeBase(
-        async_weaviate_client, collection_name="enwiki_20250520"
+        async_weaviate_client,
+        collection_name="enwiki_20250520",
     )
 
-    async_openai_client = AsyncOpenAI()
-    agents.set_tracing_disabled(disabled=True)
+    tracer = setup_langfuse_tracer()
 
-    try:
-        # Setup langfuse
-        tracer = get_langfuse_tracer()
+    main_agent = agents.Agent(
+        name="Wikipedia Agent",
+        instructions=SYSTEM_MESSAGE,
+        tools=[agents.function_tool(async_knowledgebase.search_knowledgebase)],
+        model=agents.OpenAIChatCompletionsModel(
+            model="gpt-4o-mini", openai_client=async_openai_client
+        ),
+    )
+    coros = [run_and_evaluate(main_agent, _item) for _item in lf_dataset_items]
+    results = asyncio.run(
+        gather_with_progress(coros, description="Running agent and evaluating")
+    )
 
-        lf_dataset_items = langfuse_client.get_dataset(args.langfuse_dataset_name).items
-        if args.limit is not None:
-            lf_dataset_items = lf_dataset_items[: args.limit]
-
-        main_agent = agents.Agent(
-            name="Wikipedia Agent",
-            instructions=SYSTEM_MESSAGE,
-            tools=[agents.function_tool(async_knowledgebase.search_knowledgebase)],
-            model=agents.OpenAIChatCompletionsModel(
-                model="gemini-2.5-flash", openai_client=async_openai_client
-            ),
-        )
-        evaluator_agent = agents.Agent(
-            name="Evaluator Agent",
-            instructions=EVALUATOR_INSTRUCTIONS,
-            output_type=EvaluatorResponse,
-            model=agents.OpenAIChatCompletionsModel(
-                model="gemini-2.5-flash", openai_client=async_openai_client
-            ),
-        )
-
-        coros = [
-            run_and_evaluate(main_agent, evaluator_agent, _item)
-            for _item in lf_dataset_items
-        ]
-        results: Sequence[EvaluatorResponse | Exception | None] = (
-            await gather_with_progress(
-                coros, description="Running agent and evaluating"
+    for _dataset_item, (_trace, _eval_output) in track(
+        zip(lf_dataset_items, results),
+        total=len(results),
+        description="Uploading scores",
+    ):
+        # Link the trace to the dataset item for analysis
+        if _eval_output is not None:
+            _trace.score(
+                name="is_answer_correct",
+                value=_eval_output.is_answer_correct,
+                comment=_eval_output.explanation,
             )
-        )
 
-        for _item, _eval_output in track(
-            zip(lf_dataset_items, results),
-            total=len(results),
-            description="Uploading scores",
-        ):
-            _eval_output = await run_and_evaluate(main_agent, evaluator_agent, _item)
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        transient=True,
+    ) as progress:
+        task = progress.add_task("Finalizing Langfuse annotations...", total=None)
+        langfuse_client.flush()
 
-            with _item.run(run_name=args.run_name) as span:
-                if _eval_output is not None:
-                    span.score(
-                        name="is_answer_correct",
-                        value=_eval_output.is_answer_correct,
-                        comment=_eval_output.explanation,
-                    )
-
-        with Progress(
-            SpinnerColumn(),
-            TextColumn("[progress.description]{task.description}"),
-            transient=True,
-        ) as progress:
-            _ = progress.add_task("Finalizing Langfuse annotations...", total=None)
-            langfuse_client.flush()
-    finally:
-        await async_weaviate_client.close()
-        await async_openai_client.close()
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--langfuse_dataset_name", required=True)
-    parser.add_argument("--run_name", required=True)
-    parser.add_argument("--limit", type=int)
-
-    asyncio.run(_main())
+    asyncio.run(async_weaviate_client.close())

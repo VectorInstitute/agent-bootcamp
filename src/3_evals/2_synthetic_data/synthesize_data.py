@@ -21,16 +21,19 @@ from src.utils import (
     AsyncWeaviateKnowledgeBase,
     Configs,
     gather_with_progress,
-    get_langfuse_tracer,
     get_weaviate_async_client,
     pretty_print,
+    rate_limited,
+    set_up_logging,
+    setup_langfuse_tracer,
 )
 from src.utils.data import get_dataset, get_dataset_url_hash
-from src.utils.langfuse.shared_client import langfuse
+from src.utils.langfuse.shared_client import langfuse_client
 from src.utils.tools.news_events import NewsEvent, get_news_events
 
 
 load_dotenv(verbose=True)
+set_up_logging()
 
 SYSTEM_MESSAGE = """\
 Example questions: \
@@ -38,7 +41,8 @@ Example questions: \
 
 Given the example questions, produce 5 additional questions of the same format \
 regarding the topic that the user specified with the help of the web search tool. \
-Be sure to include citations (citation_urls) in your response. \
+If the search returns relevant sources, you must include each \
+source.title and source.section that you used in "citations" in your response.
 
 You MUST produce a JSON output of this format:
 {json_schema}
@@ -51,12 +55,19 @@ parser.add_argument("--limit", type=int, default=18)
 parser.add_argument("--max_concurrency", type=int, default=3)
 
 
+class _Citation(pydantic.BaseModel):
+    """Represents one cited source/article."""
+
+    title: str
+    section: str
+
+
 class _SyntheticTestCase(pydantic.BaseModel):
     """Represents one synthetic test case."""
 
     question: str
     expected_answer: str
-    citation_urls: list[str]
+    citations: list[_Citation]
 
 
 class _SyntheticTestCases(pydantic.RootModel):
@@ -89,7 +100,7 @@ async def generate_synthetic_test_cases(
         ),
     )
 
-    with agents.trace("generate_synthetic_test_cases"):
+    with langfuse_client.start_as_current_span(name="generate_synthetic_test_cases"):
         raw_response = await agents.Runner.run(
             test_case_generator_agent,
             input="Generate test question-answer pairs based on this news event: \n"
@@ -123,16 +134,15 @@ if __name__ == "__main__":
         max_concurrency=args.max_concurrency,
     )
 
-    tracer = get_langfuse_tracer()
+    setup_langfuse_tracer()
 
     generator = random.Random(0)
     dataset_name_hash = get_dataset_url_hash(args.langfuse_dataset_name)
 
     async_openai_client = AsyncOpenAI()
-    agents.set_tracing_disabled(disabled=True)
 
     # Create langfuse dataset and upload.
-    langfuse.create_dataset(
+    langfuse_client.create_dataset(
         name=args.langfuse_dataset_name,
         description=f"[{dataset_name_hash}] Synthetic data based on {args.source_dataset}",
         metadata={
@@ -142,7 +152,7 @@ if __name__ == "__main__":
         },
     )
 
-    df = get_dataset(args.source_dataset, limit=args.limit)
+    df = get_dataset(args.source_dataset, limit=90)
     rows_news_only = [
         row.to_dict() for _, row in df[df["area"] == "Knowledge"].iterrows()
     ]
@@ -177,10 +187,14 @@ if __name__ == "__main__":
     news_events = generator.sample(all_news_events, k=args.limit)
 
     # Run generation async
+    semaphore = asyncio.Semaphore(args.max_concurrency)
     _coros = [
-        generate_synthetic_test_cases(
-            test_case_generator_agent=test_case_generator_agent,
-            news_event=_event,
+        rate_limited(
+            lambda _event=_event: generate_synthetic_test_cases(
+                test_case_generator_agent=test_case_generator_agent,
+                news_event=_event,
+            ),
+            semaphore=semaphore,
         )
         for _event in news_events
     ]
@@ -194,7 +208,7 @@ if __name__ == "__main__":
     for idx, _test_case in enumerate(
         track(all_examples, description="Uploading to Langfuse")
     ):
-        langfuse.create_dataset_item(
+        langfuse_client.create_dataset_item(
             dataset_name=args.langfuse_dataset_name,
             input={"text": _test_case.question},
             expected_output={"text": _test_case.expected_answer},

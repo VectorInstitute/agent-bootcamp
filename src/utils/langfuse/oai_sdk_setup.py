@@ -21,7 +21,7 @@ def configure_oai_agents_sdk(service_name: str) -> None:
     logfire.instrument_openai_agents()
 
 
-def get_langfuse_tracer(service_name: str = "agents_sdk") -> "trace.Tracer":
+def setup_langfuse_tracer(service_name: str = "agents_sdk") -> "trace.Tracer":
     """Register Langfuse as the default tracing provider and return tracer.
 
     Returns

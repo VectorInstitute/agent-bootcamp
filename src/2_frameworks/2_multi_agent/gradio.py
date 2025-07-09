@@ -24,7 +24,7 @@ from src.utils import (
     pretty_print,
     setup_langfuse_tracer,
 )
-from src.utils.langfuse.shared_client import langfuse as langfuse_client
+from src.utils.langfuse.shared_client import langfuse_client
 
 
 load_dotenv(verbose=True)
@@ -134,7 +134,6 @@ def _handle_sigint(signum: int, frame: object) -> None:
 
 
 async def _main(question: str, gr_messages: list[ChatMessage]):
-    setup_langfuse_tracer()
 
     planner_agent = agents.Agent(
         name="Planner Agent",
@@ -228,6 +227,7 @@ if __name__ == "__main__":
 
     async_openai_client = AsyncOpenAI()
     agents.set_tracing_disabled(disabled=True)
+    setup_langfuse_tracer()
 
     with gr.Blocks(title="OAI Agent SDK - Multi-agent") as app:
         chatbot = gr.Chatbot(type="messages", label="Agent", height=600)
