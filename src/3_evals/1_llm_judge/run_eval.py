@@ -127,10 +127,12 @@ async def run_and_evaluate(
     expected_output = lf_dataset_item.expected_output
     assert expected_output is not None
 
-    with lf_dataset_item.run(run_name=run_name):
+    with lf_dataset_item.run(run_name=run_name) as root_span:
+        root_span.update(input=lf_dataset_item.input["text"])
         traced_response = await run_agent_with_trace(
             main_agent, query=lf_dataset_item.input["text"]
         )
+        root_span.update(output=traced_response.answer)
 
     answer = traced_response.answer
     if answer is None:
