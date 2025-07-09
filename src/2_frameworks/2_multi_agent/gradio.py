@@ -1,4 +1,4 @@
-"""Reason-and-Act Knowledge Retrieval Agent via the OpenAI Agent SDK.
+"""Multi-agent Planner-Researcher Setup via OpenAI Agents SDK.
 
 Log traces to LangFuse for observability and evaluation.
 """
