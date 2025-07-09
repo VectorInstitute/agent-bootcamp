@@ -1,3 +1,5 @@
+"""Knowledge Base Search Demo using Gradio."""
+
 import gradio as gr
 from dotenv import load_dotenv
 from openai import AsyncOpenAI
@@ -24,7 +26,7 @@ The output format you see is also what the Agent LLM \
 would receive when interacting with the knowledge base search \
 tool in subsequent sections of this bootcamp- both when using \
 the Wikipedia database we provided and when using your own \
-public dataset. 
+public dataset.
 """
 
 
