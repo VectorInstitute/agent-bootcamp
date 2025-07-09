@@ -1,73 +1,91 @@
-# AI Engineering template (with uv)
+# Agent Bootcamp
 
 ----------------------------------------------------------------------------------------
 
-[![code checks](https://github.com/VectorInstitute/aieng-template-uv/actions/workflows/code_checks.yml/badge.svg)](https://github.com/VectorInstitute/aieng-template-uv/actions/workflows/code_checks.yml)
-[![integration tests](https://github.com/VectorInstitute/aieng-template-uv/actions/workflows/integration_tests.yml/badge.svg)](https://github.com/VectorInstitute/aieng-template-uv/actions/workflows/integration_tests.yml)
-[![docs](https://github.com/VectorInstitute/aieng-template-uv/actions/workflows/docs.yml/badge.svg)](https://github.com/VectorInstitute/aieng-template-uv/actions/workflows/docs.yml)
-[![codecov](https://codecov.io/github/VectorInstitute/aieng-template-uv/graph/badge.svg?token=83MYFZ3UPA)](https://codecov.io/github/VectorInstitute/aieng-template-uv)
-![GitHub License](https://img.shields.io/github/license/VectorInstitute/aieng-template-uv)
+[![code checks](https://github.com/VectorInstitute/agent-bootcamp/actions/workflows/code_checks.yml/badge.svg)](https://github.com/VectorInstitute/agent-bootcamp/actions/workflows/code_checks.yml)
+[![docs](https://github.com/VectorInstitute/agent-bootcamp/actions/workflows/docs.yml/badge.svg)](https://github.com/VectorInstitute/agent-bootcamp/actions/workflows/docs.yml)
+[![codecov](https://codecov.io/github/VectorInstitute/agent-bootcamp/graph/badge.svg?token=83MYFZ3UPA)](https://codecov.io/github/VectorInstitute/agent-bootcamp)
+[![license](https://img.shields.io/github/license/VectorInstitute/agent-bootcamp.svg)](https://github.com/VectorInstitute/agent-bootcamp/blob/main/LICENSE)
 
-A template repo for AI Engineering projects (using ``python``) and ``uv``. This
-template is like our original AI Engineering [template](https://github.com/VectorInstitute/aieng-template),
-however, unlike how that template uses poetry, this one uses uv for dependency
-management (as well as packaging and publishing).
+This is a collection of reference implementations for Vector Institute's **Agent Bootcamp**, taking place between June and September 2025. The repository demonstrates modern agentic workflows for retrieval-augmented generation (RAG), evaluation, and orchestration using the latest Python tools and frameworks.
 
-## 🧑🏿‍💻 Developing
+## Reference Implementations
 
-### Installing dependencies
+This repository includes several modules, each showcasing a different aspect of agent-based RAG systems:
 
-The development environment can be set up using
-[uv](https://github.com/astral-sh/uv?tab=readme-ov-file#installation). Hence, make sure it is
-installed and then run:
+**1. Basics: Reason-and-Act RAG**
+A minimal Reason-and-Act (ReAct) agent for knowledge retrieval, implemented without any agent framework.
+
+- **[1.0 Search Demo](src/1_basics/0_search_demo/README.md)**
+  A simple demo showing the capabilities (and limitations) of a knowledgebase search.
+
+
+- **[1.1 ReAct Agent for RAG](src/1_basics/1_react_rag/README.md)**
+  Basic ReAct agent for step-by-step retrieval and answer generation.
+
+**2. Frameworks: OpenAI Agents SDK**
+  Showcases the use of the OpenAI agents SDK to reduce boilerplate and improve readability.
+
+- **[2.1 ReAct Agent for RAG - OpenAI SDK](src/2_frameworks/1_react_rag/README.md)**
+  Implements the same Reason-and-Act agent using the high-level abstractions provided by the OpenAI Agents SDK. This approach reduces boilerplate and improves readability.
+  The use of langfuse for making the agent less of a black-box is also introduced in this module.
+
+- **[2.2 Multi-agent Setup for Deep Research](src/2_frameworks/2_multi_agent/README.md)**
+  Demo of a multi-agent architecture with planner, researcher, and writer agents collaborating on complex queries.
+
+**3. Evals: Automated Evaluation Pipelines**
+  Contains scripts and utilities for evaluating agent performance using LLM-as-a-judge and synthetic data generation. Includes tools for uploading datasets, running evaluations, and integrating with [Langfuse](https://langfuse.com/) for traceability.
+
+- **[3.1 LLM-as-a-Judge](src/3_evals/1_llm_judge/README.md)**
+  Automated evaluation pipelines using LLM-as-a-judge with Langfuse integration.
+
+- **[3.2 Evaluation on Synthetic Dataset](src/3_evals/2_synthetic_data/README.md)**
+  Showcases the generation of synthetic evaluation data for testing agents.
+
+
+
+## Requirements
+
+- Python 3.12+
+
+## Getting Started
+
+Clone the repository:
 
 ```bash
-uv sync
-source .venv/bin/activate
+git clone https://github.com/VectorInstitute/agent-bootcamp
+cd agent-bootcamp
 ```
 
-In order to install dependencies for testing (codestyle, unit tests, integration tests),
-run:
+### Setup Instructions
 
-```bash
-uv sync --dev
-source .venv/bin/activate
-```
+1. **Install [uv](https://github.com/astral-sh/uv):**
 
-In order to exclude installation of packages from a specific group (e.g. docs),
-run:
+    ```bash
+    pip install uv
+    ```
 
-```bash
-uv sync --no-group docs
-```
+2. **Create and activate a virtual environment:**
 
-If you're coming from `poetry` then you'll notice that the virtual environment
-is actually stored in the project root folder and is by default named as `.venv`.
-The other important note is that while `poetry` uses a "flat" layout of the project,
-`uv` opts for the the "src" layout. (For more info, see [here](https://packaging.python.org/en/latest/discussions/src-layout-vs-flat-layout/))
+    ```bash
+    uv venv .venv
+    source .venv/bin/activate
+    ```
 
-### Poetry to UV
+3. **Install dependencies:**
 
-The table below provides the `uv` equivalent counterparts for some of the more
-common `poetry` commands.
+    ```bash
+    uv sync --dev
+    ```
 
-| Poetry                                               | UV                                          |
-|------------------------------------------------------|---------------------------------------------|
-| `poetry new <project-name>`  # creates new project   | `uv init <project-name>`                    |
-| `poetry install`  # installs existing project        | `uv sync`                                   |
-| `poetry install --with docs,test`                    | `uv sync --group docs --group test`         |
-| `poetry add numpy`                                   | `uv add numpy`                              |
-| `poetry add pytest pytest-asyncio --groups dev`      | `uv add pytest pytest-asyncio --groups dev` |
-| `poetry remove numpy`                                | `uv remove numpy`                           |
-| `poetry lock`                                        | `uv lock`                                   |
-| `poetry run <cmd>`  # runs cmd with the project venv | `uv run <cmd>`                              |
-| `poetry build`                                       | `uv build`                                  |
-| `poetry publish`                                     | `uv publish`                                |
-| `poetry cache clear pypi --all`                      | `uv cache clean`                            |
+4. **Configure environment variables:**
 
-For the full list of `uv` commands, you can visit the official [docs](https://docs.astral.sh/uv/reference/cli/#uv).
+    ```bash
+    cp .env.example .env
+    # Edit .env and add all required environment variables
+    ```
 
-### Tidbit
+You are now ready to explore the Agent Bootcamp reference implementations!
 
-If you're curious about what "uv" stands for, it appears to have been more or
-less chosen [randomly](https://github.com/astral-sh/uv/issues/1349#issuecomment-1986451785).
+---
+For more details on each module, see the respective README files linked above.
