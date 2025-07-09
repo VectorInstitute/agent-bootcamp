@@ -68,7 +68,7 @@ class AsyncWeaviateKnowledgeBase:
             max_retries=5,
         )
 
-    @backoff.on_exception(backoff.expo, exception=asyncio.CancelledError) # type: ignore
+    @backoff.on_exception(backoff.expo, exception=asyncio.CancelledError)  # type: ignore
     async def search_knowledgebase(self, keyword: str) -> SearchResults:
         """Search knowledge base.
 

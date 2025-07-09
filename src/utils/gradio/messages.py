@@ -20,7 +20,7 @@ def gradio_messages_to_oai_chat(
     output: list["ChatCompletionMessageParam"] = []
     for message in messages:
         if isinstance(message, dict):
-            output.append(message) # type: ignore[arg-type]
+            output.append(message)  # type: ignore[arg-type]
             continue
 
         message_content = message.content
