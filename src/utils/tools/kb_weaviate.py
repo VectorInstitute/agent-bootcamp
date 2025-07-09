@@ -1,13 +1,17 @@
 """Implements knowledge retrieval tool for Weaviate."""
 
+import asyncio
 import logging
 import os
 
+import backoff
 import openai
 import pydantic
 import weaviate
 from weaviate import WeaviateAsyncClient
 from weaviate.config import AdditionalConfig
+
+from ..async_utils import rate_limited
 
 
 class _Source(pydantic.BaseModel):
@@ -42,6 +46,7 @@ class AsyncWeaviateKnowledgeBase:
         collection_name: str,
         num_results: int = 5,
         snippet_length: int = 1000,
+        max_concurrency: int = 3,
         embedding_model_name: str = "@cf/baai/bge-m3",
         embedding_api_key: str | None = None,
         embedding_base_url: str | None = None,
@@ -51,6 +56,7 @@ class AsyncWeaviateKnowledgeBase:
         self.num_results = num_results
         self.snippet_length = snippet_length
         self.logger = logging.getLogger(__name__)
+        self.semaphore = asyncio.Semaphore(max_concurrency)
 
         self.embedding_model_name = embedding_model_name
         self.embedding_api_key = embedding_api_key
@@ -62,6 +68,7 @@ class AsyncWeaviateKnowledgeBase:
             max_retries=5,
         )
 
+    @backoff.on_exception(backoff.expo, exception=asyncio.CancelledError) # type: ignore
     async def search_knowledgebase(self, keyword: str) -> SearchResults:
         """Search knowledge base.
 
@@ -88,8 +95,11 @@ class AsyncWeaviateKnowledgeBase:
 
             collection = self.async_client.collections.get(self.collection_name)
             vector = self._vectorize(keyword)
-            response = await collection.query.hybrid(
-                keyword, vector=vector, limit=self.num_results
+            response = await rate_limited(
+                lambda: collection.query.hybrid(
+                    keyword, vector=vector, limit=self.num_results
+                ),
+                semaphore=self.semaphore,
             )
 
         self.logger.info(f"Query: {keyword}; Returned matches: {len(response.objects)}")

@@ -106,21 +106,6 @@ demo = gr.ChatInterface(
 
 if __name__ == "__main__":
     configs = Configs.from_env_var()
-    async_weaviate_client = get_weaviate_async_client(
-        http_host=configs.weaviate_http_host,
-        http_port=configs.weaviate_http_port,
-        http_secure=configs.weaviate_http_secure,
-        grpc_host=configs.weaviate_grpc_host,
-        grpc_port=configs.weaviate_grpc_port,
-        grpc_secure=configs.weaviate_grpc_secure,
-        api_key=configs.weaviate_api_key,
-    )
-    async_knowledgebase = AsyncWeaviateKnowledgeBase(
-        async_weaviate_client,
-        collection_name="enwiki_20250520",
-    )
-
-    async_openai_client = AsyncOpenAI()
 
     signal.signal(signal.SIGINT, _handle_sigint)
 

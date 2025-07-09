@@ -19,12 +19,13 @@ from src.utils import (
     gather_with_progress,
     get_langfuse_tracer,
     get_weaviate_async_client,
+    set_up_logging,
 )
 from src.utils.langfuse.shared_client import langfuse as langfuse_client
 
 
 load_dotenv(verbose=True)
-logger = logging.getLogger(__name__)
+set_up_logging()
 
 SYSTEM_MESSAGE = """\
 Answer the question using the search tool. \
@@ -82,7 +83,7 @@ async def run_agent_with_trace(agent: agents.Agent, query: str) -> str | None:
     with langfuse_client.start_as_current_span(
         name="OpenAI-Agent-Trace", input=query
     ) as span:
-        span.update_trace(tags=["dataset-run"])
+        span.update(tags=["dataset-run"])
 
         try:
             result = await agents.Runner.run(agent, query)
@@ -100,7 +101,7 @@ async def run_agent_with_trace(agent: agents.Agent, query: str) -> str | None:
         trace_id = span_context.trace_id
         formatted_trace_id = otlp_trace.format_trace_id(trace_id)
 
-        span.update_trace(user_id=formatted_trace_id, output=answer)
+        span.update(user_id=formatted_trace_id, output=answer)
 
     return answer
 
@@ -154,8 +155,7 @@ async def _main() -> None:
         api_key=configs.weaviate_api_key,
     )
     async_knowledgebase = AsyncWeaviateKnowledgeBase(
-        async_weaviate_client,
-        collection_name="enwiki_20250520",
+        async_weaviate_client, collection_name="enwiki_20250520"
     )
 
     async_openai_client = AsyncOpenAI()
@@ -196,21 +196,16 @@ async def _main() -> None:
             )
         )
 
-        for _dataset_item, _eval_output in track(
+        for _item, _eval_output in track(
             zip(lf_dataset_items, results),
             total=len(results),
             description="Uploading scores",
         ):
-            # Link the trace to the dataset item for analysis
-            with _dataset_item.run(run_name=args.run_name) as _dataset_item_span:
-                if isinstance(_eval_output, (Exception, asyncio.CancelledError)):
-                    logger.error(
-                        "Error running agent on dataset item "
-                        f"{_dataset_item.id}: {_eval_output}",
-                        exc_info=_eval_output,
-                    )
-                elif _eval_output is not None:
-                    _dataset_item_span.score(
+            _eval_output = await run_and_evaluate(main_agent, evaluator_agent, _item)
+
+            with _item.run(run_name=args.run_name) as span:
+                if _eval_output is not None:
+                    span.score(
                         name="is_answer_correct",
                         value=_eval_output.is_answer_correct,
                         comment=_eval_output.explanation,

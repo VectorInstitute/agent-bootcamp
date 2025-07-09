@@ -18,9 +18,12 @@ from openai import AsyncOpenAI
 from rich.progress import track
 
 from src.utils import (
+    AsyncWeaviateKnowledgeBase,
+    Configs,
     gather_with_progress,
-    pretty_print,
     get_langfuse_tracer,
+    get_weaviate_async_client,
+    pretty_print,
 )
 from src.utils.data import get_dataset, get_dataset_url_hash
 from src.utils.langfuse.shared_client import langfuse
@@ -35,7 +38,7 @@ Example questions: \
 
 Given the example questions, produce 5 additional questions of the same format \
 regarding the topic that the user specified with the help of the web search tool. \
-Be sure to include URL citations (citation_urls) in your response. \
+Be sure to include citations (citation_urls) in your response. \
 
 You MUST produce a JSON output of this format:
 {json_schema}
@@ -45,6 +48,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--source_dataset", required=True)
 parser.add_argument("--langfuse_dataset_name", required=True)
 parser.add_argument("--limit", type=int, default=18)
+parser.add_argument("--max_concurrency", type=int, default=3)
 
 
 class _SyntheticTestCase(pydantic.BaseModel):
@@ -103,6 +107,22 @@ async def generate_synthetic_test_cases(
 if __name__ == "__main__":
     args = parser.parse_args()
 
+    configs = Configs.from_env_var()
+    async_weaviate_client = get_weaviate_async_client(
+        http_host=configs.weaviate_http_host,
+        http_port=configs.weaviate_http_port,
+        http_secure=configs.weaviate_http_secure,
+        grpc_host=configs.weaviate_grpc_host,
+        grpc_port=configs.weaviate_grpc_port,
+        grpc_secure=configs.weaviate_grpc_secure,
+        api_key=configs.weaviate_api_key,
+    )
+    async_knowledgebase = AsyncWeaviateKnowledgeBase(
+        async_weaviate_client,
+        collection_name="enwiki_20250520",
+        max_concurrency=args.max_concurrency,
+    )
+
     tracer = get_langfuse_tracer()
 
     generator = random.Random(0)
@@ -140,7 +160,7 @@ if __name__ == "__main__":
             json_schema=_SyntheticTestCases.model_json_schema(),
         ),
         # Hint: replace this tool with your own knowledge base search tool.
-        tools=[agents.WebSearchTool()],
+        tools=[agents.function_tool(async_knowledgebase.search_knowledgebase)],
         model=agents.OpenAIChatCompletionsModel(
             model="gemini-2.5-flash", openai_client=async_openai_client
         ),

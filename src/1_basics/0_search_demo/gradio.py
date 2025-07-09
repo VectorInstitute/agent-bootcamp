@@ -9,6 +9,7 @@ from src.utils import (
     pretty_print,
 )
 
+
 DESCRIPTION = """\
 In the example below, your goal is to find out where \
 Apple's SVP Software Engineering got his degree in engineering- \

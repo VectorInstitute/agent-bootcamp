@@ -20,7 +20,7 @@ class Configs(pydantic.BaseModel):
     # Langfuse
     langfuse_public_key: str
     langfuse_secret_key: str
-    langfuse_host: str = "https://cloud.langfuse.com"
+    langfuse_host: str = "https://us.cloud.langfuse.com"
 
     def _check_langfuse(self):
         """Ensure that Langfuse pk and sk are in the right place."""

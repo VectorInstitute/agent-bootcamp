@@ -5,8 +5,9 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import random
 from collections import defaultdict
-from datetime import date
+from datetime import date, timedelta
 from typing import Any
 
 import httpx
@@ -37,10 +38,20 @@ async def _fetch_current_events_html() -> str:
     -------
         Raw HTML string of the parsed page.
     """
+    # pick a random month between January and May
+    # (the knowledge base is not updated after May 30, 2025)
+    # and a random day in that month
+    random.seed(42)
+    random_date = date(2025, 1, 1) + timedelta(
+        days=random.randint(0, (date(2025, 5, 20) - date(2025, 1, 1)).days)
+    )
+    # convert to Year_Month_day format (example: 2025_May_6)
+    date_str = random_date.strftime("%Y_%B_%d")
+
     api_url = "https://en.wikipedia.org/w/api.php"
     params = {
         "action": "parse",
-        "page": "Portal:Current_events",
+        "page": f"Portal:Current_events/{date_str}",
         "prop": "text",
         "format": "json",
     }
