@@ -1,0 +1,19 @@
+# Generate synthetic data using Agent Pipeline
+
+```bash
+uv run -m src.3_evals.2_synthetic_data.synthesize_data \
+--source_dataset hf://vector-institute/hotpotqa@d997ecf:train \
+--langfuse_dataset_name search-dataset-synthetic-20250609 \
+--limit 18
+```
+
+## Run Evaluation on synthetic data
+
+```bash
+uv run \
+--env-file .env \
+-m src.3_evals.1_llm_judge.run_eval \
+--langfuse_dataset_name search-dataset-synthetic-20250609 \
+--run_name enwiki_weaviate \
+--limit 18
+```
