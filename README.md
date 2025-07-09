@@ -38,29 +38,6 @@ A minimal Reason-and-Act (ReAct) agent for knowledge retrieval, implemented with
   Showcases the generation of synthetic evaluation data for testing agents.
 
 
-# Reference Implementation Repository for AI Agent Bootcamp
-
-## Setting
-
-Build a knowledge retrieval agent.
-
-## Symposis
-
-**Basics**: Build a ReAct-styled ("Reason-and-Act") agent without using agent frameworks.
-
-**Frameworks**: Build agents with frameworks to reduce boilerplate code.
-
-**Evals**: Agent observability, test data synthesis, and automated evaluation.
-
-## Tooling
-
-- **openai-agents** as the AI Agent framework.
-- **langfuse** for agent observability and evaluation.
-- **uv** for dependency management
-- **gradio** for an interactive prototype.
-- **weaviate** as the search engine for the local knowledge base.
-
-
 ## Getting Started
 
 Set your API keys in `.env`. Use `.env.example` as a template.
@@ -139,56 +116,6 @@ uv run \
 ## Requirements
 
 - Python 3.12+
-
-## Getting Started
-
-Clone the repository:
-
-```bash
-uv sync
-source .venv/bin/activate
-```
-
-In order to install dependencies for testing (codestyle, unit tests, integration tests),
-run:
-
-```bash
-uv sync --dev
-source .venv/bin/activate
-```
-
-In order to exclude installation of packages from a specific group (e.g. docs),
-run:
-
-```bash
-uv sync --no-group docs
-```
-
-If you're coming from `poetry` then you'll notice that the virtual environment
-is actually stored in the project root folder and is by default named as `.venv`.
-The other important note is that while `poetry` uses a "flat" layout of the project,
-`uv` opts for the the "src" layout. (For more info, see [here](https://packaging.python.org/en/latest/discussions/src-layout-vs-flat-layout/))
-
-### Poetry to UV
-
-The table below provides the `uv` equivalent counterparts for some of the more
-common `poetry` commands.
-
-| Poetry                                               | UV                                          |
-|------------------------------------------------------|---------------------------------------------|
-| `poetry new <project-name>`  # creates new project   | `uv init <project-name>`                    |
-| `poetry install`  # installs existing project        | `uv sync`                                   |
-| `poetry install --with docs,test`                    | `uv sync --group docs --group test`         |
-| `poetry add numpy`                                   | `uv add numpy`                              |
-| `poetry add pytest pytest-asyncio --groups dev`      | `uv add pytest pytest-asyncio --groups dev` |
-| `poetry remove numpy`                                | `uv remove numpy`                           |
-| `poetry lock`                                        | `uv lock`                                   |
-| `poetry run <cmd>`  # runs cmd with the project venv | `uv run <cmd>`                              |
-| `poetry build`                                       | `uv build`                                  |
-| `poetry publish`                                     | `uv publish`                                |
-| `poetry cache clear pypi --all`                      | `uv cache clean`                            |
-
-For the full list of `uv` commands, you can visit the official [docs](https://docs.astral.sh/uv/reference/cli/#uv).
 
 ### Tidbit
 
