@@ -14,6 +14,8 @@ def _serializer(item: Any) -> dict[str, Any] | str:
     return str(item)
 
 
-def pretty_print(data: Any) -> None:
+def pretty_print(data: Any) -> str:
     """Print nested items with indentations."""
-    print(json.dumps(data, indent=2, default=_serializer))
+    output = json.dumps(data, indent=2, default=_serializer)
+    print(output)
+    return output

@@ -5,6 +5,7 @@ This folder reproduces the functionalities of section 1.1, but involve far less 
 ## Run
 
 ```bash
-source .env
-uv run -m src._2_frameworks._1_react_rag.basic
+uv run -m src.2_frameworks.1_react_rag.basic
+uv run -m src.2_frameworks.1_react_rag.gradio
+uv run -m src.2_frameworks.1_react_rag.langfuse_gradio
 ```

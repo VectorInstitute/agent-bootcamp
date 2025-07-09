@@ -17,5 +17,5 @@ Build a knowledge retrieval agent.
 - **openai-agents** as the AI Agent framework.
 - **langfuse** for agent observability and evaluation.
 - **uv** for dependency management
-- **streamlit** for an interactive prototype.
-- **elasticsearch** as the search engine for the local knowledge base.
+- **gradio** for an interactive prototype.
+- **weaviate** as the search engine for the local knowledge base.
