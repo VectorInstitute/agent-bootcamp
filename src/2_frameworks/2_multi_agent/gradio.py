@@ -134,7 +134,6 @@ def _handle_sigint(signum: int, frame: object) -> None:
 
 
 async def _main(question: str, gr_messages: list[ChatMessage]):
-
     planner_agent = agents.Agent(
         name="Planner Agent",
         instructions=PLANNER_INSTRUCTIONS,
@@ -226,7 +225,6 @@ if __name__ == "__main__":
     )
 
     async_openai_client = AsyncOpenAI()
-    agents.set_tracing_disabled(disabled=True)
     setup_langfuse_tracer()
 
     with gr.Blocks(title="OAI Agent SDK - Multi-agent") as app:
