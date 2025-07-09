@@ -80,7 +80,7 @@ async def run_agent_with_trace(agent: agents.Agent, query: str) -> str | None:
     with langfuse_client.start_as_current_span(
         name="OpenAI-Agent-Trace", input=query
     ) as span:
-        span.update_trace(tags=["dataset-run"])
+        span.update(tags=["dataset-run"])
 
         try:
             result = await agents.Runner.run(agent, query)
@@ -98,7 +98,7 @@ async def run_agent_with_trace(agent: agents.Agent, query: str) -> str | None:
         trace_id = span_context.trace_id
         formatted_trace_id = otlp_trace.format_trace_id(trace_id)
 
-        span.update_trace(user_id=formatted_trace_id, output=answer)
+        span.update(user_id=formatted_trace_id, output=answer)
 
     return answer
 

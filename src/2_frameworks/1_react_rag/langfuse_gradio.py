@@ -70,7 +70,7 @@ async def _main(question: str, gr_messages: list[ChatMessage]):
         name="Agents-SDK-Trace", input=question
     ) as span:
         responses = await agents.Runner.run(main_agent, input=question)
-        span.update_trace(output=responses.final_output)
+        span.update(output=responses.final_output)
 
     gr_messages += oai_agent_items_to_gradio_messages(responses.new_items)
     pretty_print(gr_messages)
@@ -97,7 +97,7 @@ if __name__ == "__main__":
     agents.set_tracing_disabled(disabled=True)
 
     with gr.Blocks(title="OAI Agent SDK ReAct") as app:
-        chatbot = gr.Chatbot(type="messages", label="Agent")
+        chatbot = gr.Chatbot(type="messages", label="Agent", height=600)
         chat_message = gr.Textbox(lines=1, label="Ask a question")
         chat_message.submit(_main, [chat_message, chatbot], [chatbot])
 

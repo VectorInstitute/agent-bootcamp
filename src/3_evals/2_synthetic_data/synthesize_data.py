@@ -93,7 +93,7 @@ async def generate_synthetic_test_cases(
             list[_SyntheticTestCase]
         )
 
-        span.update_trace(
+        span.update(
             input=test_case_query,
             output=synthetic_test_cases,
             metadata={"generated_test_case": raw_response.final_output},
