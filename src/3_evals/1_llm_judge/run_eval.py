@@ -8,7 +8,6 @@ import pydantic
 from dotenv import load_dotenv
 from langfuse._client.datasets import DatasetItemClient
 from openai import AsyncOpenAI
-from opentelemetry import trace as otlp_trace
 from rich.progress import Progress, SpinnerColumn, TextColumn, track
 
 from src.utils import (
@@ -16,12 +15,14 @@ from src.utils import (
     Configs,
     gather_with_progress,
     get_weaviate_async_client,
+    set_up_logging,
     setup_langfuse_tracer,
 )
 from src.utils.langfuse.shared_client import langfuse_client
 
 
 load_dotenv(verbose=True)
+set_up_logging()
 
 
 SYSTEM_MESSAGE = """\
@@ -53,6 +54,13 @@ EVALUATOR_TEMPLATE = """\
 """
 
 
+class LangFuseTracedResponse(pydantic.BaseModel):
+    """Agent Response and LangFuse Trace info."""
+
+    answer: str | None
+    trace_id: str | None
+
+
 class EvaluatorQuery(pydantic.BaseModel):
     """Query to the evaluator agent."""
 
@@ -74,35 +82,24 @@ class EvaluatorResponse(pydantic.BaseModel):
 
 async def run_agent_with_trace(
     agent: agents.Agent, query: str
-) -> "tuple[StatefulTraceClient, str | None]":
-    """Run OpenAI Agent on query, returning response and trace.
+) -> "LangFuseTracedResponse":
+    """Run OpenAI Agent on query, returning response and trace_id.
 
     Returns None if agent exceeds max_turn limit.
     """
-    with tracer.start_as_current_span("OpenAI-Agent-Trace") as span:
-        span.set_attribute("langfuse.tag", "dataset-run")
+    try:
+        result = await agents.Runner.run(agent, query)
+        if "|" in result.final_output:
+            answer = result.final_output.split("|")[-1].strip()
+        else:
+            answer = result.final_output
 
-        try:
-            result = await agents.Runner.run(agent, query)
-            if "|" in result.final_output:
-                answer = result.final_output.split("|")[-1].strip()
-            else:
-                answer = result.final_output
+    except agents.MaxTurnsExceeded:
+        answer = None
 
-        except agents.MaxTurnsExceeded:
-            answer = None
-
-        # Get the Langfuse trace_id to link the dataset run item to the agent trace
-        current_span = otlp_trace.get_current_span()
-        span_context = current_span.get_span_context()
-        trace_id = span_context.trace_id
-        formatted_trace_id = otlp_trace.format_trace_id(trace_id)
-
-        langfuse_trace = langfuse_client.trace(
-            id=formatted_trace_id, input=query, output=answer
-        )
-
-    return langfuse_trace, answer
+    return LangFuseTracedResponse(
+        answer=answer, trace_id=langfuse_client.get_current_trace_id()
+    )
 
 
 async def run_evaluator_agent(evaluator_query: EvaluatorQuery) -> EvaluatorResponse:
@@ -111,6 +108,9 @@ async def run_evaluator_agent(evaluator_query: EvaluatorQuery) -> EvaluatorRespo
         name="Evaluator Agent",
         instructions=EVALUATOR_INSTRUCTIONS,
         output_type=EvaluatorResponse,
+        model=agents.OpenAIChatCompletionsModel(
+            model="gemini-2.5-flash", openai_client=async_openai_client
+        ),
     )
 
     result = await agents.Runner.run(evaluator_agent, input=evaluator_query.get_query())
@@ -118,8 +118,8 @@ async def run_evaluator_agent(evaluator_query: EvaluatorQuery) -> EvaluatorRespo
 
 
 async def run_and_evaluate(
-    main_agent: agents.Agent, lf_dataset_item: "DatasetItemClient"
-) -> "tuple[StatefulTraceClient, EvaluatorResponse | None]":
+    run_name: str, main_agent: agents.Agent, lf_dataset_item: "DatasetItemClient"
+) -> "tuple[LangFuseTracedResponse, EvaluatorResponse | None]":
     """Run main agent and evaluator agent on one dataset instance.
 
     Returns None if main agent returned a None answer.
@@ -127,12 +127,14 @@ async def run_and_evaluate(
     expected_output = lf_dataset_item.expected_output
     assert expected_output is not None
 
-    langfuse_trace, answer = await run_agent_with_trace(
-        main_agent, query=lf_dataset_item.input["text"]
-    )
+    with lf_dataset_item.run(run_name=run_name):
+        traced_response = await run_agent_with_trace(
+            main_agent, query=lf_dataset_item.input["text"]
+        )
 
+    answer = traced_response.answer
     if answer is None:
-        return langfuse_trace, None
+        return traced_response, None
 
     evaluator_response = await run_evaluator_agent(
         EvaluatorQuery(
@@ -142,7 +144,7 @@ async def run_and_evaluate(
         )
     )
 
-    return langfuse_trace, evaluator_response
+    return traced_response, evaluator_response
 
 
 parser = argparse.ArgumentParser()
@@ -181,25 +183,31 @@ if __name__ == "__main__":
         instructions=SYSTEM_MESSAGE,
         tools=[agents.function_tool(async_knowledgebase.search_knowledgebase)],
         model=agents.OpenAIChatCompletionsModel(
-            model="gpt-4o-mini", openai_client=async_openai_client
+            model="gemini-2.5-flash", openai_client=async_openai_client
         ),
     )
-    coros = [run_and_evaluate(main_agent, _item) for _item in lf_dataset_items]
+    coros = [
+        run_and_evaluate(
+            run_name=args.run_name,
+            main_agent=main_agent,
+            lf_dataset_item=_item,
+        )
+        for _item in lf_dataset_items
+    ]
     results = asyncio.run(
         gather_with_progress(coros, description="Running agent and evaluating")
     )
 
-    for _dataset_item, (_trace, _eval_output) in track(
-        zip(lf_dataset_items, results),
-        total=len(results),
-        description="Uploading scores",
+    for _traced_response, _eval_output in track(
+        results, total=len(results), description="Uploading scores"
     ):
         # Link the trace to the dataset item for analysis
         if _eval_output is not None:
-            _trace.score(
+            langfuse_client.create_score(
                 name="is_answer_correct",
                 value=_eval_output.is_answer_correct,
                 comment=_eval_output.explanation,
+                trace_id=_traced_response.trace_id,
             )
 
     with Progress(
