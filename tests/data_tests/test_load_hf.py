@@ -7,7 +7,7 @@ from src.utils.data import get_dataset, get_dataset_url_hash
 
 def test_load_from_hub_unspecified_subset():
     """Test loading dataset from hub, no subset specified."""
-    url = "hf://junzhang1207/search-dataset@2349ba4:train"
+    url = "hf://vector-institute/hotpotqa@d997ecf:train"
     rows_limit = 18
     dataset = get_dataset(url, limit=rows_limit)
     print(url, get_dataset_url_hash(url), rows_limit, dataset)
@@ -17,7 +17,7 @@ def test_load_from_hub_unspecified_subset():
 
 def test_load_from_hub_named_subset():
     """Test loading dataset from hub, no subset specified."""
-    url = "hf://ComplexDataLab/Misinfo_Datasets@9f1ca17[liar_new]:test"
+    url = "hf://vector-institute/hotpotqa@d997ecf:train"
     rows_limit = 18
     dataset = get_dataset(url, limit=rows_limit)
     print(url, get_dataset_url_hash(url), rows_limit, dataset)
