@@ -68,7 +68,12 @@ class AsyncWeaviateKnowledgeBase:
             max_retries=5,
         )
 
-    @backoff.on_exception(backoff.expo, exception=asyncio.CancelledError)  # type: ignore
+    @backoff.on_exception(
+        backoff.expo,
+        exception=[
+            asyncio.CancelledError,  # type: ignore
+        ],
+    )
     async def search_knowledgebase(self, keyword: str) -> SearchResults:
         """Search knowledge base.
 
@@ -90,6 +95,7 @@ class AsyncWeaviateKnowledgeBase:
 
         """
         async with self.async_client:
+            await self.async_client.connect()
             if not await self.async_client.is_ready():
                 raise Exception("Weaviate is not ready to accept requests (HTTP 503).")
 

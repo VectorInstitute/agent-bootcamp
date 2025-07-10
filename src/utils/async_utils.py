@@ -4,7 +4,14 @@ import asyncio
 import types
 from typing import Any, Awaitable, Callable, Coroutine, Sequence, TypeVar
 
-from rich.progress import Progress
+from rich.progress import (
+    BarColumn,
+    Progress,
+    TaskProgressColumn,
+    TextColumn,
+    TimeElapsedColumn,
+    TimeRemainingColumn,
+)
 
 
 T = TypeVar("T")
@@ -45,7 +52,13 @@ async def gather_with_progress(
     results: list[T | None] = [None] * len(tasks)
 
     # Create and start a Progress bar with a total equal to the number of tasks
-    with Progress() as progress:
+    with Progress(
+        TextColumn("[progress.description]{task.description}"),
+        BarColumn(),
+        TaskProgressColumn(),
+        TimeElapsedColumn(),
+        TimeRemainingColumn(),
+    ) as progress:
         progress_task = progress.add_task(description, total=len(tasks))
 
         # as_completed yields each Task as soon as it finishes
