@@ -150,7 +150,7 @@ def plot_box_whisker(
 parser = argparse.ArgumentParser()
 parser.add_argument("--output_file", default="/tmp/plot.png")
 parser.add_argument("--iterations_per_level", default=1, type=int)
-parser.add_argument("--max_power", default=9, type=int)
+parser.add_argument("--max_power", default=5, type=int)
 
 if __name__ == "__main__":
     import uvloop
@@ -160,7 +160,7 @@ if __name__ == "__main__":
     dotenv.load_dotenv()
     args = parser.parse_args()
 
-    concurrency_levels = [2**i for i in range(1, args.max_power + 1)]
+    concurrency_levels = [5 * (2**i) for i in range(1, args.max_power + 1)]
 
     results = asyncio.run(
         gather_all_concurrency_levels(
