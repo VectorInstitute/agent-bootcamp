@@ -8,6 +8,10 @@ import pydantic
 class Configs(pydantic.BaseModel):
     """Type-friendly collection of env var configs."""
 
+    # Embeddings
+    embedding_base_url: str
+    embedding_api_key: str
+
     # Weaviate
     weaviate_http_host: str
     weaviate_grpc_host: str

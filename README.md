@@ -102,6 +102,24 @@ uv run -m src.3_evals.2_synthetic_data.synthesize_data \
 --limit 18
 ```
 
+Quantify embedding diversity of synthetic data
+
+```bash
+# Baseline: "Real" dataset
+uv run \
+--env-file .env \
+-m src.3_evals.2_synthetic_data.annotate_diversity \
+--langfuse_dataset_name search-dataset \
+--run_name cosine_similarity_bge_m3
+
+# Synthetic dataset
+uv run \
+--env-file .env \
+-m src.3_evals.2_synthetic_data.annotate_diversity \
+--langfuse_dataset_name search-dataset-synthetic-20250609 \
+--run_name cosine_similarity_bge_m3
+```
+
 Run LLM-as-a-judge Evaluation on synthetic data
 
 ```bash
