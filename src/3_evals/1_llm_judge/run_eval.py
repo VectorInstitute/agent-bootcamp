@@ -8,7 +8,7 @@ import pydantic
 from dotenv import load_dotenv
 from langfuse._client.datasets import DatasetItemClient
 from openai import AsyncOpenAI
-from rich.progress import Progress, SpinnerColumn, TextColumn, track
+from rich.progress import track
 
 from src.utils import (
     AsyncWeaviateKnowledgeBase,
@@ -18,7 +18,7 @@ from src.utils import (
     set_up_logging,
     setup_langfuse_tracer,
 )
-from src.utils.langfuse.shared_client import langfuse_client
+from src.utils.langfuse.shared_client import flush_langfuse, langfuse_client
 
 
 load_dotenv(verbose=True)
@@ -212,12 +212,6 @@ if __name__ == "__main__":
                 trace_id=_traced_response.trace_id,
             )
 
-    with Progress(
-        SpinnerColumn(),
-        TextColumn("[progress.description]{task.description}"),
-        transient=True,
-    ) as progress:
-        task = progress.add_task("Finalizing Langfuse annotations...", total=None)
-        langfuse_client.flush()
+    flush_langfuse()
 
     asyncio.run(async_weaviate_client.close())
