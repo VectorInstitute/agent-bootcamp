@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 from dotenv import load_dotenv
 from openai import AsyncOpenAI
 
+from src.prompts import REACT_INSTRUCTIONS
 from src.utils import (
     AsyncWeaviateKnowledgeBase,
     Configs,
@@ -67,14 +68,7 @@ async def _main():
     messages: list = [
         {
             "role": "system",
-            "content": (
-                "Answer the question using the search tool. "
-                "You must explain your reasons for invoking the tool. "
-                "Be sure to mention the sources. "
-                "If the search did not return intended results, try again. "
-                "Do not make up information. You must use the search tool "
-                "for all facts that might change over time."
-            ),
+            "content": REACT_INSTRUCTIONS,
         },
         {
             "role": "user",

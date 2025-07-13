@@ -12,11 +12,13 @@ from dotenv import load_dotenv
 from gradio.components.chatbot import ChatMessage
 from openai import AsyncOpenAI
 
+from src.prompts import REACT_INSTRUCTIONS
 from src.utils import (
     AsyncWeaviateKnowledgeBase,
     Configs,
     get_weaviate_async_client,
     oai_agent_items_to_gradio_messages,
+    oai_agent_stream_to_gradio_messages,
     pretty_print,
 )
 
@@ -26,14 +28,6 @@ load_dotenv(verbose=True)
 
 logging.basicConfig(level=logging.INFO)
 
-SYSTEM_MESSAGE = """\
-Answer the question using the search tool. \
-Always plan your actions before invoking the tool. \
-Be sure to mention the sources. \
-If the search did not return intended results, try again. \
-Do not make up information. You must use the search tool \
-for all facts that might change over time.
-"""
 
 AGENT_LLM_NAME = "gemini-2.5-flash"
 
@@ -70,19 +64,18 @@ def _handle_sigint(signum: int, frame: object) -> None:
 async def _main(question: str, gr_messages: list[ChatMessage]):
     main_agent = agents.Agent(
         name="Wikipedia Agent",
-        instructions=SYSTEM_MESSAGE,
+        instructions=REACT_INSTRUCTIONS,
         tools=[agents.function_tool(async_knowledgebase.search_knowledgebase)],
         model=agents.OpenAIChatCompletionsModel(
             model=AGENT_LLM_NAME, openai_client=async_openai_client
         ),
     )
-    gr_messages.append(ChatMessage(role="user", content=question))
-    yield gr_messages
 
-    responses = await agents.Runner.run(main_agent, input=question)
-    gr_messages += oai_agent_items_to_gradio_messages(responses.new_items)
-    pretty_print(gr_messages)
-    yield gr_messages
+    result_stream = agents.Runner.run_streamed(main_agent, input=question)
+    async for _item in result_stream.stream_events():
+        gr_messages += oai_agent_stream_to_gradio_messages(_item)
+        if len(gr_messages) > 0:
+            yield gr_messages
 
 
 demo = gr.ChatInterface(

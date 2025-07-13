@@ -1,7 +1,7 @@
 [project]
-name = "aieng-template-uv"
+name = "agent-bootcamp-202507"
 version = "0.1.0"
-description = "Add your description here"
+description = "Vector Institute Agent Bootcamp 202507"
 readme = "README.md"
 authors = [ {name = "Vector AI Engineering", email = "ai_engineering@vectorinstitute.ai"}]
 license = "Apache-2.0"
@@ -93,6 +93,7 @@ ignore = [
     "PLR0913", # Too many arguments
     "COM812", # Missing trailing comma
     "N999", # Number in module names.
+    "ERA001", # Commented out lines.
 ]
 
 # Ignore import violations in all `__init__.py` files.

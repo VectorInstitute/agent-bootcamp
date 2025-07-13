@@ -15,6 +15,7 @@ from gradio.components.chatbot import ChatMessage
 from openai import AsyncOpenAI
 from openai.types.chat import ChatCompletionSystemMessageParam, ChatCompletionToolParam
 
+from src.prompts import REACT_INSTRUCTIONS
 from src.utils import (
     AsyncWeaviateKnowledgeBase,
     Configs,
@@ -52,14 +53,7 @@ tools: list["ChatCompletionToolParam"] = [
 
 system_message: "ChatCompletionSystemMessageParam" = {
     "role": "system",
-    "content": (
-        "Answer the question using the search tool. "
-        "You must explain your reasons for invoking the tool. "
-        "Be sure to mention the sources. "
-        "If the search did not return intended results, try again. "
-        "Do not make up information. You must use the search tool "
-        "for all facts that might change over time."
-    ),
+    "content": REACT_INSTRUCTIONS,
 }
 
 
@@ -95,13 +89,14 @@ async def react_rag(query: str, history: list[ChatMessage]):
         # Execute tool calls and send results back to LLM if requested.
         # Otherwise, stop, as the conversation would have been finished.
         tool_calls = message.tool_calls
-        if tool_calls is None:
-            history.append(
-                ChatMessage(
-                    content=message.content or "",
-                    role="assistant",
-                )
+        history.append(
+            ChatMessage(
+                content=message.content or "",
+                role="assistant",
             )
+        )
+
+        if tool_calls is None:
             yield history
             break
 
