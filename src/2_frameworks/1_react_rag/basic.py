@@ -3,10 +3,17 @@
 import asyncio
 import logging
 
-from agents import Agent, OpenAIChatCompletionsModel, RunConfig, Runner, function_tool
+from agents import (
+    Agent,
+    OpenAIChatCompletionsModel,
+    RunConfig,
+    Runner,
+    function_tool,
+)
 from dotenv import load_dotenv
 from openai import AsyncOpenAI
 
+from src.prompts import REACT_INSTRUCTIONS
 from src.utils import (
     AsyncWeaviateKnowledgeBase,
     Configs,
@@ -19,15 +26,6 @@ load_dotenv(verbose=True)
 
 AGENT_LLM_NAME = "gemini-2.5-flash"
 no_tracing_config = RunConfig(tracing_disabled=True)
-
-INSTRUCTIONS = """\
-Answer the question using the search tool. \
-Always plan your actions before invoking the tool. \
-Be sure to mention the sources. \
-If the search did not return intended results, try again. \
-Do not make up information. You must use the search tool \
-for all facts that might change over time.
-"""
 
 
 async def _main(query: str):
@@ -50,7 +48,7 @@ async def _main(query: str):
 
     wikipedia_agent = Agent(
         name="Wikipedia Agent",
-        instructions=INSTRUCTIONS,
+        instructions=REACT_INSTRUCTIONS,
         tools=[function_tool(async_knowledgebase.search_knowledgebase)],
         model=OpenAIChatCompletionsModel(
             model=AGENT_LLM_NAME, openai_client=async_openai_client
@@ -63,9 +61,22 @@ async def _main(query: str):
         run_config=no_tracing_config,
     )
 
-    pretty_print(response.raw_responses)
-    pretty_print(response.new_items)
+    for item in response.new_items:
+        pretty_print(item.raw_item)
+        print()
+
     pretty_print(response.final_output)
+
+    # Uncomment the following for a basic "streaming" example
+
+    # from src.utils import oai_agent_stream_to_gradio_messages
+    # result_stream = Runner.run_streamed(
+    #     wikipedia_agent, input=query, run_config=no_tracing_config
+    # )
+    # async for event in result_stream.stream_events():
+    #     event_parsed = oai_agent_stream_to_gradio_messages(event)
+    #     if len(event_parsed) > 0:
+    #         pretty_print(event_parsed)
 
     await async_weaviate_client.close()
     await async_openai_client.close()
