@@ -17,9 +17,7 @@ from src.utils import (
     AsyncWeaviateKnowledgeBase,
     Configs,
     get_weaviate_async_client,
-    oai_agent_items_to_gradio_messages,
     oai_agent_stream_to_gradio_messages,
-    pretty_print,
 )
 
 
