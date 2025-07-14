@@ -35,13 +35,16 @@ jobs:
         uses: astral-sh/setup-uv@6b9c6063abd6010835644d4c2e1bef4cf5cd0fca
         with:
           # Install a specific version of uv.
-          version: "0.5.21"
+          version: "0.7.20"
           enable-cache: true
 
       - name: "Set up Python"
         uses: actions/setup-python@8d9ed9ac5c53483de85588cdf95a591a75ab9f55
         with:
           python-version-file: ".python-version"
+
+      - name: Install the project
+        run: uv sync --dev
 
       - name: Install dependencies and check code
         run: |
