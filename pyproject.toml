@@ -8,6 +8,7 @@ license = "Apache-2.0"
 repository = "https://github.com/VectorInstitute/agent-bootcamp"
 requires-python = ">=3.12"
 dependencies = [
+    "aiohttp>=3.12.14",
     "beautifulsoup4>=4.13.4",
     "datasets>=3.6.0",
     "gradio>=5.35.0",

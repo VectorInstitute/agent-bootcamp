@@ -83,7 +83,7 @@ search_agent = agents.Agent(
     ],
     # a faster, smaller model for quick searches
     model=agents.OpenAIChatCompletionsModel(
-        model="gemini-2.5-pro", openai_client=async_openai_client
+        model="gemini-2.5-flash", openai_client=async_openai_client
     ),
 )
 
