@@ -88,7 +88,8 @@ uv run --env-file .env -m src.2_frameworks.1_react_rag.langfuse_gradio
 Multi-agent examples, also via the OpenAI Agent SDK.
 
 ```bash
-uv run --env-file .env -m src.2_frameworks.2_multi_agent.gradio
+uv run --env-file .env \
+-m src.2_frameworks.2_multi_agent.planner_worker_gradio
 ```
 
 ### 3. Evals
