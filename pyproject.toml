@@ -18,9 +18,11 @@ dependencies = [
     "numpy<2.3.0",
     "openai>=1.93.1",
     "openai-agents>=0.1.0",
+    "plotly>=6.2.0",
     "pydantic>=2.11.7",
     "pydantic-ai-slim[logfire]>=0.3.7",
     "pytest-asyncio>=0.25.2",
+    "scikit-learn>=1.7.0",
     "weaviate-client>=4.15.4",
 ]
 
