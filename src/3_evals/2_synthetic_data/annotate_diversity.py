@@ -6,7 +6,7 @@ uv run \
 --env-file .env \
 -m src.3_evals.2_synthetic_data.annotate_diversity \
 --langfuse_dataset_name ${DATASET_NAME} \
---run_name cosine_similarity_bge_m3 \
+--run_name cosine_similarity_bge_m3_20250716 \
 --limit 18
 """
 
@@ -20,7 +20,7 @@ import pydantic
 from openai import AsyncOpenAI
 from rich.progress import track
 
-from src.utils import Configs, gather_with_progress
+from src.utils import Configs, create_batches, gather_with_progress
 from src.utils.langfuse.shared_client import flush_langfuse, langfuse_client
 
 
@@ -108,17 +108,12 @@ if __name__ == "__main__":
     )
 
     # Construct embed batches.
-    batches: list[list["DatasetItemClient"]] = [[]]
-    for _index, _item in enumerate(lf_dataset_items):
-        if (args.limit is not None) and (_index >= args.limit):
-            break
-
-        batches[-1].append(_item)
-        if len(batches[-1]) == args.embed_batch_size:
-            batches.append([])
-
-    if len(batches[-1]) == 0:
-        batches.pop(-1)
+    batches: list[list["DatasetItemClient"]] = create_batches(
+        lf_dataset_items,
+        batch_size=args.embed_batch_size,
+        limit=args.limit,
+        keep_trailing=True,
+    )
 
     # Async embed, traced.
     embed_coros = [
