@@ -121,6 +121,14 @@ uv run \
 --run_name cosine_similarity_bge_m3
 ```
 
+Visualize embedding diversity of synthetic data
+
+```bash
+uv run \
+--env-file .env \
+-m src.3_evals.2_synthetic_data.gradio_visualize_diversity
+```
+
 Run LLM-as-a-judge Evaluation on synthetic data
 
 ```bash
