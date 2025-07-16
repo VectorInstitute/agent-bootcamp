@@ -26,6 +26,9 @@ def set_up_logging():
     root_logger = logging.getLogger()
     filter_ = IgnoreOpenAI401Filter()
 
+    if not root_logger.handlers:
+        logging.basicConfig()
+
     for handler in root_logger.handlers:
         handler.addFilter(filter_)
 
