@@ -40,7 +40,7 @@ using this tool.
 Recommended packages: Pandas, Numpy, SymPy, Scikit-learn.
 
 You can also run Jupyter-style shell commands (e.g., `!pip freeze`)
-but you won't be able to install pacakges.
+but you won't be able to install packages.
 """
 
 AGENT_LLM_NAME = "gemini-2.5-flash"
