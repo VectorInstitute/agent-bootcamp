@@ -74,6 +74,7 @@ def chunk_texts(
 )
 @click.option("--chunk_size", default=512, help="Size of each text chunk")
 @click.option("--chunk_overlap", default=128, help="Overlap between text chunks")
+@click.option("--batch_size", default=10, help="Batch size for processing the dataset")
 @click.option(
     "--save_to_hub", is_flag=True, help="Save the processed dataset to HuggingFace Hub"
 )
@@ -89,6 +90,7 @@ def main(
     hf_dataset_cache_dir: str | None = None,
     chunk_size: int = 512,
     chunk_overlap: int = 128,
+    batch_size: int = 10,
     save_to_hub: bool = False,
     hub_repo_id: str | None = None,
 ) -> None:
@@ -109,8 +111,8 @@ def main(
             chunk_overlap=chunk_overlap,
         ),
         batched=True,
-        batch_size=2,
-        num_proc=os.cpu_count() or 1,
+        batch_size=batch_size,
+        num_proc=min(batch_size, os.cpu_count() or 1, len(dataset) // batch_size),
     )
     chunked_dataset.to_json("chunked_dataset.json", orient="records", lines=True)
 
