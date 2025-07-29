@@ -59,8 +59,8 @@ async def _upload_files(
 
     Parameters
     ----------
-        extra_file_paths: list[pathlib.Path | str]
-            Extra files to upload in addition to self.local_files.
+        paths: Sequence[pathlib.Path | str]
+            Files to upload to the sandbox.
 
     Returns
     -------
@@ -78,14 +78,17 @@ async def _upload_files(
 
 
 class CodeInterpreter:
-    """Code Interpreter session."""
+    """Code Interpreter tool for the agent."""
 
     def __init__(
         self,
         local_files: "Sequence[Path | str]| None" = None,
         timeout_seconds: int = 30,
     ):
-        """Make sandbox reusable across sessions.
+        """Configure your Code Interpreter session.
+
+        Note that the sandbox is not persistent, and each run_code will
+        execute in a fresh sandbox! (e.g., variables need to be re-declared each time.)
 
         Parameters
         ----------
