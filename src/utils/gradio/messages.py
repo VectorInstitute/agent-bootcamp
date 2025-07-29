@@ -131,5 +131,18 @@ def oai_agent_stream_to_gradio_messages(
                             },
                         )
                     )
+    elif isinstance(stream_event, stream_events.RunItemStreamEvent):
+        name = stream_event.name
+        item = stream_event.item
+        if name == "tool_output" and isinstance(item, ToolCallOutputItem):
+            output.append(
+                ChatMessage(
+                    role="assistant",
+                    content=f"```\n{item.output}\n```",
+                    metadata={
+                        "title": "*Tool call output*",
+                    },
+                )
+            )
 
     return output

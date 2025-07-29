@@ -92,6 +92,12 @@ uv run --env-file .env \
 -m src.2_frameworks.2_multi_agent.planner_worker_gradio
 ```
 
+Python Code Interpreter demo- using the OpenAI Agent SDK, E2B for secure code sandbox, and LangFuse for observability.
+
+```bash
+uv run --env-file .env -m src.2_frameworks.code_interpreter_gradio
+```
+
 ### 3. Evals
 
 Synthetic data.
