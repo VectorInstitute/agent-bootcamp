@@ -119,7 +119,7 @@ def main(
     if save_to_hub:
         if not hub_repo_id:
             raise ValueError("hub_repo_id must be provided when save_to_hub is True")
-        chunked_dataset.push_to_hub(hub_repo_id, private=True)
+        chunked_dataset.push_to_hub(hub_repo_id, private=False)
 
 
 if __name__ == "__main__":
