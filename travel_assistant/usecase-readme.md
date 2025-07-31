@@ -39,7 +39,7 @@ The system follows a modular, agentic approach where each agent is responsible f
 
 ## 🤖 Agent Tasks & Tools
 
-### 1. 📅 Event Discovery Agent
+### 1. 📅 Event Discovery Agent ( Stephainne & Charaf)
 
 **Purpose**: Retrieve relevant events at the destination based on interest categories.
 
@@ -64,7 +64,7 @@ The system follows a modular, agentic approach where each agent is responsible f
 - URL
 - Venue name
 
-### 2. ✈️ Flight Pricing Agent
+### 2. ✈️ Flight Pricing Agent ( Zohreh )
 
 **Purpose**: Identify the best-value flight options based on preferences and filters.
 
@@ -90,7 +90,7 @@ The system follows a modular, agentic approach where each agent is responsible f
 - Duration
 - Booking link
 
-### 3. 🌤️ Weather Insights Agent
+### 3. 🌤️ Weather Insights Agent (Jason J)
 
 **Purpose**: Provide weather expectations for trip planning and flag potential disruptions.
 
@@ -110,7 +110,7 @@ The system follows a modular, agentic approach where each agent is responsible f
 - Rainfall prediction
 - Alerts or disruptions
 
-### 4. 🏨 Hotel Finder Agent
+### 4. 🏨 Hotel Finder Agent ( Charaf, Leanne, Jason W)
 
 **Purpose**: Suggest the top 2–3 hotels based on style and availability.
 
@@ -135,7 +135,7 @@ The system follows a modular, agentic approach where each agent is responsible f
 - Amenities
 - Booking link
 
-### 5. 🔍 Web Search Agent (Optional)
+### 5. 🔍 Web Search Agent (Optional) ( Navjot )
 
 **Purpose**: Supplement information with real-time news, blog posts, or ticket availability.
 
@@ -158,7 +158,7 @@ The system follows a modular, agentic approach where each agent is responsible f
 - URLs
 - Snippets/summaries
 
-### 6. 🧠 Strategic Travel Recommender Agent
+### 6. 🧠 Strategic Travel Recommender Agent ( Navjot )
 
 **Purpose**: Aggregate all outputs and generate a Markdown itinerary and business strategy recommendation.
 
