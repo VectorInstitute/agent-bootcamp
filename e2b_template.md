@@ -42,7 +42,7 @@ ls -lh /data
 If the local tests looks reasonable, push the image to E2B as a template. You might need to login to your E2B account.
 
 ```bash
-# The command "/root/.jupyter/start-up.sh" is from the E2B base image 
+# The command "/root/.jupyter/start-up.sh" is from the E2B base image
 # If you are only adding data files, you don't need to modify this line.
 
 e2b template build -c "/root/.jupyter/start-up.sh"

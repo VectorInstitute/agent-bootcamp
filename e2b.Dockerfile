@@ -1,4 +1,4 @@
-FROM e2bdev/code-interpreter:latest 
+FROM e2bdev/code-interpreter:latest
 
 # All downloaded files will be available under /data
 WORKDIR /data
