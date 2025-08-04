@@ -11,6 +11,6 @@ WORKDIR /data
 # chmod -R a+wr /data && \
 # rm -v local_sqlite.zip
 
-# Example: download file from public URL- e.g., HuggingFacek
+# Example: download file from public URL- e.g., HuggingFace, or Github
 RUN wget --content-disposition \
 "https://huggingface.co/datasets/vector-institute/hotpotqa/resolve/main/data/validation-00000-of-00001.parquet"
