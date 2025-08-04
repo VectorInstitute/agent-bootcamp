@@ -12,6 +12,13 @@ Install Node Version Manager ([NVM](https://github.com/nvm-sh/nvm)).
 
 Install the latest LTS Node version (22 as of 2025AUG03.)
 
+Install the E2B utils and log into your account:
+
+```bash
+npm i -g @e2b/cli
+e2b auth login
+```
+
 ## Steps
 
 Modify `e2b.Dockerfile`. Replace the URL with the link to your data files.
@@ -39,7 +46,7 @@ ls -lh /data
 
 ## Push to E2B
 
-If the local tests looks reasonable, push the image to E2B as a template. You might need to login to your E2B account.
+If the local tests looks reasonable, push the image to E2B as a template.
 
 ```bash
 # The command "/root/.jupyter/start-up.sh" is from the E2B base image
