@@ -33,6 +33,8 @@ class _SearchResult(pydantic.BaseModel):
     source: _Source = pydantic.Field(alias="_source")
     highlight: _Highlight
 
+    def __repr__(self) -> str:
+        return self.model_dump_json(indent=2)
 
 SearchResults = list[_SearchResult]
 
