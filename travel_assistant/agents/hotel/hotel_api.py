@@ -5,7 +5,7 @@ import os
 from typing import Optional
 
 class AsyncPredictHQClient:
-    BASE_URL = "https://developers.amadeus.com/self-service/apis-docs/guides/developer-guides/resources/hotels/"
+    BASE_URL = "https://test.api.amadeus.com/v1/shopping/flight-destinations"
 
     def __init__(self, api_key: str):
         self.api_key = api_key
@@ -13,14 +13,17 @@ class AsyncPredictHQClient:
             headers={"Authorization": f"Bearer {self.api_key}", "Accept": "application/json"}
         )
 
-    async def search_events(
+    async def search_hotel(
         self,
-        q: Optional[str] = None,
-        category: Optional[str] = None,
-        country: Optional[str] = None,
-        start: Optional[str] = None,  # Format: YYYY-MM-DD
-        end: Optional[str] = None,
-        limit: int = 5
+        type, # Optional[str] = None, 
+        cityCode, checkInDate, checkOutDate, currency, priceRange
+
+        # q: Optional[str] = None,
+        # category: Optional[str] = None,
+        # country: Optional[str] = None,
+        # start: Optional[str] = None,  # Format: YYYY-MM-DD
+        # end: Optional[str] = None,
+        # limit: int = 5
     ) -> list[dict]:
         """
         Search for events using the PredictHQ API.
@@ -43,13 +46,30 @@ class AsyncPredictHQClient:
             events = await client.search_events(q="music", country="US", start="2024-08-01", end="2024-08-31")
         """
         params = {
-            "q": q,
-            "category": category,
-            "country": country,
-            "start.gte": start,
-            "start.lte": end,
-            "limit": limit,
-        }
+            "type": type ,
+            "cityCode": cityCode,
+            "checkInDate": checkInDate,
+            "checkOutDate": checkOutDate,
+            "currency": currency,
+            "priceRange": priceRange
+         }
+        
+            #         "type": "flight-destination",
+            # "origin": "PAR",
+            # "destination": "YYZ",
+            # "departureDate": "2025-09-06",
+            # "returnDate": "2025-09-11",
+            # "price": {
+            #     "total": "161.90"
+            # }
+        # params = {
+        #     "q": q,
+        #     "category": category,
+        #     "country": country,
+        #     "start.gte": start,
+        #     "start.lte": end,
+        #     "limit": limit,
+        # }
         # Remove None values
         params = {k: v for k, v in params.items() if v is not None}
         resp = await self.client.get(url=self.BASE_URL, params=params)
