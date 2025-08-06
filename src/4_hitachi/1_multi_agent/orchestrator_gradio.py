@@ -18,7 +18,7 @@ from dotenv import load_dotenv
 from gradio.components.chatbot import ChatMessage
 from openai import AsyncOpenAI
 
-from src.prompts import REACT_INSTRUCTIONS
+from src.prompts import REACT_INSTRUCTIONS, KB_SEARCH_INSTRUCTIONS
 from src.utils import (
     AsyncWeaviateKnowledgeBase,
     Configs,
@@ -73,11 +73,7 @@ def _handle_sigint(signum: int, frame: object) -> None:
 # Knowledgebase Search Agent: a simple agent that searches the knowledge base
 knowledgebase_agent = agents.Agent(
     name="KnowledgeBaseSearchAgent",
-    instructions=(
-        "You are search agent. You receive a single search query formatted as a question as input. "
-        "Use the search_knowledgebase tool to perform a search, then produce an accurate and concise "
-        "answer to the question based on the search results. If you cannot find an answer, state that you do not know the answer.",
-    ),
+    instructions=KB_SEARCH_INSTRUCTIONS,
     tools=[
         agents.function_tool(async_knowledgebase.search_knowledgebase),
     ],
@@ -128,10 +124,8 @@ demo = gr.ChatInterface(
     title="Hitachi Multi-Agent Knowledge Retrieval System",
     type="messages",
     examples=[
-        "At which university did the SVP Software Engineering"
-        " at Apple (as of June 2025) earn their engineering degree?",
-        "How does the annual growth in the 50th-percentile income "
-        "in the US compare with that in Canada?",
+        "What city are George Washington University Hospital"
+        " and MedStar Washington Hospital Center located in?"
     ],
 )
 
