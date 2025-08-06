@@ -84,6 +84,7 @@ class CodeInterpreter:
         self,
         local_files: "Sequence[Path | str]| None" = None,
         timeout_seconds: int = 30,
+        template_name: str | None = None,
     ):
         """Configure your Code Interpreter session.
 
@@ -97,9 +98,13 @@ class CodeInterpreter:
                 to upload to sandbox working directory.
             timeout_seconds : int
                 Limit executions to this duration.
+            template_name : str | None
+                Optionally, override the default e2b template name.
+                See e2b_template.md for details.
         """
         self.timeout_seconds = timeout_seconds
         self.local_files = local_files if local_files else []
+        self.template_name = template_name
 
     async def run_code(self, code: str) -> str:
         """Run the given Python code in a sandbox environment.
@@ -109,7 +114,9 @@ class CodeInterpreter:
             code : str
                 Python logic to execute.
         """
-        sbx = await AsyncSandbox.create(timeout=self.timeout_seconds)
+        sbx = await AsyncSandbox.create(
+            timeout=self.timeout_seconds, template=self.template_name
+        )
         await _upload_files(sbx, self.local_files)
 
         try:
