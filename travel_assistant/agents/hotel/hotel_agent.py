@@ -1,4 +1,4 @@
-from hotel_api import AsyncPredictHQClient
+from hotel_api import AsyncAmadeusClient
 from agents import (
     Agent,
     OpenAIChatCompletionsModel,
@@ -16,7 +16,7 @@ load_dotenv()
 
 # Initialize PredictHQ API client
 async def _main(query: str):
-  async_predicthq_client = AsyncPredictHQClient(api_key=os.environ.get("PREDICTHQ_TOKEN"))
+  async_predicthq_client = AsyncAmadeusClient(api_key=os.environ.get("HOTEL_TOKEN"))
 
   # Define the tool for the agent
   hotel_search_tool = function_tool(async_predicthq_client.search_hotel)
@@ -32,8 +32,8 @@ async def _main(query: str):
   )
 
   predicthq_agent = Agent(
-      name="PredictHQ Agent",
-      instructions="You are an assistant that helps search for hotels using PredictHQ.",
+      name="Amadeus Agent",
+      instructions="You are an assistant that search for hotels using city name.",
       tools=[hotel_search_tool],
       model=model,
   )
@@ -52,15 +52,19 @@ async def _main(query: str):
       print()
 
   print(response.final_output)
+  # print(hotel_search_tool)
 
   # await async_predicthq_client.close()
   await async_openai_client.close()
 
 
 if __name__ == "__main__":
+  # query = (   
+  #    "I am leaving from vancouver to toronto. I want to search for a hotel in Toronto from 9th of september 2025 to 19th of september 2025 for less than 200 cad"
+  # )
   query = (   
-     "I am leaving from vancouver to toronto. I want to search for a hotel in Toronto from 9th of september 2025 to 19th of september 2025 for less than 200 cad"
+     "find all hotels in Paris"
+      # " from 9th of september 2025 to 19th of september 2025 for less than 200 cad"
   )
-
   asyncio.run(_main(query))
 
