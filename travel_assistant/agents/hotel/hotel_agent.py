@@ -58,7 +58,11 @@ async def _main(query: str):
 
   hotel_agent = Agent(
       name="Amadeus Agent",
-      instructions="You are an assistant that search for hotels using city code. Find city code based on the city name provided and search for hotels in the city code",
+      instructions="""
+        You are an assistant that search for hotels using city code. Find city code based on the city name provided and search for hotels in the city code.
+        Example: find all hotels in ICN. ICN refers to Incheon, we need to find all hotels in Incheon. 
+        
+        """,
       tools=[hotel_search_tool],
       model=model,
   )

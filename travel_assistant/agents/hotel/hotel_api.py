@@ -56,13 +56,13 @@ class AsyncAmadeusClient:
         # priceRange
     ) -> list[dict]:
         """
-        Search for events using the PredictHQ API.
+        Search for hotels using the amadeus API.
 
         Args:
             cityCode (Optional[str]): city code for city name which hotels are located in.
 
         Returns:
-            list[dict]: A list of event dictionaries matching the search criteria.
+            list[dict]: A list of hotel dictionaries matching the search criteria.
 
         Raises:
             httpx.HTTPStatusError: If the API request fails.
