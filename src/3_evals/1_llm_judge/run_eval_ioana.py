@@ -25,15 +25,96 @@ load_dotenv(verbose=True)
 set_up_logging()
 
 
-SYSTEM_MESSAGE = """\
-Answer the question using the search tool. \
-EACH TIME before invoking the function, you must explain your reasons for doing so. \
-Be sure to mention the sources in your response. \
-If the search did not return intended results, try again. \
-Do not make up information.
+from src.prompts import REACT_INSTRUCTIONS, EV_INSTRUCTIONS_HALLUCINATIONS, EV_TEMPLATE_HALLUCINATIONS
+# Worker Agent QA: handles long context efficiently
+import os
+import openai
+import numpy as np
+from sklearn.metrics.pairwise import cosine_similarity
+from agents import function_tool
+# from pydantic import BaseModel
 
-Finally, write "|" and include a one-sentence summary of your answer.
-"""
+configs = Configs.from_env_var()
+async_weaviate_client = get_weaviate_async_client(
+    http_host=configs.weaviate_http_host,
+    http_port=configs.weaviate_http_port,
+    http_secure=configs.weaviate_http_secure,
+    grpc_host=configs.weaviate_grpc_host,
+    grpc_port=configs.weaviate_grpc_port,
+    grpc_secure=configs.weaviate_grpc_secure,
+    api_key=configs.weaviate_api_key,
+)
+async_openai_client = AsyncOpenAI()
+async_knowledgebase = AsyncWeaviateKnowledgeBase(
+    async_weaviate_client,
+    collection_name="enwiki_20250520",
+)
+
+@function_tool
+async def faq_match_tool(user_query:str)->list:
+    '''Return a list of FAQ sorted from the most simialr to least similar to the user query by cosine similarity.
+    '''
+    faq_list = ["Where are Toyota cars manufactured? Toyota cars are produced in Germany and Japan", 
+                "What is the engine power of Toyota RAV4? 180HP","Where is Japan?",
+                "What is horse power in cars?", "What is the capital of Germany? it's Berlin", 
+                "Is Toyota a German brand? No, it's a Japanese automobile brand."]
+
+    _embed_client = openai.OpenAI(
+        api_key=os.getenv("EMBEDDING_API_KEY"),
+        base_url=os.getenv("EMBEDDING_BASE_URL"),
+        max_retries=5)
+    
+    #embed user query
+    user_query_embedding = _embed_client.embeddings.create(input=user_query, model=os.getenv('EMBEDDING_MODEL_NAME'))
+    user_query_embedding = np.array(user_query_embedding.data[0].embedding)
+    user_query_embedding = user_query_embedding.reshape(1, -1)
+
+    cosi_list = []
+    faq_embedding_list = _embed_client.embeddings.create(input=faq_list, model=os.getenv('EMBEDDING_MODEL_NAME'))
+    for i, faq_embedding in enumerate(faq_embedding_list.data):
+            faq_embedding = np.array(faq_embedding.embedding)
+            faq_embedding = faq_embedding.reshape(1,-1)
+            similarity_score = cosine_similarity(user_query_embedding, faq_embedding)[0][0]
+            cosi_list.append({"faq":faq_list[i], "sim":similarity_score})
+
+    sorted_faqs = sorted(cosi_list, key=lambda d: d["sim"], reverse=True)
+    sorted_faqs_list = [i["faq"] for i in sorted_faqs]
+    return "\n".join(f" {i}\n"for i in sorted_faqs_list)
+
+faq_agent = agents.Agent(
+    name="QAMatchAgent",
+    instructions=(
+        "You are an agent specializing in matching user queries to FAQ. You receive a single user query as input. "
+        "Use the faq_match_tool tool to return a sorted list of FAQ based on how similar they are with the user query."
+        "Return maximum 3 FAQs that best match the user query. If you can't find any match, return the raw user query."
+        "ALWAYS structure the output as a list that contains [user request, faqs if any]."
+        
+    ),
+    tools=[faq_match_tool],
+    # a faster, smaller model for quick searches
+    model=agents.OpenAIChatCompletionsModel(
+        model="gemini-2.5-flash", openai_client=async_openai_client
+    ),
+    model_settings=agents.ModelSettings(tool_choice="required"),
+    # output_type=FAQ
+)
+
+# Worker Agent: handles long context efficiently
+search_agent = agents.Agent(
+    name="SearchAgent",
+    instructions=(
+        "You are a search agent. You receive a search query and a list of FAQ as input. "
+        "Use the WebSearchTool to perform a web search on the search query, then produce a concise "
+        "'search summary' of the key findings. Corroborate the findings with the FAQ into a final answer. Do NOT return raw search results."
+    ),
+    tools=[
+        agents.function_tool(async_knowledgebase.search_knowledgebase),
+    ],
+    # a faster, smaller model for quick searches
+    model=agents.OpenAIChatCompletionsModel(
+        model="gemini-2.5-flash", openai_client=async_openai_client
+    ),
+)
 
 EVALUATOR_INSTRUCTIONS = """\
 Evaluate whether the "Proposed Answer" to the given "Question" matches the "Ground Truth"."""
@@ -53,31 +134,7 @@ EVALUATOR_TEMPLATE = """\
 
 """
 
-EV_INSTRUCTIONS_HALLUCINATIONS = """\
-Evaluate the degree of hallucination in the whether the "Generation" on a continuous scale from 0 to 1.\
-A generation can be considered to hallucinate (score 1) if it does not align with the established knowledge, \
-verifiable data or logical inference and often includes elements that are implausible, misleading or entirely fictional.\
-Example:
-Question: Do carrots improve your vison?
-Generation: Yes, carrots significantly improve vision. Rabbits consume large amounts of carrots. This is why their sight \
-is very good until great ages. They have never been observed wearing glasses.
 
-Score: 1.0
-Reasoning: Rabbits are animals and can not wear glasses, an accesory reserved to humans.
-
-Think step by step.
-"""
-
-EV_TEMPLATE_HALLUCINATIONS = """\
-# Question
-
-{question}
-
-# Generation
-
-{generation}
-
-"""
 
 
 class LangFuseTracedResponse(pydantic.BaseModel):
@@ -189,31 +246,59 @@ if __name__ == "__main__":
         lf_dataset_items = lf_dataset_items[: args.limit]
 
     configs = Configs.from_env_var()
-    async_weaviate_client = get_weaviate_async_client(
-        http_host=configs.weaviate_http_host,
-        http_port=configs.weaviate_http_port,
-        http_secure=configs.weaviate_http_secure,
-        grpc_host=configs.weaviate_grpc_host,
-        grpc_port=configs.weaviate_grpc_port,
-        grpc_secure=configs.weaviate_grpc_secure,
-        api_key=configs.weaviate_api_key,
-    )
-    async_openai_client = AsyncOpenAI()
-    async_knowledgebase = AsyncWeaviateKnowledgeBase(
-        async_weaviate_client,
-        collection_name="enwiki_20250520",
-    )
+    # async_weaviate_client = get_weaviate_async_client(
+    #     http_host=configs.weaviate_http_host,
+    #     http_port=configs.weaviate_http_port,
+    #     http_secure=configs.weaviate_http_secure,
+    #     grpc_host=configs.weaviate_grpc_host,
+    #     grpc_port=configs.weaviate_grpc_port,
+    #     grpc_secure=configs.weaviate_grpc_secure,
+    #     api_key=configs.weaviate_api_key,
+    # )
+    # async_openai_client = AsyncOpenAI()
+    # async_knowledgebase = AsyncWeaviateKnowledgeBase(
+    #     async_weaviate_client,
+    #     collection_name="enwiki_20250520",
+    # )
 
     tracer = setup_langfuse_tracer()
 
+    # main_agent = agents.Agent(
+    #     name="Wikipedia Agent",
+    #     instructions=REACT_INSTRUCTIONS,
+    #     tools=[agents.function_tool(async_knowledgebase.search_knowledgebase)],
+    #     model=agents.OpenAIChatCompletionsModel(
+    #         model="gemini-2.5-flash", openai_client=async_openai_client
+    #     ),
+
+
+    ##############################################################################################
+    ###### Our Pipeline
+    ##############################################################################################
+    
+
+    # Main Agent: more expensive and slower, but better at complex planning
     main_agent = agents.Agent(
-        name="Wikipedia Agent",
-        instructions=SYSTEM_MESSAGE,
-        tools=[agents.function_tool(async_knowledgebase.search_knowledgebase)],
+        name="MainAgent",
+        instructions=REACT_INSTRUCTIONS,
+        # Allow the planner agent to invoke the worker agents.
+        # The long context provided to the worker agent is hidden from the main agent.
+        tools=[
+            faq_agent.as_tool(
+                tool_name="faq_match",
+                tool_description = "Identify the matching FAQs in the database."
+        ),
+            search_agent.as_tool(
+                tool_name="search",
+                tool_description="Perform a web search for a query and return a concise summary.",
+            )
+        ],
+        # a larger, more capable model for planning and reasoning over summaries
         model=agents.OpenAIChatCompletionsModel(
-            model="gemini-2.5-flash", openai_client=async_openai_client
+            model="gemini-2.5-pro", openai_client=async_openai_client
         ),
     )
+
     coros = [
         run_and_evaluate(
             run_name=args.run_name,
