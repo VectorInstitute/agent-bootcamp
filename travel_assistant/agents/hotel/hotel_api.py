@@ -1,4 +1,4 @@
-"""Implements event retrieval tool for PredictHQ."""
+"""Implements event retrieval tool for hotel using Amadeus."""
 
 import httpx
 import os
@@ -43,7 +43,8 @@ class AsyncAmadeusClient:
             print(response.text)
 
         self.client = httpx.AsyncClient(
-            headers={"Authorization": f"Bearer {self.access_token}"}
+            headers={"Authorization": f"Bearer {self.access_token}",
+                        "Content-Type": "application/json"}
         )
     async def search_hotel(
         self,
@@ -58,12 +59,7 @@ class AsyncAmadeusClient:
         Search for events using the PredictHQ API.
 
         Args:
-            q (Optional[str]): Free text search query for event titles or descriptions.
-            category (Optional[str]): Event category (e.g., 'sports', 'concerts').
-            country (Optional[str]): 2-letter country code (e.g., 'US', 'GB').
-            start (Optional[str]): Start date (inclusive) in 'YYYY-MM-DD' format.
-            end (Optional[str]): End date (inclusive) in 'YYYY-MM-DD' format.
-            limit (int): Maximum number of results to return (default: 5).
+            cityCode (Optional[str]): city code for city name which hotels are located in.
 
         Returns:
             list[dict]: A list of event dictionaries matching the search criteria.
@@ -72,52 +68,21 @@ class AsyncAmadeusClient:
             httpx.HTTPStatusError: If the API request fails.
 
         Example:
-            events = await client.search_events(q="music", country="US", start="2024-08-01", end="2024-08-31")
+            events = await client.search_events(cityCode="PAR")
         """
-        
-        # params = {
-        #     "cityCode": cityCode,
-        # }
-        # # Remove None values
-        # params = {k: v for k, v in params.items() if v is not None}
-        # self.client(veri)
-        # resp = await self.client.get(url=f"{self.BASE_URL}{self.ENDPOINT}", params=params)
-        # print("print: ", resp.url)
-        # resp.raise_for_status()
-        # return resp.json().get("results") #resp.json().get("results", [])
-    
-        endpoint = "/reference-data/locations/hotels/by-city"
-        
         params = {
-            "cityCode": cityCode
+            "cityCode": cityCode,
         }
-
-        
-        headers = {
-            "Authorization": f"Bearer {self.access_token}",
-            # "x-rapidapi-host": self.host,
-            "Content-Type": "application/json"
-        }
-
-        # resp = await self.client.get(url=f"{self.BASE_URL}{self.ENDPOINT}", params=params)
-        # print("print: ", resp.url)
-        # resp.raise_for_status()
-        # return resp.json()#.get("results") #resp.json().get("results", [])
-    
-        
-        async with httpx.AsyncClient(verify=False) as client:
-            try:
-                response = await client.get(f"{self.BASE_URL}{endpoint}", headers=headers, params=params)
-                response.raise_for_status()
-                return response.json()
-            except httpx.HTTPStatusError as exc:
-                print(f"HTTP error occurred: {exc.response.status_code} - {exc.response.text}")
-            except Exception as e:
-                print(f"An error occurred: {e}")
+        # Remove None values
+        params = {k: v for k, v in params.items() if v is not None}
+        resp = await self.client.get(url=f"{self.BASE_URL}{self.ENDPOINT}", params=params)
+        print("print: ", resp.url)
+        resp.raise_for_status()
+        return resp.json()
 
 # Example usage
 load_dotenv()
-
+# Example usage
 async def main():
     client = AsyncAmadeusClient(api_key=os.environ.get("AMADEUS_API_KEY"),
                                 api_secret=os.environ.get("AMADEUS_API_SECRET"))
@@ -126,11 +91,3 @@ async def main():
 
 # # Run the async main function
 asyncio.run(main())
-
-# curl 'https://test.api.amadeus.com/v1/reference-data/locations/hotels/by-city?cityCode=PAR' -H 'Authorization: Bearer h4y62q8Zxo3scvggU1PC8wGgUVCY'
-
-#  url 'https://test.api.amadeus.com/v1/reference-data/locations/hotels/by-city?cityCode=PAR'
-
-# https://test.api.amadeus.com/v1/reference-data/locations/hotels/by-city?cityCode=PAR
-# https://test.api.amadeus.com/v1/reference-data/locations/hotels/by-city?cityCode=PAR
-# https://test.api.amadeus.com/v1/reference-data/locations/hotels/by-city?cityCode=PAR
