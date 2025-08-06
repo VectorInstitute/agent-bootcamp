@@ -6,7 +6,7 @@ import os
 import asyncio
 import json
 
-from flight_api import RapidApiClient
+from flight_api import RapidApiFlightSearchClient,RapidApiAirportSearchClient 
 from agents import (
     Agent,
     OpenAIChatCompletionsModel,
@@ -23,13 +23,23 @@ Try queries like: "Find flights from Montreal to Vancouver" or "Show me flight p
 
 load_dotenv()
 
-async def agent_flight_search(query: str) -> str:
-    """Run the Flight Search agent and return pretty-printed results."""
-    rapidapi_client = RapidApiClient(
+# Initialize RapidAPI flight search client and agent
+async def agent_flight_search(query: str):
+    flight_search_client = RapidApiFlightSearchClient(
         api_key=os.environ.get("RAPIDAPI_KEY"),
         host="google-flights2.p.rapidapi.com"
     )
-    flight_search_tool = function_tool(rapidapi_client.search_flight)
+
+    airport_search_client = RapidApiAirportSearchClient(
+        api_key=os.environ.get("RAPIDAPI_KEY"),
+        host="google-flights4.p.rapidapi.com"
+    )
+
+    # Wrap the airport search method as a tool
+    flight_search_tool = function_tool(flight_search_client.search_flight)
+
+    # Wrap the airport search method as a tool
+    airport_search_tool = function_tool(airport_search_client.search_airport)
 
     async_openai_client = AsyncOpenAI(
         api_key=os.environ.get("OPENAI_API_KEY"),
@@ -43,8 +53,20 @@ async def agent_flight_search(query: str) -> str:
 
     flight_agent = Agent(
         name="Flight Search Agent",
-        instructions="You are a travel assistant that helps users find flight information using RapidAPI's Google Flights API. If the user provides city names instead of airport IDs, first find the corresponding IDs for origin and destination, then call the API.",
-        tools=[flight_search_tool],
+        instructions="""
+            You are a travel assistant that helps users find flights information using RapidAPI's Google Flights API.
+            If the user provides city names instead of airport codes, first use airport_search_tool to map the origin and 
+            destination's cities to airports' IATA codes and initialize departure_id and arrival_id with extracted code
+            and then use the flight search tool to get flight information based on extracetd departure_id and arrival_id.
+            You do not need to ask for currency or language codes unless the user specifies them—default values are used.
+            Extract the travel date from the user query and format it as YYYY-MM-DD and initialize outbound_date with it.
+            if date is not specified, use the current date to initialize outbound_date and call the api with current date withought asking the user.
+            before calling the flight search tool.
+            Example : 
+            User: Find flights from Toronto to Montreal
+            Agent: Resolves Toronto → YYZ, Montreal → YUL
+            Agent: Calls flight API with origin=YYZ, destination=YUL """,
+        tools=[flight_search_tool,airport_search_tool],
         model=model,
     )
 
