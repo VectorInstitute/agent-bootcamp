@@ -4,18 +4,46 @@ import httpx
 import os
 from typing import Optional
 import asyncio
+import requests
+from dotenv import load_dotenv
 
 class AsyncAmadeusClient:
     BASE_URL = "https://test.api.amadeus.com/v1"
     ENDPOINT = "/reference-data/locations/hotels/by-city"
 
-    # ENDPOINT = "/shopping/hotel_offers_serach"
-
-    def __init__(self, api_key: str):
+    def __init__(self, api_key: str, api_secret: str):
         self.api_key = api_key
+        self.api_secret = api_secret
+        self.access_token = None
+
+        # Endpoint
+        url = "https://test.api.amadeus.com/v1/security/oauth2/token"
+
+        # Headers
+        headers = {
+            'Content_Type': 'application/x-www-form-urlencoded'
+        }
+
+        # Body
+        data = {
+            'grant_type': 'client_credentials',
+            'client_id': self.api_key,
+            'client_secret': self.api_secret
+        }
+
+        # Send POST request 
+        response = requests.post(url, headers=headers, data=data)
+
+        # Parse response
+        if response.status_code == 200: 
+            token_info = response.json()
+            self.access_token = token_info['access_token']
+        else: 
+            print("Failed to retrieve token:", response.status_code)
+            print(response.text)
+
         self.client = httpx.AsyncClient(
-            headers={"Authorization": f"Bearer Agd2ZKFJG3JvxOM43yzQsBXXoSny"
-            }#, "Content-Type": "application/json"}
+            headers={"Authorization": f"Bearer {self.access_token}"}
         )
     async def search_hotel(
         self,
@@ -66,7 +94,7 @@ class AsyncAmadeusClient:
 
         
         headers = {
-            "Authorization": f"Bearer Agd2ZKFJG3JvxOM43yzQsBXXoSny",
+            "Authorization": f"Bearer {self.access_token}",
             # "x-rapidapi-host": self.host,
             "Content-Type": "application/json"
         }
@@ -88,11 +116,11 @@ class AsyncAmadeusClient:
                 print(f"An error occurred: {e}")
 
 # Example usage
+load_dotenv()
+
 async def main():
-    client = AsyncAmadeusClient(
-        api_key="Agd2ZKFJG3JvxOM43yzQsBXXoSny",
-        # host="https://test.api.amadeus.com/v1"
-    )
+    client = AsyncAmadeusClient(api_key=os.environ.get("AMADEUS_API_KEY"),
+                                api_secret=os.environ.get("AMADEUS_API_SECRET"))
     result = await client.search_hotel("PAR")
     print(result)
 

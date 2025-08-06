@@ -16,10 +16,11 @@ load_dotenv()
 
 # Initialize PredictHQ API client
 async def _main(query: str):
-  async_predicthq_client = AsyncAmadeusClient(api_key=os.environ.get("HOTEL_TOKEN"))
+  async_amadeus_client = AsyncAmadeusClient(api_key=os.environ.get("AMADEUS_API_KEY"),
+                                              api_secret=os.environ.get("AMADEUS_API_SECRET"))
 
   # Define the tool for the agent
-  hotel_search_tool = function_tool(async_predicthq_client.search_hotel)
+  hotel_search_tool = function_tool(async_amadeus_client.search_hotel)
 
   async_openai_client = AsyncOpenAI(
     api_key=os.environ.get("OPENAI_API_KEY"),
