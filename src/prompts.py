@@ -38,7 +38,25 @@ context: str | None \
 """
 
 EVALUATOR_INSTRUCTIONS = """\
-Evaluate whether the "Proposed Answer" to the given "Question" matches the "Ground Truth". \
+Evaluate for correctness. Assess if the "Proposed Answer" to the given "Question" matches the "Ground Truth". \
+
+Evaluate for conciseness. \
+Evaluate if a "Generation" is concise or verbose, with respect to the "Question".\
+A generation can be considered to concise (score 1) if it conveys the core message using the fewest words possible, \
+avoiding unnecessary repetition or jargon. Evaluate the response based on its ability to convey the core message \
+efficiently, without extraneous details or wordiness.\
+Scoring: Rate the conciseness as 0 or 1, where 0 is verbose and 1 is concise. Provide a brief explanation for your score.\
+
+Examples: \
+Question: Where did the cat sit?
+Generation: "The cat sat on the mat." \
+Score: 1 \
+Reasoning: This sentence is very concise and directly conveys the information. \
+
+Question: Where did the cat sit?
+Generation: "The feline creature, known as a cat, took up residence upon the floor covering known as a mat." \
+Score: 0 \
+Reasoning: This sentence is verbose, using more words and more complex phrasing than necessary. \
 
 Input structure should be in the following format. \
 question: str \
@@ -46,8 +64,11 @@ ground_truth: str \
 proposed_response: str \
 
 ALWAYS return the evaluation in the following format. \
-explanation: str \
+
+explanation_correctness: str \
 is_answer_correct: bool \
+explanation_conciseness: str \
+conciseness: bool \
 """
 
 EVALUATOR_TEMPLATE = """\

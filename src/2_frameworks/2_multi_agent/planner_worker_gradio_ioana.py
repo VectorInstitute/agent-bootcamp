@@ -74,11 +74,18 @@ class EvaluatorQuery(BaseModel):
         return EVALUATOR_TEMPLATE.format(**self.model_dump())
 
 
+# class EvaluatorResponse(BaseModel):
+#     """Typed response from the evaluator."""
+
+#     explanation: str
+#     is_answer_correct: bool
 class EvaluatorResponse(BaseModel):
     """Typed response from the evaluator."""
 
-    explanation: str
+    explanation_correctness: str
     is_answer_correct: bool
+    explanation_conciseness: str
+    conciseness: bool
 
 
 class EvaluatorAgent(agents.Agent[EvaluatorResponse]):
@@ -222,8 +229,11 @@ async def _main(question: str, gr_messages: list[ChatMessage]):
         span.update(input=question)
 
         result_stream = agents.Runner.run_streamed(main_agent, input=question)
-        score_is_answer_correct = []
-        score_explanation = []
+        correctness = []
+        correctness_explanation = []
+        conciseness = []
+        conciseness_explanation = []
+
         async for _item in result_stream.stream_events():
             # print(f"Item: {_item}")
             gr_messages += oai_agent_stream_to_gradio_messages(_item)
@@ -235,14 +245,20 @@ async def _main(question: str, gr_messages: list[ChatMessage]):
                 if _item.name == "tool_output" and _item.item.type == "tool_call_output_item":
                         tool_output = json.loads(_item.item.output)
 
-                        explanation = tool_output.get("explanation")
+                        correctness_expl = tool_output.get("explanation_correctness")
                         is_correct = tool_output.get("is_answer_correct")
+                        conciseness_expl = tool_output.get("explanation_conciseness")
+                        is_concise = tool_output.get("conciseness")
 
-                        score_is_answer_correct.append(is_correct)
-                        score_explanation.append(explanation)
+                        correctness.append(is_correct)
+                        correctness_explanation.append(correctness_expl)
+                        conciseness.append(is_concise)
+                        conciseness_explanation.append(conciseness_expl)
 
                         print("✅ is_answer_correct:", is_correct)
-                        print("🧠 explanation:", explanation)
+                        print("🧠 explanation:", correctness_expl)
+                        print("✅ is_answer_concise:", is_concise)
+                        print("🧠 explanation:", conciseness_expl)
             except: 
                 continue
         
@@ -251,8 +267,14 @@ async def _main(question: str, gr_messages: list[ChatMessage]):
 
         langfuse_client.create_score(
                 name="is_answer_correct",
-                value=score_is_answer_correct[0],
-                comment=score_explanation[0],
+                value=correctness[0],
+                comment=correctness_explanation[0],
+                trace_id=langfuse_client.get_current_trace_id()
+            )
+        langfuse_client.create_score(
+                name="conciseness",
+                value=conciseness[0],
+                comment=conciseness_explanation[0],
                 trace_id=langfuse_client.get_current_trace_id()
             )
 
