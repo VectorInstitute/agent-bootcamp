@@ -1,4 +1,4 @@
-"""PredictHQ Event Search Demo using Gradio."""
+"""Hotel Search Demo using Gradio."""
 from dotenv import load_dotenv
 load_dotenv()
 
