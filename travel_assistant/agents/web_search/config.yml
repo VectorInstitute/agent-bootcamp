@@ -1,0 +1,3 @@
+# Configuration for Web Search Agent
+# API keys are loaded from environment variables.
+# TAVILY_API_KEY and SERPAPI_API_KEY should be set in the environment.
