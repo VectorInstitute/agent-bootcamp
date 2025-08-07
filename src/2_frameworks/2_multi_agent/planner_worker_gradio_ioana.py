@@ -123,14 +123,13 @@ qa_search_agent = agents.Agent(
     )
 )
 
-# Worker Agent: handles long context efficiently
 kb_search_agent = agents.Agent(
     name="KBSearchAgent",
     instructions=KB_SEARCH_INSTRUCTIONS,
     tools=[
         agents.function_tool(async_knowledgebase.search_knowledgebase),
     ],
-    # a faster, smaller model for quick searches
+
     model=agents.OpenAIChatCompletionsModel(
         model="gemini-2.5-flash", openai_client=async_openai_client
     )
@@ -144,12 +143,10 @@ evaluator_agent = agents.Agent(
     )
 )
 
-# Main Agent: more expensive and slower, but better at complex planning
 main_agent = agents.Agent(
     name="MainAgent",
     instructions=REACT_INSTRUCTIONS,
-    # Allow the planner agent to invoke the worker agents.
-    # The long context provided to the worker agent is hidden from the main agent.
+
     tools=[
         qa_search_agent.as_tool(
             tool_name="qa_search_Agent",
@@ -164,7 +161,7 @@ main_agent = agents.Agent(
             tool_description="Evaluate the output of the knowledge base search agent.",
         )
     ],
-    # a larger, more capable model for planning and reasoning over summaries
+
     model=agents.OpenAIChatCompletionsModel(
         model="gemini-2.5-pro", openai_client=async_openai_client
     ),
@@ -175,17 +172,45 @@ async def _main(question: str, gr_messages: list[ChatMessage]):
     setup_langfuse_tracer()
 
     # Use the main agent as the entry point- not the worker agent.
-    with langfuse_client.start_as_current_span(name="Calen-Multi-Agent") as span:
-        span.update(input=question)
+    with langfuse_client.start_as_current_span(name="Calen-Multi-Agent-V1.0") as span:
+        score_is_answer_correct = []
+        score_explanation = []
 
+        span.update(input=question)
         result_stream = agents.Runner.run_streamed(main_agent, input=question)
+
         async for _item in result_stream.stream_events():
             gr_messages += oai_agent_stream_to_gradio_messages(_item)
+
             if len(gr_messages) > 0:
                 yield gr_messages
 
+            try:
+                # Assume `event` is your RunItemStreamEvent
+                if _item.name == "tool_output" and _item.item.type == "tool_call_output_item":
+                        tool_output = json.loads(_item.item.output)
+
+                        explanation = tool_output.get("explanation")
+                        is_correct = tool_output.get("is_answer_correct")
+
+                        score_is_answer_correct.append(is_correct)
+                        score_explanation.append(explanation)
+
+                        print("✅ is_answer_correct:", is_correct)
+                        print("🧠 explanation:", explanation)
+
+            except: 
+                continue
+
         span.update(output=result_stream.final_output)
 
+        if len(score_is_answer_correct) > 0:
+            langfuse_client.create_score(
+                    name="is_answer_correct",
+                    value=score_is_answer_correct[0],
+                    comment=score_explanation[0],
+                    trace_id=langfuse_client.get_current_trace_id()
+                )
 
 demo = gr.ChatInterface(
     _main,
