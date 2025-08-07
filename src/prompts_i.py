@@ -11,6 +11,7 @@ For best performance, divide complex queries into simpler sub-queries. \
 Do not make up information. \
 For facts that might change over time, you must use the search tool to retrieve the \
 most up-to-date information.
+Finally, write "|" and include a one-sentence summary of your answer.
 """
 
 # EVALUATIONS
@@ -62,6 +63,7 @@ Score: 0 \
 Reasoning: This sentence is verbose, using more words and more complex phrasing than necessary. \
 
 Think step by step.
+
 """
 
 EV_TEMPLATE_CONCISENESS = """\

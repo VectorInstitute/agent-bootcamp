@@ -25,7 +25,7 @@ load_dotenv(verbose=True)
 set_up_logging()
 
 
-from src.prompts import REACT_INSTRUCTIONS, EV_INSTRUCTIONS_HALLUCINATIONS, EV_TEMPLATE_HALLUCINATIONS
+from prompts_i import REACT_INSTRUCTIONS, EV_INSTRUCTIONS_HALLUCINATIONS, EV_TEMPLATE_HALLUCINATIONS
 # Worker Agent QA: handles long context efficiently
 import os
 import openai
@@ -188,7 +188,7 @@ async def run_agent_with_trace(
 async def run_evaluator_agent(evaluator_query: EvaluatorQuery) -> EvaluatorResponse:
     """Evaluate using evaluator agent."""
     evaluator_agent = agents.Agent(
-        name="Evaluator Agent",
+        name="EvaluatorAgent",
         instructions=EV_INSTRUCTIONS_HALLUCINATIONS,
         output_type=EvaluatorResponse,
         model=agents.OpenAIChatCompletionsModel(

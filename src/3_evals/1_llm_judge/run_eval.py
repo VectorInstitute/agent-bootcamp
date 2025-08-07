@@ -53,7 +53,6 @@ EVALUATOR_TEMPLATE = """\
 
 """
 
-
 class LangFuseTracedResponse(pydantic.BaseModel):
     """Agent Response and LangFuse Trace info."""
 

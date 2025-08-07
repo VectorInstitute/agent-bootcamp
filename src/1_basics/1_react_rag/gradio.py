@@ -15,7 +15,7 @@ from gradio.components.chatbot import ChatMessage
 from openai import AsyncOpenAI
 from openai.types.chat import ChatCompletionSystemMessageParam, ChatCompletionToolParam
 
-from src.prompts import REACT_INSTRUCTIONS
+from prompts_i import REACT_INSTRUCTIONS
 from src.utils import (
     AsyncWeaviateKnowledgeBase,
     Configs,
