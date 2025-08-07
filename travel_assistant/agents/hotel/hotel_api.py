@@ -79,15 +79,3 @@ class AsyncAmadeusClient:
         print("print: ", resp.url)
         resp.raise_for_status()
         return resp.json()
-
-# Example usage
-load_dotenv()
-# Example usage
-async def main():
-    client = AsyncAmadeusClient(api_key=os.environ.get("AMADEUS_API_KEY"),
-                                api_secret=os.environ.get("AMADEUS_API_SECRET"))
-    result = await client.search_hotel("PAR")
-    print(result)
-
-# # Run the async main function
-asyncio.run(main())
