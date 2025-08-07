@@ -11,14 +11,21 @@ import contextlib
 import logging
 import signal
 import sys
+import os
+import json
+import openai
+import numpy as np
 
 import agents
+from agents import function_tool
 import gradio as gr
 from dotenv import load_dotenv
 from gradio.components.chatbot import ChatMessage
 from openai import AsyncOpenAI
+from sklearn.metrics.pairwise import cosine_similarity
+from pydantic import BaseModel
 
-from src.prompts import REACT_INSTRUCTIONS
+from src.prompts import REACT_INSTRUCTIONS, KB_SEARCH_INSTRUCTIONS, QA_SEARCH_INSTRUCTIONS, EVALUATOR_INSTRUCTIONS, EVALUATOR_TEMPLATE
 from src.utils import (
     AsyncWeaviateKnowledgeBase,
     Configs,
@@ -35,10 +42,52 @@ load_dotenv(verbose=True)
 logging.basicConfig(level=logging.INFO)
 
 
-AGENT_LLM_NAMES = {
-    "worker": "gemini-2.5-flash",  # less expensive,
-    "planner": "gemini-2.5-pro",  # more expensive, better at reasoning and planning
-}
+
+class QASearchSingleResponse(BaseModel):
+    """Typed response from the QA search agent."""
+
+    user_query: str | None
+    question: str | None
+    answer: str | None
+    context: str | None
+
+    def __str__(self) -> str:
+        """String representation of the response."""
+        return f"QASearchSingleResponse(user_query={self.user_query}, question={self.question}, answer={self.answer}, context={self.context})"
+
+
+class KBSearchResponse(BaseModel):
+    """Query to the knowledge base search agent."""
+
+    answer: str | None
+    context: str | None
+
+class EvaluatorQuery(BaseModel):
+    """Query to the evaluator agent."""
+
+    question: str
+    ground_truth: str
+    proposed_response: str
+
+    def get_query(self) -> str:
+        """Obtain query string to the evaluator agent."""
+        return EVALUATOR_TEMPLATE.format(**self.model_dump())
+
+
+class EvaluatorResponse(BaseModel):
+    """Typed response from the evaluator."""
+
+    explanation: str
+    is_answer_correct: bool
+
+
+class EvaluatorAgent(agents.Agent[EvaluatorResponse]):
+    async def run_tool(self, tool_input, *args, **kwargs):
+        # Convert dict → EvaluatorQuery → formatted prompt
+        if not isinstance(tool_input, EvaluatorQuery):
+            tool_input = EvaluatorQuery(**tool_input)
+        return await super().run_tool(tool_input.get_query(), *args, **kwargs)
+
 
 configs = Configs.from_env_var()
 async_weaviate_client = get_weaviate_async_client(
@@ -69,91 +118,73 @@ def _handle_sigint(signum: int, frame: object) -> None:
         asyncio.get_event_loop().run_until_complete(_cleanup_clients())
     sys.exit(0)
 
-# Worker Agent QA: handles long context efficiently
-import os
-import openai
-import numpy as np
-from sklearn.metrics.pairwise import cosine_similarity
-from agents import function_tool
-# from pydantic import BaseModel
-
-
 
 @function_tool
-async def faq_match_tool(user_query:str)->list:
-    '''Return a list of FAQ sorted from the most simialr to least similar to the user query by cosine similarity.
+async def qa_search_tool(user_query:str) -> list:
+    '''Return a list of questions sorted from the most similar to least similar to the user query by cosine similarity.
     '''
-    faq_list = ["Where are Toyota cars manufactured? Toyota cars are produced in Germany and Japan", 
-                "What is the engine power of Toyota RAV4? 180HP","Where is Japan?",
-                "What is horse power in cars?", "What is the capital of Germany? it's Berlin", 
-                "Is Toyota a German brand? No, it's a Japanese automobile brand."]
+    qa_dataset = { 
+        1 : {
+            "question": "What is the capital of France?",
+            "answer": "The capital of France is Paris.",
+            "context": "Paris is the capital city of France, known for its art, fashion, and culture."
+        }
+    }
 
-    _embed_client = openai.OpenAI(
-        api_key=os.getenv("EMBEDDING_API_KEY"),
-        base_url=os.getenv("EMBEDDING_BASE_URL"),
-        max_retries=5)
+    # _embed_client = openai.OpenAI(
+    #     api_key=os.getenv("EMBEDDING_API_KEY"),
+    #     base_url=os.getenv("EMBEDDING_BASE_URL"),
+    #     max_retries=5)
     
-    #embed user query
-    user_query_embedding = _embed_client.embeddings.create(input=user_query, model=os.getenv('EMBEDDING_MODEL_NAME'))
-    user_query_embedding = np.array(user_query_embedding.data[0].embedding)
-    user_query_embedding = user_query_embedding.reshape(1, -1)
+    # #embed user query
+    # user_query_embedding = _embed_client.embeddings.create(input=user_query, model=os.getenv('EMBEDDING_MODEL_NAME'))
+    # user_query_embedding = np.array(user_query_embedding.data[0].embedding)
+    # user_query_embedding = user_query_embedding.reshape(1, -1)
 
-    cosi_list = []
-    faq_embedding_list = _embed_client.embeddings.create(input=faq_list, model=os.getenv('EMBEDDING_MODEL_NAME'))
-    for i, faq_embedding in enumerate(faq_embedding_list.data):
-            faq_embedding = np.array(faq_embedding.embedding)
-            faq_embedding = faq_embedding.reshape(1,-1)
-            similarity_score = cosine_similarity(user_query_embedding, faq_embedding)[0][0]
-            cosi_list.append({"faq":faq_list[i], "sim":similarity_score})
+    # cosi_list = []
+    # qa_embedding_list = _embed_client.embeddings.create(input=qa_dataset, model=os.getenv('EMBEDDING_MODEL_NAME'))
+    # for i, qa_embedding in enumerate(qa_embedding_list.data):
+    #         qa_embedding = np.array(qa_embedding.embedding)
+    #         qa_embedding = qa_embedding.reshape(1,-1)
+    #         similarity_score = cosine_similarity(user_query_embedding, qa_embedding)[0][0]
+    #         cosi_list.append({"faq":faq_list[i], "sim":similarity_score})
 
-    sorted_faqs = sorted(cosi_list, key=lambda d: d["sim"], reverse=True)
-    sorted_faqs_list = [i["faq"] for i in sorted_faqs]
-    return "\n".join(f" {i}\n"for i in sorted_faqs_list)
-    # return sorted_faqs_list
+    # sorted_qa = sorted(cosi_list, key=lambda d: d["sim"], reverse=True)
+    # sorted_faqs_list = [i["faq"] for i in sorted_qa]
+    # 
+    # return "\n".join(f" {i}\n"for i in sorted_faqs_list)
 
-# class FAQ(BaseModel):
-#     user_query: str
-#     similar_faqs: list[str]
-#     def __str__(self) -> str:
-#         """Return a string representation of the faq list"""
-#         return "\n".join(
-#             f"faq {step}\n"
-#             for step in self.similar_faqs
-#         )
+    return json.dumps(qa_dataset)
 
-faq_agent = agents.Agent(
-    name="QAMatchAgent",
-    instructions=(
-        "You are an agent specializing in matching user queries to FAQ. You receive a single user query as input. "
-        "Use the faq_match_tool tool to return a sorted list of FAQ based on how similar they are with the user query."
-        "Return maximum 3 FAQs that best match the user query. If you can't find any match, return the raw user query."
-        "ALWAYS structure the output as a list that contains [user request, faqs if any]."
-        
-    ),
-    tools=[faq_match_tool],
+qa_search_agent = agents.Agent(
+    name="QASearchAgent",
+    instructions=QA_SEARCH_INSTRUCTIONS,
+    tools=[qa_search_tool],
     # a faster, smaller model for quick searches
     model=agents.OpenAIChatCompletionsModel(
         model="gemini-2.5-flash", openai_client=async_openai_client
-    ),
-    model_settings=agents.ModelSettings(tool_choice="required"),
-    # output_type=FAQ
+    )
 )
 
 # Worker Agent: handles long context efficiently
-search_agent = agents.Agent(
-    name="SearchAgent",
-    instructions=(
-        "You are a search agent. You receive a search query and a list of FAQ as input. "
-        "Use the WebSearchTool to perform a web search on the search query, then produce a concise "
-        "'search summary' of the key findings. Corroborate the findings with the FAQ into a final answer. Do NOT return raw search results."
-    ),
+kb_search_agent = agents.Agent(
+    name="KBSearchAgent",
+    instructions=KB_SEARCH_INSTRUCTIONS,
     tools=[
         agents.function_tool(async_knowledgebase.search_knowledgebase),
     ],
     # a faster, smaller model for quick searches
     model=agents.OpenAIChatCompletionsModel(
         model="gemini-2.5-flash", openai_client=async_openai_client
-    ),
+    )
+)
+
+evaluator_agent = agents.Agent(
+    name="EvaluatorAgent",
+    instructions=EVALUATOR_INSTRUCTIONS,
+    model=agents.OpenAIChatCompletionsModel(
+        model="gemini-2.5-flash", openai_client=async_openai_client
+    )
 )
 
 # Main Agent: more expensive and slower, but better at complex planning
@@ -163,13 +194,17 @@ main_agent = agents.Agent(
     # Allow the planner agent to invoke the worker agents.
     # The long context provided to the worker agent is hidden from the main agent.
     tools=[
-        faq_agent.as_tool(
-            tool_name="faq_match",
-            tool_description = "Identify the matching FAQs in the database."
+        qa_search_agent.as_tool(
+            tool_name="qa_search_Agent",
+            tool_description = "Perform a search of the QA database and retrieve question/answer/context tuples related to input query."
        ),
-        search_agent.as_tool(
-            tool_name="search",
-            tool_description="Perform a web search for a query and return a concise summary.",
+        kb_search_agent.as_tool(
+            tool_name="kb_search_agent",
+            tool_description="Perform a search of a knowledge base and synthesize the search results to answer input question.",
+        ),
+        evaluator_agent.as_tool(
+            tool_name="evaluator_agent",
+            tool_description="Evaluate the output of the knowledge base search agent.",
         )
     ],
     # a larger, more capable model for planning and reasoning over summaries
@@ -183,7 +218,7 @@ async def _main(question: str, gr_messages: list[ChatMessage]):
     setup_langfuse_tracer()
 
     # Use the main agent as the entry point- not the worker agent.
-    with langfuse_client.start_as_current_span(name="Agents-SDK-Trace") as span:
+    with langfuse_client.start_as_current_span(name="Calen-Multi-Agent") as span:
         span.update(input=question)
 
         result_stream = agents.Runner.run_streamed(main_agent, input=question)
@@ -197,12 +232,11 @@ async def _main(question: str, gr_messages: list[ChatMessage]):
 
 demo = gr.ChatInterface(
     _main,
-    title="2.2 Multi-Agent for Efficiency",
+    title="Hitachi Multi-Agent Knowledge Retrieval System",
     type="messages",
     examples=[
-        "what is toyota? ",
-        "How does the annual growth in the 50th-percentile income "
-        "in the US compare with that in Canada?",
+        "Where should I go in France? ",
+        "Where is the government of France located? "
     ],
 )
 
