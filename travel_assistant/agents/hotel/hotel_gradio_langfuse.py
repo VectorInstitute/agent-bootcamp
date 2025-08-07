@@ -40,7 +40,7 @@ model = OpenAIChatCompletionsModel(
 )
 
 async def _main(question: str, gr_messages: list[ChatMessage]):
-    """Run the PredictHQ agent and return pretty-printed results."""
+    """Run the Hotel agent and return pretty-printed results."""
 
     setup_langfuse_tracer()
 
@@ -55,7 +55,7 @@ async def _main(question: str, gr_messages: list[ChatMessage]):
         model=model,
     )
 
-    with langfuse_client.start_as_current_span(name="Agents-SDK-Trace") as span:
+    with langfuse_client.start_as_current_span(name="HotelAgent-Trace") as span:
       span.update(input=question)
 
       result_stream = Runner.run_streamed(hotel_agent, input=question)
