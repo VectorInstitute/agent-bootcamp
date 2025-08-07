@@ -35,7 +35,7 @@ Example data:
 
 ```bash
 uv run --env-file .env \
--m src.3_evals.1_llm_judge.run_eval \
+-m src.3_evals.1_llm_judge.run_eval_ioana \
 --langfuse_dataset_name search-dataset \
 --run_name enwiki_weaviate
 ```

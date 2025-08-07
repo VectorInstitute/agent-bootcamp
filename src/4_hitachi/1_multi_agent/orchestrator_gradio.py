@@ -1,4 +1,4 @@
-"""Example code for planner-worker agent collaboration.
+"""Example code for orchestrator-worker agent collaboration.
 
 With reference to:
 
@@ -18,7 +18,7 @@ from dotenv import load_dotenv
 from gradio.components.chatbot import ChatMessage
 from openai import AsyncOpenAI
 
-from prompts_i import REACT_INSTRUCTIONS
+from src.prompts import REACT_INSTRUCTIONS, KB_SEARCH_INSTRUCTIONS
 from src.utils import (
     AsyncWeaviateKnowledgeBase,
     Configs,
@@ -34,7 +34,7 @@ load_dotenv(verbose=True)
 
 logging.basicConfig(level=logging.INFO)
 
-
+DATASET_NAME = "hitachi-multi-agent-orchestrator"
 AGENT_LLM_NAMES = {
     "worker": "gemini-2.5-flash",  # less expensive,
     "planner": "gemini-2.5-pro",  # more expensive, better at reasoning and planning
@@ -70,14 +70,10 @@ def _handle_sigint(signum: int, frame: object) -> None:
     sys.exit(0)
 
 
-# Worker Agent: handles long context efficiently
-search_agent = agents.Agent(
-    name="SearchAgent",
-    instructions=(
-        "You are a search agent. You receive a single search query as input. "
-        "Use the WebSearchTool to perform a web search, then produce a concise "
-        "'search summary' of the key findings. Do NOT return raw search results."
-    ),
+# Knowledgebase Search Agent: a simple agent that searches the knowledge base
+knowledgebase_agent = agents.Agent(
+    name="KnowledgeBaseSearchAgent",
+    instructions=KB_SEARCH_INSTRUCTIONS,
     tools=[
         agents.function_tool(async_knowledgebase.search_knowledgebase),
     ],
@@ -88,15 +84,16 @@ search_agent = agents.Agent(
 )
 
 # Main Agent: more expensive and slower, but better at complex planning
-main_agent = agents.Agent(
-    name="MainAgent",
+orchestrator_agent = agents.Agent(
+    name="OrchestratorAgent",
     instructions=REACT_INSTRUCTIONS,
+
     # Allow the planner agent to invoke the worker agent.
     # The long context provided to the worker agent is hidden from the main agent.
     tools=[
-        search_agent.as_tool(
-            tool_name="search",
-            tool_description="Perform a web search for a query and return a concise summary.",
+        knowledgebase_agent.as_tool(
+            tool_name="KnowledgeBaseSearchAgent",
+            tool_description="Perform a search in the knowledge base and return a concise answer.",
         )
     ],
     # a larger, more capable model for planning and reasoning over summaries
@@ -113,7 +110,7 @@ async def _main(question: str, gr_messages: list[ChatMessage]):
     with langfuse_client.start_as_current_span(name="Agents-SDK-Trace") as span:
         span.update(input=question)
 
-        result_stream = agents.Runner.run_streamed(main_agent, input=question)
+        result_stream = agents.Runner.run_streamed(orchestrator_agent, input=question)
         async for _item in result_stream.stream_events():
             gr_messages += oai_agent_stream_to_gradio_messages(_item)
             if len(gr_messages) > 0:
@@ -124,15 +121,14 @@ async def _main(question: str, gr_messages: list[ChatMessage]):
 
 demo = gr.ChatInterface(
     _main,
-    title="2.2 Multi-Agent for Efficiency",
+    title="Hitachi Multi-Agent Knowledge Retrieval System",
     type="messages",
     examples=[
-        "At which university did the SVP Software Engineering"
-        " at Apple (as of June 2025) earn their engineering degree?",
-        "How does the annual growth in the 50th-percentile income "
-        "in the US compare with that in Canada?",
+        "What city are George Washington University Hospital"
+        " and MedStar Washington Hospital Center located in?"
     ],
 )
+
 
 if __name__ == "__main__":
     async_openai_client = AsyncOpenAI()

@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 from dotenv import load_dotenv
 from openai import AsyncOpenAI
 
-from src.prompts import REACT_INSTRUCTIONS
+from prompts_i import REACT_INSTRUCTIONS
 from src.utils import (
     AsyncWeaviateKnowledgeBase,
     Configs,
