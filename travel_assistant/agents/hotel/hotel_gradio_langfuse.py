@@ -16,14 +16,15 @@ from agents import (
 
 from gradio.components.chatbot import ChatMessage
 import sys
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
-
-from utils import (
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
+from src.utils import (
     oai_agent_stream_to_gradio_messages,
     pretty_print,
     setup_langfuse_tracer,
 )
-from utils.langfuse.shared_client import langfuse_client
+from src.utils.langfuse.shared_client import langfuse_client
+
+"""Web search demo with Langfuse tracing."""
 
 
 async_amadeus_client = AsyncAmadeusClient(api_key=os.environ.get("AMADEUS_API_KEY"),
