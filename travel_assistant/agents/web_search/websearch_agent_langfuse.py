@@ -42,7 +42,8 @@ async def _main(question: str, gr_messages: list[ChatMessage]):
     web_agent = Agent(
         name="Web Search Agent",
         instructions=(
-            "You search the web using DuckDuckGo first, then Tavily and SerpAPI if needed."
+            #"You search the web using DuckDuckGo first, then Tavily and SerpAPI if needed."
+            "You search the hotel based on city, check in and check out dates, as well as price range using DuckDuckGo, Tavily, and SerpAPI in that order"
         ),
         tools=[web_search_tool],
         model=model,
@@ -68,9 +69,10 @@ demo = gr.ChatInterface(
     title="Web Search Demo + Langfuse",
     type="messages",
     examples=[
-        "Latest AI research",
-        "Best pizza places in New York",
-        "Weather in Tokyo tomorrow",
+        # "Latest AI research",
+        # "Best pizza places in New York",
+        # "Weather in Tokyo tomorrow",
+        "I am planning a trip to Vancouver from Oct 1 until Oct 4. Find me a list of hotels below 200 CAD per night"
     ],
 )
 

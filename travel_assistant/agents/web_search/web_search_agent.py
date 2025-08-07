@@ -35,7 +35,8 @@ async def _main(query: str) -> None:
     web_agent = Agent(
         name="Web Search Agent",
         instructions=(
-            "You search the web using DuckDuckGo, Tavily, and SerpAPI in that order."
+            #"You search the web using DuckDuckGo, Tavily, and SerpAPI in that order."
+            "You search the hotel based on city, check in and check out dates, as well as price range using DuckDuckGo, Tavily, and SerpAPI in that order" 
         ),
         tools=[web_search_tool],
         model=model,
