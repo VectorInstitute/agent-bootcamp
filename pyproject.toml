@@ -24,7 +24,6 @@ dependencies = [
     "pydantic-ai-slim[logfire]>=0.3.7",
     "pytest-asyncio>=0.25.2",
     "scikit-learn>=1.7.0",
-    "starlette>=0.47.2",
     "weaviate-client>=4.15.4",
 ]
 
@@ -44,6 +43,7 @@ dev = [
     "pytest-cov>=6.0.0",
     "pytest-mock>=3.14.0",
     "ruff>=0.12.2",
+    "transformers>=4.54.1",
 ]
 docs = [
     "jinja2>=3.1.6", # Pinning version to address vulnerability GHSA-cpwx-vrp4-4pq7
