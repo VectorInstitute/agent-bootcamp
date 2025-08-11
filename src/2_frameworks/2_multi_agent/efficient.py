@@ -140,6 +140,6 @@ if __name__ == "__main__":
     signal.signal(signal.SIGINT, _handle_sigint)
 
     try:
-        demo.launch(server_name="0.0.0.0")
+        demo.launch(share=True)
     finally:
         asyncio.run(_cleanup_clients())

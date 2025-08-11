@@ -4,7 +4,4 @@ This folder contains logic for showcasing the capabilities (and limitations) of 
 
 Format of the output is similar to what the Agent LLM will receive as tool output.
 
-```bash
-source .env && \
-uv run -m src.1_basics.0_search_demo.gradio
-```
+Refer to the README.md file under project root for instructions.

@@ -46,7 +46,10 @@ but you won't be able to install packages.
 AGENT_LLM_NAME = "gemini-2.5-flash"
 async_openai_client = AsyncOpenAI()
 code_interpreter = CodeInterpreter(
-    local_files=[Path("tests/tool_tests/example_files/example_a.csv")]
+    local_files=[
+        Path("sandbox_content/"),
+        Path("tests/tool_tests/example_files/example_a.csv"),
+    ]
 )
 
 
@@ -95,4 +98,4 @@ demo = gr.ChatInterface(
 
 
 if __name__ == "__main__":
-    demo.launch(server_name="0.0.0.0")
+    demo.launch(share=True)

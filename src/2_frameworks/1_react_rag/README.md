@@ -4,8 +4,4 @@ This folder reproduces the functionalities of section 1.1, but involve far less 
 
 ## Run
 
-```bash
-uv run -m src.2_frameworks.1_react_rag.basic
-uv run -m src.2_frameworks.1_react_rag.gradio
-uv run -m src.2_frameworks.1_react_rag.langfuse_gradio
-```
+Refer to the README.md file under project root for instructions.

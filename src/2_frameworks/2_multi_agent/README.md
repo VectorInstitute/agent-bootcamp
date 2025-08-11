@@ -5,8 +5,8 @@ The planner agents take a user query and breaks it down into search queries for 
 each performs a search for each query by calling a search tool. The writer agent then sythesizes the search results into
 a summary that is presented to the user.
 
-## Run
+## "Efficient" or "Verbose"?
 
-```bash
-uv run -m src.2_frameworks.2_multi_agent.gradio
-```
+"Efficient" variant- recommended starting point.
+
+"Verbose" variant- only if you need fine-grained control over the behavior of the agent. Beware that this implementation is more complex and reduces the agency and flexibility of your agent system.

@@ -1,5 +1,9 @@
 """Multi-agent Planner-Researcher Setup via OpenAI Agents SDK.
 
+Note: this implementation does not unlock the full potential and flexibility
+of LLM agents. Use this reference implementation only if your use case requires
+the additional structures, and you are okay with the additional complexities.
+
 Log traces to LangFuse for observability and evaluation.
 """
 
