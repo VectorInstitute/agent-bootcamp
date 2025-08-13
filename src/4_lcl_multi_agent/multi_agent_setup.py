@@ -5,7 +5,8 @@ With reference to:
 github.com/ComplexData-MILA/misinfo-datasets
 /blob/3304e6e/misinfo_data_eval/tasks/web_search.py
 """
-
+import pandas as pd
+from pandasql import sqldf
 import asyncio
 import contextlib
 import logging
@@ -19,11 +20,39 @@ from gradio.components.chatbot import ChatMessage
 from openai import AsyncOpenAI
 from src.utils import (
     Configs,
-    oai_agent_stream_to_gradio_messages
+    oai_agent_stream_to_gradio_messages,
+    setup_langfuse_tracer,  #add langfuse for traceback
 )
 
-def search_historical_data(SQL):
-    return SQL
+from src.utils.langfuse.shared_client import langfuse_client
+
+import pandas as pd
+from pandasql import sqldf
+
+import pandas as pd
+from pandasql import sqldf
+
+def search_historical_data(sql: str) -> list[dict]:
+    """
+    Run a SQL query against the local LCL sales dataset.
+
+    Args:
+        sql (str): SQL query string. Reference the dataframe by name 'df'.
+
+    Returns:
+        list[dict]: Query results as a list of dictionaries (JSON-serializable).
+    """
+    # Load dataset (fixed location)
+    df = pd.read_csv("/home/coder/agent-bootcamp_lcl1/lcl_sample_dataset.csv")
+
+    # Ensure df is in the environment passed to sqldf
+    context = {"df": df}
+
+    # Execute SQL query
+    result_df = sqldf(sql, context)
+
+    # Convert result to JSON-friendly format
+    return result_df.to_dict(orient="records")
 
 
 load_dotenv(verbose=True)
@@ -89,6 +118,18 @@ search_agent = agents.Agent(
         "Weightage_Lift: "
         "schema end"
         "Use the search_historical_data tool to run this SQL query you generated and return the output dataframe"
+        "Rules:"
+        "1. The table name is 'df'."
+        "2. The year column is 'Year', not 'startYear'."
+        "3. Always use the LIKE operator with wildcards for text matches (e.g., "
+        "Product_Group LIKE '%spicy%')."
+        "4. When looking for the 'best' promotion, order by Sales_Lift DESC and LIMIT to 1."
+        "5. Keep queries concise but ensure they capture all relevant matches."
+        "Example query:"
+        "SELECT * FROM df "
+        "WHERE Year = 2024 AND (Product_Group LIKE '%spicy%' OR Category_Group LIKE '%spicy%') "
+        "ORDER BY Sales_Lift DESC LIMIT 1;"
+
     ),
     tools=[
         agents.function_tool(search_historical_data),
@@ -128,21 +169,28 @@ main_agent = agents.Agent(
 
 
 async def _main(question: str, gr_messages: list[ChatMessage]):
+    setup_langfuse_tracer()
+    
+    with langfuse_client.start_as_current_span(name="Agents-SDK-Trace") as span:
+        span.update(input=question)
 
-    result_stream = agents.Runner.run_streamed(main_agent, input=question)
-    async for _item in result_stream.stream_events():
-        gr_messages += oai_agent_stream_to_gradio_messages(_item)
-        if len(gr_messages) > 0:
-            yield gr_messages
+        result_stream = agents.Runner.run_streamed(main_agent, input=question)
+        async for _item in result_stream.stream_events():
+            gr_messages += oai_agent_stream_to_gradio_messages(_item)
+            if len(gr_messages) > 0:
+                yield gr_messages
+
+        span.update(output=result_stream.final_output)
+
 
 
 
 demo = gr.ChatInterface(
     _main,
-    title="2.2 Multi-Agent for Efficiency",
+    title="Multi-Agent for Promo Planning at LCL",
     type="messages",
     examples=[
-        "Give me the best promotion for spicy sauce",
+        "Give me the all promotions for spicy sauce",
     ],
 )
 
