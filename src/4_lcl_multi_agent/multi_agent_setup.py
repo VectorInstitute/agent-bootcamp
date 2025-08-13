@@ -87,12 +87,20 @@ def _handle_sigint(signum: int, frame: object) -> None:
 search_agent = agents.Agent(
     name="SearchAgent",
     instructions=(
-        "You are a SQL search, You receive a single search query as input."
+        "You are a SQL search tool, You receive a single query in natural language as an input." \
+        "You are supposed to translate this natural language into an sql query based on the database,"
+        "so that the result helps best answer the users question." \
+        "If you think the results would not satisfy the user, please reason for the best query you can generate to give back better results."
+        "If you do not have the exact product provide the next best product you can get."
+        "Do not respond in natural language only respond back by providing the dataframe itself." 
+        "However, you can reason in natural language."
         "Generate an SQL query to gather data that can used to analyze the query"
         "Try to keep the data retireval consize without risking leaving out details"
         "Here is the schema of the data base which you will be writing quries againt"
         "The schema defines the column names and the column description"
+        "The schema is as follows 'column name': 'description', Use only the column names written before the : to generate the sql"
         "schema start"
+        "column: Description"
         "Year: Year the offer was promoted,"
         "Week: Week the offer was promoted"
         "Category_Group: What category the products fall under"
@@ -105,31 +113,20 @@ search_agent = agents.Agent(
         "Locations: Store IDs for stores/location offering the promotions"
         "Locations_Name: Store names offering the promotions"
         "Container: promotion container unique to each promotion"
-        "Advertisement: Amount of advertisement each promotion receives "
+        "Advertisement: Amount of advertisement each promotion receives (this is a categorical column containng the following categories: not_promoted, most_promoted, least_promoted, medium_promoted)"
         "Shelf_Price: Product price on the Shelf in the stores"
         "Promo_Price: Product price for promotion purposes"
         "Total_Qty: Total quantity of "
-        "Sales_Qty: "
-        "Total_Revenue: "
-        "Revenue: "
-        "Margin	Weightage: "
-        "Sales_Lift: "
-        "Margin_Lift: "
-        "Weightage_Lift: "
+        "Sales_Qty: No description"
+        "Total_Revenue: No description"
+        "Revenue: No description"
+        "Margin	Weightage: No description"
+        "Sales_Lift: No description"
+        "Margin_Lift: No description"
+        "Weightage_Lift: No description"
         "schema end"
         "Use the search_historical_data tool to run this SQL query you generated and return the output dataframe"
-        "Rules:"
-        "1. The table name is 'df'."
-        "2. The year column is 'Year', not 'startYear'."
-        "3. Always use the LIKE operator with wildcards for text matches (e.g., "
-        "Product_Group LIKE '%spicy%')."
-        "4. When looking for the 'best' promotion, order by Sales_Lift DESC and LIMIT to 1."
-        "5. Keep queries concise but ensure they capture all relevant matches."
-        "Example query:"
-        "SELECT * FROM df "
-        "WHERE Year = 2024 AND (Product_Group LIKE '%spicy%' OR Category_Group LIKE '%spicy%') "
-        "ORDER BY Sales_Lift DESC LIMIT 1;"
-
+        
     ),
     tools=[
         agents.function_tool(search_historical_data),
@@ -140,6 +137,18 @@ search_agent = agents.Agent(
     ),
 )
 
+# "Rules:"
+#         "1. The table name is 'df'."
+#         "2. The year column is 'Year', not 'startYear'."
+#         "3. Always use the LIKE operator with wildcards for text matches (e.g., "
+#         "Product_Group LIKE '%spicy%')."
+#         "4. When looking for the 'best' promotion, order by Sales_Lift DESC and LIMIT to 1."
+#         "5. Keep queries concise but ensure they capture all relevant matches."
+#         "Example query:"
+#         "SELECT * FROM df "
+#         "WHERE Year = 2024 AND (Product_Group LIKE '%spicy%' OR Category_Group LIKE '%spicy%') "
+#         "ORDER BY Sales_Lift DESC LIMIT 1;"
+
 
 REACT_INSTRUCTIONS = """\
 Answer the question using the search tool. \
@@ -148,6 +157,8 @@ If the search tool did not return intended results, try again. \
 For best performance, divide complex queries into simpler sub-queries. \
 Do not make up information.
 Stop after two tries.
+Your search tool is an agent searching an sql database containing promotion data for products.
+Use that to reason based on the information you get from the search agent/tool.
 """
 # Main Agent: more expensive and slower, but better at complex planning
 main_agent = agents.Agent(
