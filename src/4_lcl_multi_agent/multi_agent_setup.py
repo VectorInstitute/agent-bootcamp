@@ -24,6 +24,7 @@ from src.utils import (
     setup_langfuse_tracer,  #add langfuse for traceback
 )
 import agent_prompt_lib
+import agent_example_lib
 
 from src.utils.langfuse.shared_client import langfuse_client
 
@@ -112,7 +113,7 @@ search_agent = agents.Agent(
 #         "ORDER BY Sales_Lift DESC LIMIT 1;"
 
 
-REACT_INSTRUCTIONS = """\
+REACT_INSTRUCTIONS = f"""\
 Answer the question using the search tool. \
 EACH TIME before invoking the function, you must explain your reasons for doing so. \
 If the search tool did not return intended results, try again. \
@@ -121,6 +122,10 @@ Do not make up information.
 Stop after two tries.
 Your search tool is an agent searching an sql database containing promotion data for products.
 Use that to reason based on the information you get from the search agent/tool.
+
+Examples of good responses can be found here: 
+    input: {agent_example_lib.main_agent["input"]}
+    output: {agent_example_lib.main_agent["output"]}
 """
 # Main Agent: more expensive and slower, but better at complex planning
 main_agent = agents.Agent(
