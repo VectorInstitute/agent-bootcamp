@@ -125,3 +125,87 @@ prompt_search_agent = {
         "ORDER BY Sales_Lift DESC LIMIT 1;"
     '''
 }
+
+
+# sample json reponse for FE:
+{
+  "plan_id": "random_str",
+  "create_from": "agent",
+  "offers": [
+    {
+      "id": ...,
+      "year": ...,
+      "week": ...,
+      "category_group": ...,
+      "container": ...,
+      "products": [
+        {
+          "product_group": ...,
+          "product_group_id": ...,
+          "shelf_price": ...,
+          "promo_price": ...,
+          "weightage": ...,
+          "gauging_unit": ...,
+          "sub_product": ...,
+          "sub_product_id": ...
+        },
+        {
+          "product_group": ...,
+          "product_group_id": ...,
+          "shelf_price": ...,
+          "promo_price": ...,
+          "weightage": ...,
+          "gauging_unit": ...,
+          "sub_product": ...,
+          "sub_product_id": ...
+        }
+      ]
+    },
+    {
+      "id": ...,
+      "year": ...,
+      "week": ...,
+      "category_group": ...,
+      "container": ...,
+      "products": [
+        {
+          "product_group": ...,
+          "product_group_id": ...,
+          "shelf_price": ...,
+          "promo_price": ...,
+          "weightage": ...,
+          "gauging_unit": ...,
+          "sub_product": ...,
+          "sub_product_id": ...
+        },
+        {
+          "product_group": ...,
+          "product_group_id": ...,
+          "shelf_price": ...,
+          "promo_price": ...,
+          "weightage": ...,
+          "gauging_unit": ...,
+          "sub_product": ...,
+          "sub_product_id": ...
+        }
+      ]
+    }
+  ]
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+}
