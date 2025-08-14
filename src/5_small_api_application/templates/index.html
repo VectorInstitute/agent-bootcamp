@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Plan Viewer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        .plan-block {
+            border: 1px solid #ccc;
+            padding: 1em;
+            margin-bottom: 1em;
+        }
+        .offer-block {
+            margin-left: 2em;
+        }
+        .product-block {
+            margin-left: 4em;
+        }
+    </style>
+</head>
+<body>
+    <h1>Stored Plans (Latest First)</h1>
+
+    {% for plan in plans %}
+        <div class="plan-block">
+            <strong>Plan ID:</strong> {{ plan.plan_id }} |
+            <strong>Created From:</strong> {{ plan.create_from }}
+
+            {% for offer in plan.offers %}
+                <div class="offer-block">
+                    <strong>Offer ID:</strong> {{ offer.id }},
+                    Year: {{ offer.year }},
+                    Week: {{ offer.week }},
+                    Category Group: {{ offer.category_group }},
+                    Container: {{ offer.container }}
+
+                    {% for product in offer.products %}
+                        <div class="product-block">
+                            Product Group: {{ product.product_group }},
+                            Product Group ID: {{ product.product_group_id }},
+                            Shelf Price: {{ product.shelf_price }},
+                            Promo Price: {{ product.promo_price }},
+                            Weightage: {{ product.weightage }},
+                            Gauging Unit: {{ product.gauging_unit }},
+                            Sub Product: {{ product.sub_product }},
+                            Sub Product ID: {{ product.sub_product_id }}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p>No plans submitted yet.</p>
+    {% endfor %}
+</body>
+</html>
