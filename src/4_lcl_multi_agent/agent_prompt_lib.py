@@ -130,7 +130,7 @@ prompt_search_agent = {
 # sample json reponse for FE:
 {
   "plan_id": "random_str",
-  "create_from": "agent",
+  "created_from": "agent",
   "offers": [
     {
       "id": ...,
@@ -208,4 +208,4 @@ prompt_search_agent = {
 
 
 
-}
+

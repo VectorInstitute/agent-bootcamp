@@ -113,7 +113,7 @@ search_agent = agents.Agent(
 #         "ORDER BY Sales_Lift DESC LIMIT 1;"
 
 
-REACT_INSTRUCTIONS = f"""\
+REACT_INSTRUCTIONS = """\
 Answer the question using the search tool. \
 EACH TIME before invoking the function, you must explain your reasons for doing so. \
 If the search tool did not return intended results, try again. \
@@ -121,12 +121,109 @@ For best performance, divide complex queries into simpler sub-queries. \
 Do not make up information.
 Stop after two tries.
 Your search tool is an agent searching an sql database containing promotion data for products.
-Use that to reason based on the information you get from the search agent/tool.
+Use that to reason based on the information you get from the search agent/tool. 
 
-Examples of good responses can be found here: 
-    input: {agent_example_lib.main_agent["input"]}
-    output: {agent_example_lib.main_agent["output"]}
+Once you have the answer ready to share with the user, in addition to answer the user in natural 
+language, use the api tool 'submit_plan_to_api' to create a reponse in the sample dictionary defined
+below to the Front End through API call. In case you don't find the api tool, ignore sending the 
+api call.
+
+
+The table schema is defined in Pydantic class as follows:
+
+class Plan(BaseModel):
+    id: str  # main agent generate 10-digit random string 
+    created_from: "agent" #default is "agent" no need to change
+    offers: list[Offer]
+
+class Offer(BaseModel):
+    id: str
+    year: int  # Ad year the offer starts on
+    week: int  # Ad week the offer starts on
+    category_group: str #
+    container: str # Empty until created in JDA
+    products: list[Product]
+
+class Product(BaseModel):
+    "product_group": str
+    "product_group_id": str
+    "shelf_price": float
+    "promo_price": float
+    "weightage": float
+    "gauging_unit": str
+    "sub_product": str
+    "sub_product_id": str
+
+The dictionary response is defined as follows:
+{
+    "plan_id": "random_str",
+    "created_from": "agent",
+    "offers": [
+        {
+            "id": "123",
+            "year": 2025,
+            "week": 12,
+            "category_group": "soda",
+            "container": "123-45-45",
+            "products": [
+                {
+                    "product_group": "tasty soda",
+                    "product_group_id": "1234",
+                    "shelf_price": 23,
+                    "promo_price": 23,
+                    "weightage": 23,
+                    "gauging_unit": "23",
+                    "sub_product": "23",
+                    "sub_product_id": 23
+                },
+                {
+                    "product_group": "sweet soda",
+                    "product_group_id": "1235",
+                    "shelf_price": 24,
+                    "promo_price": 24,
+                    "weightage": 24,
+                    "gauging_unit": "24",
+                    "sub_product": "24",
+                    "sub_product_id": 24
+                }
+            ]
+        },
+        {
+            "id": "134",
+            "year": 2024,
+            "week": 14,
+            "category_group": "chips",
+            "container": "134-45-45",
+            "products": [
+                {
+                    "product_group": "tasty chips",
+                    "product_group_id": "1234",
+                    "shelf_price": 23,
+                    "promo_price": 23,
+                    "weightage": 23,
+                    "gauging_unit": "23",
+                    "sub_product": "23",
+                    "sub_product_id": 23
+                },
+                {
+                    "product_group": "spicy chips",
+                    "product_group_id": "1235",
+                    "shelf_price": 24,
+                    "promo_price": 24,
+                    "weightage": 24,
+                    "gauging_unit": "24",
+                    "sub_product": "24",
+                    "sub_product_id": 24
+                }
+            ]
+        }
+    ]
+}
 """
+# Examples of good responses can be found here: 
+#     input: {agent_example_lib.main_agent["input"]}
+#     output: {agent_example_lib.main_agent["output"]}
+
 # Main Agent: more expensive and slower, but better at complex planning
 main_agent = agents.Agent(
     name="MainAgent",
