@@ -27,6 +27,7 @@ dependencies = [
     "weaviate-client>=4.15.4",
     "fastapi>=0.111.0",
     "uvicorn[standard]>=0.30.0",
+    "requests>=2.31.0",
 ]
 
 [dependency-groups]

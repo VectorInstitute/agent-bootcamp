@@ -5,6 +5,7 @@ With reference to:
 github.com/ComplexData-MILA/misinfo-datasets
 /blob/3304e6e/misinfo_data_eval/tasks/web_search.py
 """
+import requests
 import pandas as pd
 from pandasql import sqldf
 import asyncio
@@ -55,6 +56,28 @@ def search_historical_data(sql: str) -> list[dict]:
 
     # Convert result to JSON-friendly format
     return result_df.to_dict(orient="records")
+
+
+
+def submit_plan_to_api(plan: dict, url: str = "http://127.0.0.1:8000/update") -> None:
+    """
+    Sends a plan JSON to the FastAPI /update endpoint.
+
+    Args:
+        plan (dict): The plan data to send.
+        url (str): The FastAPI endpoint URL (default is localhost).
+
+    Returns:
+        None
+    """
+    try:
+        response = requests.post(url, json=plan)
+        response.raise_for_status()
+        print("✅ Plan submitted successfully.")
+        print("Response:", response.text)
+    except requests.exceptions.RequestException as e:
+        print("❌ Failed to submit plan.")
+        print("Error:", e)
 
 
 load_dotenv(verbose=True)
@@ -137,7 +160,8 @@ main_agent = agents.Agent(
         search_agent.as_tool(
             tool_name="search",
             tool_description="Query the structured data and return enough data to help asnwer the user question.",
-        )
+        ),
+        agents.function_tool(submit_plan_to_api)
     ],
     # a larger, more capable model for planning and reasoning over summaries
     model=agents.OpenAIChatCompletionsModel(
