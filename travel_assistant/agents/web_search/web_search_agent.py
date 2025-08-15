@@ -59,4 +59,4 @@ async def _main(query: str) -> None:
 
 
 if __name__ == "__main__":
-    asyncio.run(_main("Latest AI research breakthroughs"))
+    asyncio.run(_main("Provide list of hotels in Toronto between Sep 1 and Sep 3 and price is under 300 CAD per night"))
