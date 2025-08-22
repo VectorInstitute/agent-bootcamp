@@ -6,6 +6,8 @@ github.com/ComplexData-MILA/misinfo-datasets
 /blob/3304e6e/misinfo_data_eval/tasks/web_search.py
 """
 import requests
+from pydantic import BaseModel
+
 import pandas as pd
 from pandasql import sqldf
 import asyncio
@@ -35,6 +37,32 @@ from pandasql import sqldf
 import pandas as pd
 from pandasql import sqldf
 
+
+class Product(BaseModel):
+    product_group: str
+    product_group_id: str
+    shelf_price: float
+    promo_price: float
+    weightage: float
+    gauging_unit: str
+    sub_product: str
+    sub_product_id: str
+
+class Offer(BaseModel):
+    id: str
+    year: int  # Ad year the offer starts on
+    week: int  # Ad week the offer starts on
+    category_group: str #
+    container: str # Empty until created in JDA
+    products: list[Product]
+
+class Plan(BaseModel):
+    id: str  # main agent generate 10-digit random string 
+    created_from: str #default is "agent" no need to change
+    offers: list[Offer]
+
+
+
 def search_historical_data(sql: str) -> list[dict]:
     """
     Run a SQL query against the local LCL sales dataset.
@@ -59,7 +87,7 @@ def search_historical_data(sql: str) -> list[dict]:
 
 
 
-def submit_plan_to_api(plan: dict, url: str = "http://127.0.0.1:8000/update") -> None:
+def submit_plan_to_api(plan: Plan, url: str = "http://127.0.0.1:8000/update") -> None:
     """
     Sends a plan JSON to the FastAPI /update endpoint.
 
@@ -71,7 +99,7 @@ def submit_plan_to_api(plan: dict, url: str = "http://127.0.0.1:8000/update") ->
         None
     """
     try:
-        response = requests.post(url, json=plan)
+        response = requests.post(url, json=plan.model_dump())
         response.raise_for_status()
         print("✅ Plan submitted successfully.")
         print("Response:", response.text)
@@ -254,16 +282,18 @@ main_agent = agents.Agent(
     # Allow the planner agent to invoke the worker agent.
     # The long context provided to the worker agent is hidden from the main agent.
     tools=[
+        agents.function_tool(submit_plan_to_api),
         search_agent.as_tool(
             tool_name="search",
             tool_description="Query the structured data and return enough data to help asnwer the user question.",
         ),
-        agents.function_tool(submit_plan_to_api)
     ],
     # a larger, more capable model for planning and reasoning over summaries
     model=agents.OpenAIChatCompletionsModel(
         model="gemini-2.5-pro", openai_client=async_openai_client
     ),
+    model_settings=agents.ModelSettings(tool_choice="auto"),
+
 )
 
 
