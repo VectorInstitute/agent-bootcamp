@@ -8,7 +8,6 @@ github.com/ComplexData-MILA/misinfo-datasets
 
 import asyncio
 import contextlib
-import logging
 import signal
 import sys
 
@@ -24,6 +23,7 @@ from src.utils import (
     Configs,
     get_weaviate_async_client,
     oai_agent_stream_to_gradio_messages,
+    set_up_logging,
     setup_langfuse_tracer,
 )
 from src.utils.langfuse.shared_client import langfuse_client
@@ -31,9 +31,7 @@ from src.utils.langfuse.shared_client import langfuse_client
 
 load_dotenv(verbose=True)
 
-
-logging.basicConfig(level=logging.INFO)
-
+set_up_logging()
 
 AGENT_LLM_NAMES = {
     "worker": "gemini-2.5-flash",  # less expensive,
@@ -75,7 +73,7 @@ search_agent = agents.Agent(
     name="SearchAgent",
     instructions=(
         "You are a search agent. You receive a single search query as input. "
-        "Use the WebSearchTool to perform a web search, then produce a concise "
+        "Use the search tool to perform a search, then produce a concise "
         "'search summary' of the key findings. Do NOT return raw search results."
     ),
     tools=[
@@ -83,7 +81,7 @@ search_agent = agents.Agent(
     ],
     # a faster, smaller model for quick searches
     model=agents.OpenAIChatCompletionsModel(
-        model="gemini-2.5-flash", openai_client=async_openai_client
+        model=AGENT_LLM_NAMES["worker"], openai_client=async_openai_client
     ),
 )
 
@@ -101,7 +99,7 @@ main_agent = agents.Agent(
     ],
     # a larger, more capable model for planning and reasoning over summaries
     model=agents.OpenAIChatCompletionsModel(
-        model="gemini-2.5-pro", openai_client=async_openai_client
+        model=AGENT_LLM_NAMES["planner"], openai_client=async_openai_client
     ),
 )
 
