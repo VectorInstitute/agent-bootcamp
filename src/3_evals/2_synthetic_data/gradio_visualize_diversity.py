@@ -109,7 +109,7 @@ async def get_projection_plot(
     embeddings_np = np.asarray(embeddings)
 
     # Reduce dimensions
-    num_texts = int(limit) if limit else len(texts)
+    num_texts = min(int(limit), len(texts)) if limit else len(texts)
     assert embeddings_np.shape[0] == num_texts, (embeddings_np.shape, num_texts)
     embeddings_reduced = reduce_dimensions(embeddings_np, method=projection_method)
 
