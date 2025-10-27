@@ -5,7 +5,6 @@ Log traces to LangFuse for observability and evaluation.
 
 import asyncio
 import contextlib
-import logging
 import signal
 import sys
 
@@ -22,6 +21,7 @@ from src.utils import (
     get_weaviate_async_client,
     oai_agent_stream_to_gradio_messages,
     pretty_print,
+    set_up_logging,
     setup_langfuse_tracer,
 )
 from src.utils.langfuse.shared_client import langfuse_client
@@ -29,8 +29,7 @@ from src.utils.langfuse.shared_client import langfuse_client
 
 load_dotenv(verbose=True)
 
-
-logging.basicConfig(level=logging.INFO)
+set_up_logging()
 
 AGENT_LLM_NAME = "gemini-2.5-flash"
 
