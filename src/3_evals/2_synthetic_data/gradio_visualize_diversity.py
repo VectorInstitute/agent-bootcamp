@@ -37,7 +37,11 @@ def reduce_dimensions(
         np.ndarray: Reduced 2D embeddings of shape (n_samples, 2).
     """
     if method == "tsne":
-        reducer = TSNE(n_components=n_components, random_state=42)
+        reducer = TSNE(
+            n_components=n_components,
+            perplexity=min(embeddings.shape[0] - 1, 30),
+            random_state=42,
+        )
     elif method == "pca":
         reducer = PCA(n_components=n_components)
     else:
@@ -105,13 +109,14 @@ async def get_projection_plot(
     embeddings_np = np.asarray(embeddings)
 
     # Reduce dimensions
-    assert embeddings_np.shape[0] == len(texts), (embeddings_np.shape, len(texts))
+    num_texts = min(int(limit), len(texts)) if limit else len(texts)
+    assert embeddings_np.shape[0] == num_texts, (embeddings_np.shape, num_texts)
     embeddings_reduced = reduce_dimensions(embeddings_np, method=projection_method)
 
     # Create plot
     return plot_embeddings_2d(
         reduced_embeddings=embeddings_reduced,
-        texts=texts,
+        texts=texts[:num_texts],
         dataset_title=dataset_name,
     )
 
@@ -121,7 +126,7 @@ viewer = gr.Interface(
     inputs=[
         gr.Textbox(label="Dataset name"),
         gr.Radio(["tsne", "pca"], label="Dimensionality Reduction Method"),
-        gr.Number(value=36, label="Number of rows to plot", minimum=1),
+        gr.Number(value=18, label="Number of rows to plot", minimum=1),
     ],
     outputs=gr.Plot(label="2D Embedding Plot"),
     title="3.2 Text Embedding Visualizer",
@@ -129,4 +134,4 @@ viewer = gr.Interface(
 )
 
 if __name__ == "__main__":
-    viewer.launch(server_name="0.0.0.0")
+    viewer.launch(share=True)
