@@ -48,3 +48,7 @@ variable github_app_id {
 variable container_image {
     type = string
 }
+
+variable "service_account_email" {
+    type = string
+}

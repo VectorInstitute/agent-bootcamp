@@ -35,12 +35,21 @@ resource "coder_agent" "main" {
   auth           = "google-instance-identity"
   arch           = "amd64"
   os             = "linux"
+
+  display_apps {
+    vscode = false
+  }
+
   startup_script = <<-EOT
     #!/bin/bash
     set -e
 
-    echo "Changing permissions of /home/${local.username} folder"
+    # Fix permissions immediately - must be first!
+    echo "Fixing permissions for /home/${local.username}"
     sudo chown -R ${local.username}:${local.username} /home/${local.username}
+
+    # Create project directory early so vscode-web can use it
+    mkdir -p "/home/${local.username}/${local.repo_name}"
 
     # Install uv
     curl -LsSf https://astral.sh/uv/install.sh | sh
@@ -49,19 +58,37 @@ resource "coder_agent" "main" {
     # Clone the GitHub repository
     cd "/home/${local.username}"
 
-    if [ ! -d "${local.repo_name}" ] ; then
-      git clone ${var.github_repo}
+    if [ ! -d "${local.repo_name}/.git" ] ; then
+      git clone ${var.github_repo} ${local.repo_name}
       cd ${local.repo_name}
       git checkout ${var.github_branch}
     else
       cd ${local.repo_name}
+      git pull || true
     fi
 
     # Run project init steps
-    
     uv venv .venv
     source .venv/bin/activate
     uv sync --dev
+
+    # Configure VS Code settings
+    mkdir -p "/home/${local.username}/${local.repo_name}/.vscode"
+    cat > "/home/${local.username}/${local.repo_name}/.vscode/settings.json" <<'VSCODE_SETTINGS'
+{
+  "python.terminal.useEnvFile": true
+}
+VSCODE_SETTINGS
+
+    # Configure shell to always start in repo with venv activated
+    cat >> "/home/${local.username}/.bashrc" <<'BASHRC'
+
+# Auto-navigate to agent-bootcamp and activate venv
+if [ -f ~/agent-bootcamp/.venv/bin/activate ]; then
+    cd ~/agent-bootcamp
+    source .venv/bin/activate
+fi
+BASHRC
 
     echo "Startup script ran successfully!"
 
@@ -72,6 +99,7 @@ resource "coder_agent" "main" {
 			GIT_AUTHOR_EMAIL    = "${data.coder_workspace_owner.me.email}"
 			GIT_COMMITTER_NAME  = coalesce(data.coder_workspace_owner.me.full_name, data.coder_workspace_owner.me.name)
 			GIT_COMMITTER_EMAIL = "${data.coder_workspace_owner.me.email}"
+		GITHUB_USER         = data.coder_workspace_owner.me.name
 	}
 
 	metadata {
@@ -107,7 +135,7 @@ module "gce-container" {
   container = {
     image   = var.container_image
     command = ["sh"]
-    args    = ["-c", coder_agent.main.init_script]
+    args    = ["-c", "chown -R ${local.username}:${local.username} /home/${local.username} && su - ${local.username} -s /bin/bash <<'CODER_SCRIPT'\n${coder_agent.main.init_script}\nCODER_SCRIPT\n"]
     securityContext = {
       privileged : true
     }
@@ -212,38 +240,6 @@ module "vscode-web" {
   install_prefix = "/tmp/.vscode-web"
   folder         = "/home/coder/${local.repo_name}"
   accept_license = true
+  subdomain      = false
 }
 
-resource "coder_app" "jupyter" {
-  count        = tobool(var.jupyterlab) ? 1 : 0
-  agent_id     = coder_agent.main.id
-  slug         = "jupyter"
-  display_name = "JupyterLab"
-  url          = "http://localhost:8888"
-  icon         = "/icon/jupyter.svg"
-  share        = "owner"
-  subdomain    = true
-
-  healthcheck {
-    url       = "http://localhost:8888/api"
-    interval  = 5
-    threshold = 10
-  }
-}
-
-resource "coder_app" "streamlit-app" {
-  count        = tobool(var.streamlit) ? 1 : 0
-  agent_id     = coder_agent.main.id
-  slug         = "streamlit-app"
-  display_name = "Search and Chat"
-  url          = "http://localhost:8501"
-  icon         = "https://icon.icepanel.io/Technology/svg/Streamlit.svg"
-  subdomain    = false
-  share        = "owner"
-
-  healthcheck {
-    url       = "http://localhost:8501/healthz"
-    interval  = 5
-    threshold = 6
-  }
-}

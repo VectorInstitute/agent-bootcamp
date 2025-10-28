@@ -25,12 +25,10 @@ RUN useradd --groups sudo --shell /bin/bash ${USER} \
     && echo "${USER} ALL=(ALL) NOPASSWD:ALL" >/etc/sudoers.d/${USER} \
     && chmod 0440 /etc/sudoers.d/${USER}
 
-# Setup user account but not activate it yet
-RUN mkdir /home/${USER} && \
-    chown -R ${USER}:${USER} /home/${USER}
+# Setup user account and home directory in the image
 RUN mkdir -p /home/${USER}/.config/gcloud && \
-    chown -R ${USER}:${USER} /home/${USER}/.config
+    chown -R ${USER}:${USER} /home/${USER}
 
-# We want the following commands to run as a regular user, so activate the coder account
-USER ${USER}
-WORKDIR /home/${USER}
+# Note: We don't set USER here because the container needs to run as root
+# to fix permissions on the mounted volume. The container command will
+# chown /home/coder and then su to the coder user.
