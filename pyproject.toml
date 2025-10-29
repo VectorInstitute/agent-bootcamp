@@ -54,6 +54,11 @@ docs = [
     "ipykernel>=6.29.5",
     "ipython>=9.4.0",
 ]
+web-search = [
+    "google-cloud-firestore>=2.21.0",
+    "fastapi[standard]>=0.116.1",
+    "google-genai>=1.46.0",
+]
 
 # Default dependency groups to be installed
 [tool.uv]
