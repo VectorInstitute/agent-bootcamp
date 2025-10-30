@@ -300,6 +300,18 @@ async def require_api_key(
     )
 
 
+async def require_api_key_without_consumption(
+    api_key_header: Annotated[str, Header(alias="X-API-Key")],
+    authenticator: Annotated[APIKeyAuthenticator, Depends(get_authenticator)],
+) -> APIKeyRecord:
+    """Validate the user's API key without decrementing the usage counter."""
+    return await _authenticate_request(
+        api_key_header,
+        authenticator,
+        consume_usage=False,
+    )
+
+
 async def require_admin_api_key(
     api_key_header: Annotated[str, Header(alias="X-API-Key")],
     authenticator: Annotated[APIKeyAuthenticator, Depends(get_authenticator)],
@@ -456,14 +468,14 @@ async def search(
 
 @router.get("/usage")
 async def usage(
-    record: Annotated[APIKeyRecord, Depends(require_api_key)],
+    record: Annotated[APIKeyRecord, Depends(require_api_key_without_consumption)],
 ) -> APIKeyUsageResponse:
     """Return current usage information for the caller's API key.
 
     Parameters
     ----------
     record : APIKeyRecord
-        Updated API key record produced by ``require_api_key``.
+        Updated API key record produced by ``require_api_key_without_consumption``.
 
     Returns
     -------
