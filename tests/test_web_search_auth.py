@@ -23,15 +23,18 @@ class FakeRepository:
         self.records: dict[str, APIKeyRecord] = {}
 
     async def create_api_key(self, record: APIKeyRecord) -> None:
+        """Create API key."""
         self.records[record.lookup_hash] = record
 
     async def get_api_key(self, lookup_hash: str) -> APIKeyRecord:
+        """Get API key."""
         try:
             return self.records[lookup_hash]
         except KeyError as exc:
             raise APIKeyNotFoundError(lookup_hash) from exc
 
     async def delete_api_key(self, lookup_hash: str) -> None:
+        """Delete API key."""
         self.records.pop(lookup_hash, None)
 
     async def list_api_keys(
@@ -40,12 +43,14 @@ class FakeRepository:
         status: Status | None = None,
         limit: int = 100,
     ) -> list[APIKeyRecord]:
+        """List API keys."""
         records = list[APIKeyRecord](self.records.values())
         if status:
             records = [record for record in records if record.status == status]
         return records[:limit]
 
     async def update_usage_counter(self, lookup_hash: str) -> APIKeyRecord:
+        """Update usage counter."""
         if lookup_hash not in self.records:
             raise APIKeyNotFoundError(lookup_hash)
 
@@ -62,10 +67,12 @@ class FakeRepository:
         return updated
 
     async def set_status(self, lookup_hash: str, status: Status) -> None:
+        """Set status."""
         record = self.records[lookup_hash]
         self.records[lookup_hash] = replace(record, status=status)
 
     async def update_usage_limit(self, lookup_hash: str, usage_limit: int) -> None:
+        """Update usage limit."""
         record = self.records[lookup_hash]
         self.records[lookup_hash] = replace(record, usage_limit=usage_limit)
 
@@ -74,6 +81,7 @@ class FakeRepository:
         lookup_hash: str,
         expires_at: Optional[datetime],
     ) -> None:
+        """Update expiration."""
         record = self.records[lookup_hash]
         self.records[lookup_hash] = replace(record, expires_at=expires_at)
 
