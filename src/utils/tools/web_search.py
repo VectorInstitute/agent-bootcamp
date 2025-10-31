@@ -74,15 +74,15 @@ class GeminiGroundingWithGoogleSearch:
         """Get Google Search grounded response to query from Gemini model.
 
         This function calls a Gemini model with Google Search tool enabled. How
-        it works:
+        it works [1]_:
             - The model analyzes the input query and determines if a Google Search
-              can improve the answer
+              can improve the answer.
             - If needed, the model automatically generates one or multiple search
-              queries and executes them
+              queries and executes them.
             - The model processes the search results, synthesizes the information,
               and formulates a response.
             - The API returns a final, user-friendly response that is grounded in
-              the search results
+              the search results.
 
         Parameters
         ----------
@@ -95,6 +95,10 @@ class GeminiGroundingWithGoogleSearch:
             Response returned by Gemini. This includes the text with citations added,
             the web search queries executed (expanded from the input query), and the
             raw response object from the API.
+
+        References
+        ----------
+        .. [1] https://ai.google.dev/gemini-api/docs/google-search#how_grounding_with_google_search_works
         """
         # Payload
         payload = self.model_settings.model_dump(exclude_unset=True)
