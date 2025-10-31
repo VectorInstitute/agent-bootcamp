@@ -11,6 +11,9 @@ from pydantic import BaseModel
 from pydantic.fields import Field
 
 
+RETRYABLE_STATUS = {429, 500, 502, 503, 504}
+
+
 class ModelSettings(BaseModel):
     """Configuration for the Gemini model used for web search."""
 
@@ -105,7 +108,7 @@ class GeminiGroundingWithGoogleSearch:
         payload["query"] = query
 
         # Call Gemini
-        response = await self._post(payload)
+        response = await self._post_payload(payload)
 
         try:
             response.raise_for_status()
@@ -116,18 +119,31 @@ class GeminiGroundingWithGoogleSearch:
 
         response_json = response.json()
         text_with_citations = add_citations(response_json)
+
         return Response(
             text_with_citations=text_with_citations,
-            web_search_queries=response_json["web_search_queries"],
+            web_search_queries=response_json["candidates"][0]["grounding_metadata"][
+                "web_search_queries"
+            ],
             raw_response=response_json,
         )
 
     @backoff.on_exception(
         backoff.expo,
-        (httpx.HTTPError, httpx.Timeout, httpx.RequestError),
+        (
+            httpx.TimeoutException,
+            httpx.NetworkError,
+            httpx.HTTPStatusError,  # only retry codes in RETRYABLE_STATUS
+        ),
+        giveup=lambda exc: (
+            isinstance(exc, httpx.HTTPStatusError)
+            and exc.response.status_code not in RETRYABLE_STATUS
+        ),
         jitter=backoff.full_jitter,
+        max_tries=5,
     )
-    async def _post(self, payload: dict[str, object]) -> httpx.Response:
+    async def _post_payload(self, payload: dict[str, object]) -> httpx.Response:
+        """Send a POST request to the endpoint with the given payload."""
         async with self._semaphore:
             return await self._client.post(self._endpoint, json=payload)
 
