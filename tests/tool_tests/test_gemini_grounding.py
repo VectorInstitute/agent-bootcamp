@@ -5,7 +5,7 @@ import os
 import pytest
 
 from src.utils import pretty_print
-from src.utils.tools.web_search import GeminiGroundingWithGoogleSearch
+from src.utils.tools.gemini_grounding import GeminiGroundingWithGoogleSearch
 
 
 @pytest.mark.asyncio
