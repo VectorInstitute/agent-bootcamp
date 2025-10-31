@@ -444,7 +444,8 @@ async def health() -> dict[str, str]:
 @router.post("/v1/grounding_with_search")
 async def search(
     request: RequestBody,
-    _: Annotated[APIKeyRecord, Depends(require_api_key)],
+    record: Annotated[APIKeyRecord, Depends(require_api_key)],
+    authenticator: Annotated[APIKeyAuthenticator, Depends(get_authenticator)],
 ) -> dict[str, object]:
     """Proxy Gemini grounding requests with quota enforcement.
 
@@ -452,16 +453,27 @@ async def search(
     ----------
     request : RequestBody
         Payload describing the Gemini call.
-    _ : APIKeyRecord
-        API key record produced by ``require_api_key``. The underscore keeps
-        the dependency explicit without exposing it to callers.
+    record : APIKeyRecord
+        API key record produced by ``require_api_key``.
+    authenticator : APIKeyAuthenticator
+        Authenticator dependency used to roll back usage reservations on error.
 
     Returns
     -------
-    google.genai.types.GenerateContentResponse
-        Response returned by the Gemini model.
+    dict of str to object
+        JSON serialisable response returned by the Gemini model.
     """
-    response = await call_gemini_with_retry(request)
+    try:
+        response = await call_gemini_with_retry(request)
+    except Exception:
+        try:
+            await authenticator.release_usage(record.lookup_hash)
+        except Exception:  # pragma: no cover - defensive logging for rollbacks
+            logger.exception(
+                "Failed to roll back usage for API key %s", record.lookup_hash
+            )
+        raise
+
     logger.info("Gemini request completed for model %s", request.model)
     return response.to_json_dict()
 

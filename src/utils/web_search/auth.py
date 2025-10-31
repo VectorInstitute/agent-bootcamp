@@ -286,6 +286,31 @@ class APIKeyAuthenticator:
 
         return record
 
+    async def release_usage(self, lookup_hash: str) -> APIKeyRecord:
+        """Rollback a previously reserved usage slot.
+
+        Parameters
+        ----------
+        lookup_hash : str
+            Lookup hash corresponding to the API key whose usage should be
+            decremented.
+
+        Returns
+        -------
+        APIKeyRecord
+            Updated record containing the decremented usage counter.
+        """
+        try:
+            updated_record = await self._repository.decrement_usage_counter(
+                lookup_hash,
+            )
+        except APIKeyNotFoundError as exc:  # pragma: no cover - defensive branch
+            self._cache.pop(lookup_hash, None)
+            raise InvalidAPIKeyError("API key not recognised") from exc
+
+        self._cache_store(updated_record)
+        return updated_record
+
     async def create_api_key(
         self,
         *,

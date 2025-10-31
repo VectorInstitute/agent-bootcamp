@@ -66,6 +66,17 @@ class FakeRepository:
         self.records[lookup_hash] = updated
         return updated
 
+    async def decrement_usage_counter(self, lookup_hash: str) -> APIKeyRecord:
+        """Decrement usage counter."""
+        if lookup_hash not in self.records:
+            raise APIKeyNotFoundError(lookup_hash)
+
+        record = self.records[lookup_hash]
+        new_count = max(record.usage_count - 1, 0)
+        updated = replace(record, usage_count=new_count)
+        self.records[lookup_hash] = updated
+        return updated
+
     async def set_status(self, lookup_hash: str, status: Status) -> None:
         """Set status."""
         record = self.records[lookup_hash]
@@ -108,6 +119,25 @@ async def test_reserve_usage_increments_counter() -> None:
 
     assert updated_record.usage_count == 1
     assert repository.records[record.lookup_hash].usage_count == 1
+
+
+@pytest.mark.asyncio
+async def test_release_usage_rolls_back_counter() -> None:
+    """Ensure usage reservations can be rolled back after failures."""
+    repository = FakeRepository()
+    authenticator = auth.APIKeyAuthenticator(repository, clock=fixed_clock)
+
+    api_key, record = await authenticator.create_api_key(
+        role="user",
+        owner="owner-rollback",
+        usage_limit=5,
+        created_by="admin",
+    )
+
+    await authenticator.reserve_usage(api_key)
+    await authenticator.release_usage(record.lookup_hash)
+
+    assert repository.records[record.lookup_hash].usage_count == 0
 
 
 @pytest.mark.asyncio
