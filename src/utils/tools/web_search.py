@@ -1,4 +1,4 @@
-"""Implements a tool for fetch Google Search grounded responses from Gemini."""
+"""Implements a tool to fetch Google Search grounded responses from Gemini."""
 
 import asyncio
 import os
@@ -51,6 +51,12 @@ class GeminiGroundingWithGoogleSearch:
         Maximum number of concurrent Gemini requests.
     timeout : int, optional, default=300
         Timeout for requests to the server.
+
+    Raises
+    ------
+    ValueError
+        If the ``WEB_SEARCH_API_KEY`` environment variable is not set or the
+        ``WEB_SEARCH_BASE_URL`` environment variable is not set.
     """
 
     def __init__(
@@ -65,6 +71,11 @@ class GeminiGroundingWithGoogleSearch:
         self.base_url = base_url or os.getenv("WEB_SEARCH_BASE_URL")
         self.api_key = api_key or os.getenv("WEB_SEARCH_API_KEY")
         self.model_settings = model_settings or ModelSettings()
+
+        if self.api_key is None:
+            raise ValueError("WEB_SEARCH_API_KEY environment variable is not set.")
+        if self.base_url is None:
+            raise ValueError("WEB_SEARCH_BASE_URL environment variable is not set.")
 
         self._semaphore = asyncio.Semaphore(max_concurrency)
 
