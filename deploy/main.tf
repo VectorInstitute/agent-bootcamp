@@ -57,5 +57,3 @@ resource "google_compute_instance" "server" {
 
     depends_on = [ google_project_service.cloud_resource_manager_api, google_project_service.compute_api ]
 }
-
-
