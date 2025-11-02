@@ -242,4 +242,3 @@ module "vscode-web" {
   accept_license = true
   subdomain      = false
 }
-
