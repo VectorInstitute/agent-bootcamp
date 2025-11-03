@@ -26,7 +26,7 @@ class ModelSettings(BaseModel):
     thinking_budget: int | None = Field(default=-1, ge=-1)
 
 
-class Response(BaseModel):
+class GroundedResponse(BaseModel):
     """Response returned by Gemini."""
 
     text_with_citations: str
@@ -82,9 +82,9 @@ class GeminiGroundingWithGoogleSearch:
         self._client = httpx.AsyncClient(
             timeout=timeout, headers={"X-API-Key": self.api_key}
         )
-        self._endpoint = f"{self.base_url}/api/v1/grounding_with_search"
+        self._endpoint = f"{self.base_url.strip('/')}/api/v1/grounding_with_search"
 
-    async def get_web_search_grounded_response(self, query: str) -> Response:
+    async def get_web_search_grounded_response(self, query: str) -> GroundedResponse:
         """Get Google Search grounded response to query from Gemini model.
 
         This function calls a Gemini model with Google Search tool enabled. How
@@ -105,7 +105,7 @@ class GeminiGroundingWithGoogleSearch:
 
         Returns
         -------
-        Response
+        GroundedResponse
             Response returned by Gemini. This includes the text with citations added,
             the web search queries executed (expanded from the input query), and the
             raw response object from the API.
@@ -131,7 +131,7 @@ class GeminiGroundingWithGoogleSearch:
         response_json = response.json()
         text_with_citations = add_citations(response_json)
 
-        return Response(
+        return GroundedResponse(
             text_with_citations=text_with_citations,
             web_search_queries=response_json["candidates"][0]["grounding_metadata"][
                 "web_search_queries"
