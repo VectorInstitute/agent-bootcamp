@@ -1,21 +1,30 @@
 """Test cases for Weaviate integration."""
 
 import json
+import sys
+from pathlib import Path
 from typing import AsyncGenerator
 
-import pytest
-import pytest_asyncio
-from dotenv import load_dotenv
-from langfuse import get_client
-from openai import AsyncOpenAI
 
-from src.utils import (
+# Add project root to path to allow imports from src
+project_root = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(project_root))
+
+import pytest  # noqa: E402
+import pytest_asyncio  # noqa: E402
+from dotenv import load_dotenv  # noqa: E402
+from langfuse import get_client  # noqa: E402
+from openai import AsyncOpenAI  # noqa: E402
+
+from src.utils import (  # noqa: E402
     AsyncWeaviateKnowledgeBase,
     Configs,
     get_weaviate_async_client,
     pretty_print,
 )
-from src.utils.langfuse.otlp_env_setup import set_up_langfuse_otlp_env_vars
+from src.utils.langfuse.otlp_env_setup import (  # noqa: E402
+    set_up_langfuse_otlp_env_vars,
+)
 
 
 load_dotenv(verbose=True)
