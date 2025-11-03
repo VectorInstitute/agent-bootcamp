@@ -262,7 +262,7 @@ module "vscode-web" {
   source         = "registry.coder.com/coder/vscode-web/coder"
   version        = "1.3.0"
   agent_id       = coder_agent.main.id
-  extensions     = ["ms-python.python", "ms-python.vscode-pylance"]
+  extensions     = ["ms-python.python", "ms-python.vscode-pylance", "ms-vsliveshare.vsliveshare"]
   install_prefix = "/tmp/.vscode-web"
   folder         = "/home/coder/${local.repo_name}"
   accept_license = true
