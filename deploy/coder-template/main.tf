@@ -16,25 +16,23 @@ provider "google" {
   project = var.project
 }
 
-data "google_compute_default_service_account" "default" {}
-
 data "coder_provisioner" "me" {}
 data "coder_workspace" "me" {}
 data "coder_workspace_owner" "me" {}
 data "coder_external_auth" "github" {
-   id = var.github_app_id
+  id = var.github_app_id
 }
 
 locals {
   # Ensure Coder username is a valid Linux username
-  username = "coder"
+  username  = "coder"
   repo_name = replace(regex(".*/(.*)", var.github_repo)[0], ".git", "")
 }
 
 resource "coder_agent" "main" {
-  auth           = "google-instance-identity"
-  arch           = "amd64"
-  os             = "linux"
+  auth = "google-instance-identity"
+  arch = "amd64"
+  os   = "linux"
 
   display_apps {
     vscode = false
@@ -68,9 +66,34 @@ resource "coder_agent" "main" {
     fi
 
     # Run project init steps
+    echo "Creating virtual environment and installing dependencies..."
     uv venv .venv
     source .venv/bin/activate
+
+    # Run sync synchronously and wait for completion
     uv sync --dev
+    sync_exit_code=$?
+
+    # Ensure sync completed successfully before proceeding
+    if [ $sync_exit_code -eq 0 ]; then
+      echo "Dependencies installed successfully"
+    else
+      echo "Warning: uv sync exited with code $sync_exit_code"
+    fi
+
+    # Wait a moment to ensure all installations are finalized
+    sleep 2
+
+    # Run automatic onboarding
+    echo "Running automatic onboarding..."
+    if command -v onboard &> /dev/null; then
+      onboard \
+        --bootcamp-name "$BOOTCAMP_NAME" \
+        --output-dir "/home/${local.username}/${local.repo_name}" \
+        --test-script "/home/${local.username}/${local.repo_name}/tests/tool_tests/test_integration.py" || echo "Onboarding failed, continuing..."
+    else
+      echo "Onboarding CLI not found, skipping automated onboarding"
+    fi
 
     # Configure VS Code settings
     mkdir -p "/home/${local.username}/${local.repo_name}/.vscode"
@@ -95,28 +118,31 @@ BASHRC
   EOT
 
   env = {
-			GIT_AUTHOR_NAME     = coalesce(data.coder_workspace_owner.me.full_name, data.coder_workspace_owner.me.name)
-			GIT_AUTHOR_EMAIL    = "${data.coder_workspace_owner.me.email}"
-			GIT_COMMITTER_NAME  = coalesce(data.coder_workspace_owner.me.full_name, data.coder_workspace_owner.me.name)
-			GIT_COMMITTER_EMAIL = "${data.coder_workspace_owner.me.email}"
-		GITHUB_USER         = data.coder_workspace_owner.me.name
-	}
+    GIT_AUTHOR_NAME      = coalesce(data.coder_workspace_owner.me.full_name, data.coder_workspace_owner.me.name)
+    GIT_AUTHOR_EMAIL     = "${data.coder_workspace_owner.me.email}"
+    GIT_COMMITTER_NAME   = coalesce(data.coder_workspace_owner.me.full_name, data.coder_workspace_owner.me.name)
+    GIT_COMMITTER_EMAIL  = "${data.coder_workspace_owner.me.email}"
+    GITHUB_USER          = data.coder_workspace_owner.me.name
+    TOKEN_SERVICE_URL    = var.token_service_url
+    BOOTCAMP_NAME        = var.bootcamp_name
+    FIREBASE_WEB_API_KEY = var.firebase_api_key
+  }
 
-	metadata {
-			display_name = "CPU Usage"
-			key          = "0_cpu_usage"
-			script       = "coder stat cpu"
-			interval     = 10
-			timeout      = 1
-	}
+  metadata {
+    display_name = "CPU Usage"
+    key          = "0_cpu_usage"
+    script       = "coder stat cpu"
+    interval     = 10
+    timeout      = 1
+  }
 
-	metadata {
-			display_name = "RAM Usage"
-			key          = "1_ram_usage"
-			script       = "coder stat mem"
-			interval     = 10
-			timeout      = 1
-	}
+  metadata {
+    display_name = "RAM Usage"
+    key          = "1_ram_usage"
+    script       = "coder stat mem"
+    interval     = 10
+    timeout      = 1
+  }
 }
 
 module "github-upload-public-key" {
@@ -176,9 +202,9 @@ module "gce-container" {
 
 resource "google_compute_disk" "pd" {
   project = var.project
-  name  = "coder-${data.coder_workspace.me.id}-data-disk"
-  type  = "pd-ssd"
-  zone  = var.zone
+  name    = "coder-${data.coder_workspace.me.id}-data-disk"
+  type    = "pd-ssd"
+  zone    = var.zone
   size    = var.pd_size
 }
 
@@ -204,7 +230,7 @@ resource "google_compute_instance" "dev" {
     mode        = "READ_WRITE"
   }
   service_account {
-    email  = data.google_compute_default_service_account.default.email
+    email  = var.service_account_email
     scopes = ["cloud-platform"]
   }
   metadata = {
@@ -241,4 +267,5 @@ module "vscode-web" {
   folder         = "/home/coder/${local.repo_name}"
   accept_license = true
   subdomain      = false
+  order          = 1
 }
