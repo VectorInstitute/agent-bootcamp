@@ -89,7 +89,7 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "aieng-platform-onboard", specifier = ">=0.3.2" },
+    { name = "aieng-platform-onboard", specifier = ">=0.3.4" },
     { name = "codecov", specifier = ">=2.1.13" },
     { name = "ipykernel", specifier = ">=6.29.5" },
     { name = "ipython", specifier = ">=9.4.0" },
@@ -124,7 +124,7 @@ web-search = [
 
 [[package]]
 name = "aieng-platform-onboard"
-version = "0.3.2"
+version = "0.3.4"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "firebase-admin" },
@@ -132,14 +132,15 @@ dependencies = [
     { name = "google-cloud-firestore" },
     { name = "google-cloud-secret-manager" },
     { name = "openai" },
+    { name = "pandas" },
     { name = "python-dotenv" },
     { name = "requests" },
     { name = "rich" },
     { name = "weaviate-client" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/41/7d/8f079401843271fb5b97b64eefae7d7edd593ce20b0bc7870c171eb4fb16/aieng_platform_onboard-0.3.2.tar.gz", hash = "sha256:a097cc461f9d01a454b690a726290efef2f040193addbf9e2c88792ad9925430", size = 14653 }
+sdist = { url = "https://files.pythonhosted.org/packages/6b/f9/69db0e1e6d9aa55d75ed1fb64bd46962d7eb601b015205fb7cf57e2898da/aieng_platform_onboard-0.3.4.tar.gz", hash = "sha256:2ddb6b06bb401a3aa4605bdd59876491b7c5eef041c7a34cc52621a91eabe555", size = 16398 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/0e/05/f7cce422ce11f5b07ec673e79673d1b5abbcb0fd1608b44bd7370752a685/aieng_platform_onboard-0.3.2-py3-none-any.whl", hash = "sha256:c2d896b33f792fc35769094fc8de9c9160972cd7e3657c2df431ef7bf8108a9a", size = 15611 },
+    { url = "https://files.pythonhosted.org/packages/7f/f0/c551967155cf16c1bfe845d6c355b9527a8e6ff419f2af3cb91f9ab7b710/aieng_platform_onboard-0.3.4-py3-none-any.whl", hash = "sha256:28e06c8689fd410f314eb8de6e8e3093f6f061a75a9230836b5567d9e719123e", size = 17463 },
 ]
 
 [[package]]
