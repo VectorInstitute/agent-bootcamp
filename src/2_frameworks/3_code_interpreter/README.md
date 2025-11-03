@@ -8,5 +8,5 @@ Prerequisites:
 Run:
 
 ```bash
-PYTHONPATH="." uv run --env-file .env gradio src/2_frameworks/3_code_interpreter/app.py
+uv run --env-file .env gradio src/2_frameworks/3_code_interpreter/app.py
 ```

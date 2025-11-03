@@ -50,7 +50,7 @@ cp -v .env.example .env
 Run integration tests to validate that your API keys are set up correctly.
 
 ```bash
-PYTHONPATH="." uv run --env-file .env pytest -sv tests/tool_tests/test_integration.py
+uv run --env-file .env pytest -sv tests/tool_tests/test_integration.py
 ```
 
 ## Reference Implementations
@@ -79,7 +79,7 @@ These warnings can be safely ignored, as they are the result of a bug in the ups
 Interactive knowledge base demo. Access the gradio interface in your browser to see if your knowledge base meets your expectations.
 
 ```bash
-PYTHONPATH="." uv run --env-file .env gradio src/1_basics/0_search_demo/app.py
+uv run --env-file .env gradio src/1_basics/0_search_demo/app.py
 ```
 
 Basic Reason-and-Act Agent- for demo purposes only.
@@ -87,8 +87,8 @@ Basic Reason-and-Act Agent- for demo purposes only.
 As noted above, these are unnecessarily verbose for real applications.
 
 ```bash
-# PYTHONPATH="." uv run --env-file .env src/1_basics/1_react_rag/cli.py
-# PYTHONPATH="." uv run --env-file .env gradio src/1_basics/1_react_rag/app.py
+# uv run --env-file .env src/1_basics/1_react_rag/cli.py
+# uv run --env-file .env gradio src/1_basics/1_react_rag/app.py
 ```
 
 
@@ -97,16 +97,16 @@ As noted above, these are unnecessarily verbose for real applications.
 Reason-and-Act Agent without the boilerplate- using the OpenAI Agent SDK.
 
 ```bash
-PYTHONPATH="." uv run --env-file .env src/2_frameworks/1_react_rag/cli.py
-PYTHONPATH="." uv run --env-file .env gradio src/2_frameworks/1_react_rag/langfuse_gradio.py
+uv run --env-file .env src/2_frameworks/1_react_rag/cli.py
+uv run --env-file .env gradio src/2_frameworks/1_react_rag/langfuse_gradio.py
 ```
 
 Multi-agent examples, also via the OpenAI Agent SDK.
 
 ```bash
-PYTHONPATH="." uv run --env-file .env gradio src/2_frameworks/2_multi_agent/efficient.py
+uv run --env-file .env gradio src/2_frameworks/2_multi_agent/efficient.py
 # Verbose option- greater control over the agent flow, but less flexible.
-# PYTHONPATH="." uv run --env-file .env gradio src/2_frameworks/2_multi_agent/verbose.py
+# uv run --env-file .env gradio src/2_frameworks/2_multi_agent/verbose.py
 ```
 
 Python Code Interpreter demo- using the OpenAI Agent SDK, E2B for secure code sandbox, and LangFuse for observability. Refer to [src/2_frameworks/3_code_interpreter/README.md](src/2_frameworks/3_code_interpreter/README.md) for details.
