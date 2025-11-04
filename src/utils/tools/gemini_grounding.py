@@ -2,8 +2,8 @@
 
 import asyncio
 import os
-from collections.abc import Mapping
-from typing import Literal
+from typing import Any, Literal
+from urllib.parse import urlparse
 
 import backoff
 import httpx
@@ -31,7 +31,7 @@ class GroundedResponse(BaseModel):
 
     text_with_citations: str
     web_search_queries: list[str]
-    raw_response: Mapping[str, object]
+    citations: dict[int, str]
 
 
 class GeminiGroundingWithGoogleSearch:
@@ -107,8 +107,8 @@ class GeminiGroundingWithGoogleSearch:
         -------
         GroundedResponse
             Response returned by Gemini. This includes the text with citations added,
-            the web search queries executed (expanded from the input query), and the
-            raw response object from the API.
+            the web search queries executed (expanded from the input query), and a
+            mapping of the citation ids to the website where the citation is from.
 
         References
         ----------
@@ -124,19 +124,24 @@ class GeminiGroundingWithGoogleSearch:
         try:
             response.raise_for_status()
         except httpx.HTTPStatusError as exc:
-            raise RuntimeError(
-                f"Gemini call failed with status {exc.response.status_code}"
-            ) from exc
+            raise exc from exc
 
         response_json = response.json()
-        text_with_citations = add_citations(response_json)
+
+        candidates: list[dict[str, Any]] | None = response_json.get("candidates")
+        grounding_metadata: dict[str, Any] | None = (
+            candidates[0].get("grounding_metadata") if candidates else None
+        )
+        web_search_queries: list[str] = (
+            grounding_metadata["web_search_queries"] if grounding_metadata else []
+        )
+
+        text_with_citations, citations = add_citations(response_json)
 
         return GroundedResponse(
             text_with_citations=text_with_citations,
-            web_search_queries=response_json["candidates"][0]["grounding_metadata"][
-                "web_search_queries"
-            ],
-            raw_response=response_json,
+            web_search_queries=web_search_queries,
+            citations=citations,
         )
 
     @backoff.on_exception(
@@ -159,7 +164,7 @@ class GeminiGroundingWithGoogleSearch:
             return await self._client.post(self._endpoint, json=payload)
 
 
-def add_citations(response: dict[str, object]) -> str:
+def add_citations(response: dict[str, object]) -> tuple[str, dict[int, str]]:
     """Add citations to the Gemini response.
 
     Code based on example in [1]_.
@@ -171,34 +176,102 @@ def add_citations(response: dict[str, object]) -> str:
 
     Returns
     -------
-    str
-        Text with citations added.
+    tuple[str, dict[int, str]]
+        The synthesized text and a mapping of citation ids to source labels.
 
     References
     ----------
     .. [1] https://ai.google.dev/gemini-api/docs/google-search#attributing_sources_with_inline_citations
     """
-    text = response["candidates"][0]["content"]["parts"][0]["text"]
-    supports = response["candidates"][0]["grounding_metadata"]["grounding_supports"]
-    chunks = response["candidates"][0]["grounding_metadata"]["grounding_chunks"]
+    candidates = response.get("candidates") if isinstance(response, dict) else None
+    if not candidates:
+        return "", {}
+
+    candidate = candidates[0] or {}
+    content = candidate.get("content") if isinstance(candidate, dict) else {}
+    parts = content.get("parts") if isinstance(content, dict) else []
+
+    text = ""
+    for part in parts if isinstance(parts, list) else []:
+        if isinstance(part, dict) and isinstance(part.get("text"), str):
+            text = part["text"]
+            break
+    if not text:
+        return "", {}
+
+    meta = candidate.get("grounding_metadata") if isinstance(candidate, dict) else {}
+    raw_supports = meta.get("grounding_supports") if isinstance(meta, dict) else []
+    supports = raw_supports if isinstance(raw_supports, list) else []
+    raw_chunks = meta.get("grounding_chunks") if isinstance(meta, dict) else []
+    chunks = raw_chunks if isinstance(raw_chunks, list) else []
+
+    citations: dict[int, str] = {}
+    chunk_to_id: dict[int, int] = {}
+
+    if supports and chunks:
+        citations, chunk_to_id = _collect_citations(candidate)
 
     # Sort supports by end_index in descending order to avoid shifting issues
     # when inserting.
     sorted_supports = sorted(
-        supports, key=lambda s: s["segment"]["end_index"], reverse=True
+        (s for s in supports if isinstance(s, dict) and s.get("segment")),
+        key=lambda s: s["segment"].get("end_index", 0),
+        reverse=True,
     )
 
     for support in sorted_supports:
-        end_index = support["segment"]["end_index"]
-        if support["grounding_chunk_indices"]:
-            # Create citation string like [1](link1)[2](link2)
-            citation_links = []
-            for i in support["grounding_chunk_indices"]:
-                if i < len(chunks):
-                    uri = chunks[i]["web"]["uri"]
-                    citation_links.append(f"[{i + 1}]({uri})")
+        segment = support.get("segment") or {}
+        end_index = segment.get("end_index")
+        if not isinstance(end_index, int) or end_index < 0 or end_index > len(text):
+            continue
+        indices = support.get("grounding_chunk_indices") or []
+        citation_links: list[str] = []
+        for idx in indices:
+            if not isinstance(idx, int):
+                continue
+            citation_id = chunk_to_id.get(idx)
+            if citation_id is None or idx >= len(chunks):
+                continue
+            web = chunks[idx].get("web") if isinstance(chunks[idx], dict) else {}
+            uri = web.get("uri") if isinstance(web, dict) else None
+            if uri:
+                citation_links.append(f"[{citation_id}]({uri})")
 
+        if citation_links:
             citation_string = ", ".join(citation_links)
             text = text[:end_index] + citation_string + text[end_index:]
 
-    return text
+    return text, citations
+
+
+def _collect_citations(candidate: dict) -> tuple[dict[int, str], dict[int, int]]:
+    """Collect citation ids from a candidate dict."""
+    supports = candidate["grounding_metadata"]["grounding_supports"]
+    chunks = candidate["grounding_metadata"]["grounding_chunks"]
+
+    citations: dict[int, str] = {}
+    chunk_to_id: dict[int, int] = {}
+    next_id = 1
+
+    def label_for(chunk: dict) -> str:
+        web = chunk.get("web") or {}
+        title = web.get("title")
+        uri = web.get("uri")
+        if title:
+            return title
+        if uri:
+            parsed = urlparse(uri)
+            return parsed.hostname or parsed.netloc or uri
+        return "unknown source"
+
+    for support in supports:
+        if not isinstance(support, dict):
+            continue
+        for chunk_idx in support.get("grounding_chunk_indices", []):
+            if chunk_idx not in chunk_to_id and 0 <= chunk_idx < len(chunks):
+                label = label_for(chunks[chunk_idx])
+                chunk_to_id[chunk_idx] = next_id
+                citations[next_id] = label
+                next_id += 1
+
+    return citations, chunk_to_id
