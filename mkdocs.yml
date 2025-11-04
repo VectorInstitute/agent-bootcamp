@@ -6,7 +6,7 @@ extra:
     - icon: fontawesome/brands/discord
       link: 404.html
     - icon: fontawesome/brands/github
-      link: https://github.com/VectorInstitute/aieng-template-uv
+      link: https://github.com/VectorInstitute/agent-bootcamp
 markdown_extensions:
   - attr_list
   - admonition
@@ -26,8 +26,6 @@ markdown_extensions:
       permalink: true
 nav:
   - Home: index.md
-  - User Guide: user_guide.md
-  - API Reference: api.md
 plugins:
   - search
   - mkdocstrings:
@@ -44,9 +42,9 @@ plugins:
             show_root_toc_entry: false
             show_symbol_type_heading: true
             show_symbol_type_toc: true
-repo_url: https://github.com/VectorInstitute/aieng-template-uv
-repo_name: VectorInstitute/aieng-template-uv
-site_name: AI Engineering Template (uv)
+repo_url: https://github.com/VectorInstitute/agent-bootcamp
+repo_name: VectorInstitute/agent-bootcamp
+site_name: Agent Bootcamp Reference Implementations
 theme:
   custom_dir: docs/overrides
   favicon: assets/favicon-48x48.svg

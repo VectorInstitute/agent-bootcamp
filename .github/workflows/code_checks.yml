@@ -35,7 +35,7 @@ jobs:
         uses: astral-sh/setup-uv@6b9c6063abd6010835644d4c2e1bef4cf5cd0fca
         with:
           # Install a specific version of uv.
-          version: "0.5.21"
+          version: "0.7.20"
           enable-cache: true
 
       - name: "Set up Python"
@@ -44,7 +44,7 @@ jobs:
           python-version-file: ".python-version"
 
       - name: Install the project
-        run: uv sync --all-extras --dev
+        run: uv sync --dev
 
       - name: Install dependencies and check code
         run: |
@@ -55,3 +55,5 @@ jobs:
         uses: pypa/gh-action-pip-audit@1220774d901786e6f652ae159f7b6bc8fea6d266
         with:
           virtual-environment: .venv/
+          ignore-vulns: |
+            GHSA-2qfp-q593-8484

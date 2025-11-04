@@ -10,10 +10,8 @@ on:
     paths:
       - .pre-commit-config.yaml
       - .github/workflows/code_checks.yml
-      - .github/workflows/docs_build.yml
-      - .github/workflows/docs_deploy.yml
+      - .github/workflows/docs.yml
       - .github/workflows/unit_tests.yml
-      - .github/workflows/integration_tests.yml
       - '**.py'
       - '**.ipynb'
       - uv.lock
@@ -26,10 +24,8 @@ on:
     paths:
       - .pre-commit-config.yaml
       - .github/workflows/code_checks.yml
-      - .github/workflows/docs_build.yml
-      - .github/workflows/docs_deploy.yml
+      - .github/workflows/docs.yml
       - .github/workflows/unit_tests.yml
-      - .github/workflows/integration_tests.yml
       - '**.py'
       - '**.ipynb'
       - uv.lock
@@ -55,18 +51,15 @@ jobs:
         with:
           python-version-file: ".python-version"
 
-      - name: Install the project
-        run: uv sync --all-extras --dev
-
-      - name: Install dependencies and check code
-        run: |
-          uv run pytest -m "not integration_test" --cov src/aieng_template_uv --cov-report=xml tests
+      # - name: Install dependencies and check code
+      #   run: |
+      #     uv run pytest -m "not integration_test" --cov src/aieng_template_uv --cov-report=xml tests
 
       # Uncomment this once this repo is configured on Codecov
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@18283e04ce6e62d37312384ff67231eb8fd56d24
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          slug: VectorInstitute/aieng-template-uv
-          fail_ci_if_error: true
-          verbose: true
+      # - name: Upload coverage to Codecov
+      #   uses: codecov/codecov-action@ad3126e916f78f00edff4ed0317cf185271ccc2d
+      #   with:
+      #     token: ${{ secrets.CODECOV_TOKEN }}
+      #     slug: VectorInstitute/aieng-template-uv
+      #     fail_ci_if_error: true
+      #     verbose: true

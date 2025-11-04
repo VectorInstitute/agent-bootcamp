@@ -19,3 +19,12 @@ wheels/
 
 # macos
 *.DS_Store
+
+# Secrets
+.env
+
+# Built documentations
+site/
+
+# Gradio "share=True" utils.
+/.gradio
