@@ -3,6 +3,7 @@
 !app.py
 !db.py
 !auth.py
+!daily_usage.py
 !requirements-app.txt
 !requirements_app.in
 !Dockerfile
