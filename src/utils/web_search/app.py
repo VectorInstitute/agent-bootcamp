@@ -551,14 +551,13 @@ async def search(
     try:
         response = await call_gemini_with_retry(request)
     except Exception:
-        if reservation is not None:
-            try:
-                await daily_usage.release(reservation)
-            except Exception:  # pragma: no cover - defensive logging for rollbacks
-                logger.exception(
-                    "Failed to roll back daily usage for bucket %s",
-                    bucket,
-                )
+        try:
+            await daily_usage.release(reservation)
+        except Exception:  # pragma: no cover - defensive logging for rollbacks
+            logger.exception(
+                "Failed to roll back daily usage for bucket %s",
+                bucket,
+            )
 
         if consumed_api_quota:
             try:
