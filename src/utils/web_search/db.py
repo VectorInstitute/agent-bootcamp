@@ -1,11 +1,15 @@
 """Helpers for interacting with the Firestore-backed API key store."""
 
+import asyncio
+import os
+import random
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any, Literal, Optional
 
 
 try:
+    from google.api_core.exceptions import Aborted
     from google.cloud.firestore_v1 import (
         SERVER_TIMESTAMP,
         AsyncClient,
@@ -15,6 +19,7 @@ try:
         async_transactional,
     )
 except ImportError:  # pragma: no cover - imported at runtime in production
+    Aborted = RuntimeError  # type: ignore
     AsyncClient = Any  # type: ignore
     AsyncDocumentReference = Any  # type: ignore
     DocumentSnapshot = Any  # type: ignore
@@ -24,6 +29,21 @@ except ImportError:  # pragma: no cover - imported at runtime in production
     def async_transactional(func):  # type: ignore
         """Passthrough decorator used when Firestore is not available."""
         return func
+
+
+USAGE_TRANSACTION_MAX_RETRIES = int(os.getenv("API_KEY_USAGE_MAX_RETRIES", "8"))
+USAGE_TRANSACTION_BASE_DELAY = float(os.getenv("API_KEY_USAGE_BASE_DELAY", "0.05"))
+USAGE_TRANSACTION_MAX_DELAY = float(os.getenv("API_KEY_USAGE_MAX_DELAY", "1.0"))
+
+
+def _usage_retry_delay(attempt: int) -> float:
+    """Calculate a jittered backoff delay for Firestore retries."""
+    base_delay = USAGE_TRANSACTION_BASE_DELAY * (2**attempt)
+    capped_delay = min(base_delay, USAGE_TRANSACTION_MAX_DELAY)
+    if capped_delay <= 0:
+        return 0.0
+    jitter = random.uniform(0, capped_delay / 2)
+    return capped_delay + jitter
 
 
 class APIKeyNotFoundError(Exception):
@@ -307,7 +327,75 @@ class APIKeyRepository:
                 expires_at=_ensure_timezone(data.get("expires_at")),
             )
 
-        return await _increment(self._client.transaction(), doc_ref)
+        attempts = 0
+        while True:
+            try:
+                return await _increment(self._client.transaction(), doc_ref)
+            except (Aborted, ValueError):
+                if attempts >= USAGE_TRANSACTION_MAX_RETRIES - 1:
+                    raise
+                await asyncio.sleep(_usage_retry_delay(attempts))
+                attempts += 1
+
+    async def decrement_usage_counter(self, lookup_hash: str) -> APIKeyRecord:
+        """Rollback the usage counter when a request ultimately fails.
+
+        Parameters
+        ----------
+        lookup_hash : str
+            SHA-256 digest corresponding to the key to update.
+
+        Returns
+        -------
+        APIKeyRecord
+            The API key record containing the updated usage counter.
+        """
+        doc_ref = self._document(lookup_hash)
+
+        @async_transactional
+        async def _decrement(
+            transaction: AsyncTransaction,
+            reference: AsyncDocumentReference,
+        ) -> APIKeyRecord:
+            snapshot = await reference.get(transaction=transaction)
+            if not snapshot.exists:
+                raise APIKeyNotFoundError(lookup_hash)
+
+            data: dict[str, Any] = snapshot.to_dict() or {}
+            usage_count = max(int(data.get("usage_count", 0)) - 1, 0)
+
+            transaction.update(
+                reference,
+                {"usage_count": usage_count},
+            )
+
+            return APIKeyRecord(
+                lookup_hash=lookup_hash,
+                hashed_key=data["hashed_key"],
+                salt=data["salt"],
+                display_prefix=data.get("display_prefix", ""),
+                role=data.get("role", "user"),
+                owner=data.get("owner"),
+                status=data.get("status", "active"),
+                usage_count=usage_count,
+                usage_limit=int(data.get("usage_limit", 0)),
+                last_used_at=_ensure_timezone(data.get("last_used_at")),
+                created_at=_ensure_timezone(data.get("created_at"))
+                or datetime.now(tz=timezone.utc),
+                created_by=data.get("created_by", "system"),
+                metadata=data.get("metadata", {}),
+                expires_at=_ensure_timezone(data.get("expires_at")),
+            )
+
+        attempts = 0
+        while True:
+            try:
+                return await _decrement(self._client.transaction(), doc_ref)
+            except (Aborted, ValueError):
+                if attempts >= USAGE_TRANSACTION_MAX_RETRIES - 1:
+                    raise
+                await asyncio.sleep(_usage_retry_delay(attempts))
+                attempts += 1
 
     async def set_status(self, lookup_hash: str, status: Status) -> None:
         """Update the ``status`` field for an API key record.

@@ -21,6 +21,7 @@ from .auth import (
     InactiveAPIKeyError,
     InvalidAPIKeyError,
 )
+from .daily_usage import DailyUsageRepository
 from .db import APIKeyRecord, APIKeyRepository, UsageLimitExceededError
 
 
@@ -37,6 +38,58 @@ MAX_BACKOFF_SECONDS = float(os.getenv("GEMINI_MAX_BACKOFF_SECONDS", "10"))
 FIRESTORE_COLLECTION = os.getenv("FIRESTORE_COLLECTION", "apiKeys")
 API_KEY_CACHE_TTL = int(os.getenv("API_KEY_CACHE_TTL", "30"))
 API_KEY_CACHE_MAX_ITEMS = int(os.getenv("API_KEY_CACHE_MAX_ITEMS", "1024"))
+FREE_LIMIT_DEFAULT_PRO = 1500
+FREE_LIMIT_DEFAULT_FLASH = 1500
+
+
+def _parse_free_limit(env_var: str, default: int) -> int:
+    """Parse a non-negative integer from the environment with logging."""
+    value = os.getenv(env_var)
+    if value is None or value == "":
+        return default
+    try:
+        parsed = int(value)
+    except ValueError:
+        logger.warning(
+            "Invalid value '%s' for %s; falling back to %d",
+            value,
+            env_var,
+            default,
+        )
+        return default
+    if parsed < 0:
+        logger.warning(
+            "Negative value '%s' for %s; treating as 0",
+            value,
+            env_var,
+        )
+        return 0
+    return parsed
+
+
+MODEL_TO_USAGE_BUCKET: dict[str, str] = {
+    "gemini-2.5-pro": "gemini-2.5-pro",
+    "gemini-2.5-flash": "gemini-2.5-flash-family",
+    "gemini-2.5-flash-lite": "gemini-2.5-flash-family",
+}
+
+BUCKET_FREE_LIMITS: dict[str, int] = {
+    "gemini-2.5-pro": _parse_free_limit(
+        "GEMINI_GROUNDING_FREE_LIMIT_PRO",
+        FREE_LIMIT_DEFAULT_PRO,
+    ),
+    "gemini-2.5-flash-family": _parse_free_limit(
+        "GEMINI_GROUNDING_FREE_LIMIT_FLASH",
+        FREE_LIMIT_DEFAULT_FLASH,
+    ),
+}
+
+
+def _resolve_usage_bucket(model: str) -> tuple[str, int]:
+    """Return the usage bucket and free allowance for the given model."""
+    bucket = MODEL_TO_USAGE_BUCKET.get(model, model)
+    return bucket, BUCKET_FREE_LIMITS.get(bucket, 0)
+
 
 RETRYABLE_EXCEPTIONS: tuple[type[Exception], ...] = (
     google_exceptions.ResourceExhausted,
@@ -189,6 +242,13 @@ async def startup_event() -> None:
         cache_ttl_seconds=API_KEY_CACHE_TTL,
         cache_max_items=API_KEY_CACHE_MAX_ITEMS,
     )
+    app.state.daily_usage_repository = DailyUsageRepository(
+        firestore_client,
+        collection_name=os.getenv(
+            "DAILY_USAGE_COLLECTION",
+            "dailyUsageCounters",
+        ),
+    )
 
 
 async def shutdown_event() -> None:
@@ -235,6 +295,18 @@ def get_authenticator() -> APIKeyAuthenticator:
     return authenticator
 
 
+def get_daily_usage_repository() -> DailyUsageRepository:
+    """Return the daily usage repository stored on the app state."""
+    repository: DailyUsageRepository | None = getattr(
+        app.state,
+        "daily_usage_repository",
+        None,
+    )
+    if repository is None:
+        raise RuntimeError("Daily usage repository has not been initialised")
+    return repository
+
+
 async def _authenticate_request(
     api_key_header: str,
     authenticator: APIKeyAuthenticator,
@@ -267,37 +339,6 @@ async def _authenticate_request(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="API key usage limit exceeded",
         ) from exc
-
-
-async def require_api_key(
-    api_key_header: Annotated[str, Header(alias="X-API-Key")],
-    authenticator: Annotated[APIKeyAuthenticator, Depends(get_authenticator)],
-) -> APIKeyRecord:
-    """Validate the user's API key and reserve a usage slot.
-
-    Parameters
-    ----------
-    api_key_header : str
-        API key supplied in the ``X-API-Key`` header.
-    authenticator : APIKeyAuthenticator
-        Authenticator responsible for validating and reserving usage.
-
-    Returns
-    -------
-    APIKeyRecord
-        Updated API key record that includes the latest usage counter.
-
-    Raises
-    ------
-    HTTPException
-        Raised when the API key is invalid, inactive, or has exhausted its
-        quota.
-    """
-    return await _authenticate_request(
-        api_key_header,
-        authenticator,
-        consume_usage=True,
-    )
 
 
 async def require_api_key_without_consumption(
@@ -405,7 +446,9 @@ async def call_gemini_with_retry(request: RequestBody) -> types.GenerateContentR
                 )
         except RETRYABLE_EXCEPTIONS as exc:
             if attempt >= MAX_GEMINI_ATTEMPTS:
-                logger.exception("Gemini request failed after retries")
+                logger.exception(
+                    "Gemini request failed after %d retries", MAX_GEMINI_ATTEMPTS
+                )
                 raise HTTPException(
                     status_code=status.HTTP_502_BAD_GATEWAY,
                     detail="Gemini is currently unavailable",
@@ -444,7 +487,15 @@ async def health() -> dict[str, str]:
 @router.post("/v1/grounding_with_search")
 async def search(
     request: RequestBody,
-    _: Annotated[APIKeyRecord, Depends(require_api_key)],
+    record: Annotated[
+        APIKeyRecord,
+        Depends(require_api_key_without_consumption),
+    ],
+    authenticator: Annotated[APIKeyAuthenticator, Depends(get_authenticator)],
+    daily_usage: Annotated[
+        DailyUsageRepository,
+        Depends(get_daily_usage_repository),
+    ],
 ) -> dict[str, object]:
     """Proxy Gemini grounding requests with quota enforcement.
 
@@ -452,17 +503,77 @@ async def search(
     ----------
     request : RequestBody
         Payload describing the Gemini call.
-    _ : APIKeyRecord
-        API key record produced by ``require_api_key``. The underscore keeps
-        the dependency explicit without exposing it to callers.
+    record : APIKeyRecord
+        API key record produced by ``require_api_key``.
+    authenticator : APIKeyAuthenticator
+        Authenticator dependency used to roll back usage reservations on error.
 
     Returns
     -------
-    google.genai.types.GenerateContentResponse
-        Response returned by the Gemini model.
+    dict of str to object
+        JSON serialisable response returned by the Gemini model.
     """
-    response = await call_gemini_with_retry(request)
-    logger.info("Gemini request completed for model %s", request.model)
+    bucket, free_limit = _resolve_usage_bucket(request.model)
+    consumed_api_quota = False
+    reservation = await daily_usage.reserve(bucket, free_limit)
+
+    if not reservation.consumed_free:
+        try:
+            updated_record = await authenticator.consume_usage(record.lookup_hash)
+        except UsageLimitExceededError as exc:
+            await daily_usage.release(reservation)
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="API key usage limit exceeded",
+            ) from exc
+        except InvalidAPIKeyError as exc:
+            await daily_usage.release(reservation)
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid API key provided",
+            ) from exc
+        except InactiveAPIKeyError as exc:
+            await daily_usage.release(reservation)
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="API key is inactive",
+            ) from exc
+        except ExpiredAPIKeyError as exc:
+            await daily_usage.release(reservation)
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="API key has expired",
+            ) from exc
+
+        record = updated_record
+        consumed_api_quota = True
+
+    try:
+        response = await call_gemini_with_retry(request)
+    except Exception:
+        try:
+            await daily_usage.release(reservation)
+        except Exception:  # pragma: no cover - defensive logging for rollbacks
+            logger.exception(
+                "Failed to roll back daily usage for bucket %s",
+                bucket,
+            )
+
+        if consumed_api_quota:
+            try:
+                await authenticator.release_usage(record.lookup_hash)
+            except Exception:  # pragma: no cover - defensive logging for rollbacks
+                logger.exception(
+                    "Failed to roll back usage for API key %s", record.lookup_hash
+                )
+        raise
+
+    logger.info(
+        "Gemini request completed for model %s (bucket=%s, consumed_free=%s)",
+        request.model,
+        bucket,
+        reservation.consumed_free if reservation else False,
+    )
     return response.to_json_dict()
 
 

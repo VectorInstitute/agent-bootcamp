@@ -49,6 +49,10 @@ gcloud auth configure-docker "$REGION-docker.pkg.dev"
 | `GEMINI_API_KEY` | Gemini API key used by the proxy | _(required)_ |
 | `GEMINI_MAX_ATTEMPTS`, `GEMINI_MAX_BACKOFF_SECONDS` | Retry tuning | `5`, `10` |
 | `API_KEY_CACHE_TTL`, `API_KEY_CACHE_MAX_ITEMS` | Auth cache tuning | `30`, `1024` |
+| `DAILY_USAGE_COLLECTION` | Collection that stores per-day usage counters | `dailyUsageCounters` |
+| `DAILY_USAGE_MAX_RETRIES`, `DAILY_USAGE_BASE_DELAY`, `DAILY_USAGE_MAX_DELAY` | Daily usage retry tuning | `8`, `0.05`, `1.0` |
+| `GEMINI_GROUNDING_FREE_LIMIT_PRO` | Daily free allowance for `gemini-2.5-pro` | `1500` |
+| `GEMINI_GROUNDING_FREE_LIMIT_FLASH` | Shared daily free allowance for Flash/Flash-Lite | `1500` |
 
 Keep `.env.example` up to date so teammates can copy it into their own `.env`.
 
@@ -81,6 +85,8 @@ Keep `.env.example` up to date so teammates can copy it into their own `.env`.
    export FIRESTORE_DATABASE_NAME=grounding
    export FIRESTORE_EMULATOR_HOST=0.0.0.0:8922
    export GEMINI_API_KEY="dev-placeholder"
+   export GEMINI_GROUNDING_FREE_LIMIT_PRO=1500
+   export GEMINI_GROUNDING_FREE_LIMIT_FLASH=1500
    ```
 
 4. **Install Python dependencies**
