@@ -286,6 +286,33 @@ class APIKeyAuthenticator:
 
         return record
 
+    async def consume_usage(self, lookup_hash: str) -> APIKeyRecord:
+        """Increment usage counter for a previously validated API key."""
+        record = self._cache_lookup(lookup_hash)
+
+        if not record:
+            try:
+                record = await self._repository.get_api_key(lookup_hash)
+            except APIKeyNotFoundError as exc:
+                raise InvalidAPIKeyError("API key not recognised") from exc
+            self._cache_store(record)
+
+        if record.status != "active":
+            raise InactiveAPIKeyError("API key has been suspended")
+
+        if record.expires_at and self._clock() >= record.expires_at:
+            self._cache.pop(lookup_hash, None)
+            raise ExpiredAPIKeyError("API key has expired")
+
+        try:
+            updated_record = await self._repository.update_usage_counter(lookup_hash)
+        except APIKeyNotFoundError as exc:
+            self._cache.pop(lookup_hash, None)
+            raise InvalidAPIKeyError("API key not recognised") from exc
+
+        self._cache_store(updated_record)
+        return updated_record
+
     async def release_usage(self, lookup_hash: str) -> APIKeyRecord:
         """Rollback a previously reserved usage slot.
 

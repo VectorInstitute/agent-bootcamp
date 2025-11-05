@@ -163,6 +163,70 @@ async def test_reserve_usage_without_consuming() -> None:
 
 
 @pytest.mark.asyncio
+async def test_consume_usage_increments_counter_after_validation() -> None:
+    """Ensure usage can be consumed after a non-consuming validation."""
+    repository = FakeRepository()
+    authenticator = auth.APIKeyAuthenticator(repository, clock=fixed_clock)
+
+    api_key, record = await authenticator.create_api_key(
+        role="user",
+        owner="owner-consume",
+        usage_limit=5,
+        created_by="admin",
+    )
+
+    await authenticator.reserve_usage(api_key, consume_usage=False)
+    updated_record = await authenticator.consume_usage(record.lookup_hash)
+
+    assert updated_record.usage_count == 1
+    assert repository.records[record.lookup_hash].usage_count == 1
+
+
+@pytest.mark.asyncio
+async def test_consume_usage_respects_usage_limit() -> None:
+    """Ensure ``consume_usage`` propagates usage limit errors."""
+    repository = FakeRepository()
+    authenticator = auth.APIKeyAuthenticator(repository, clock=fixed_clock)
+
+    api_key, record = await authenticator.create_api_key(
+        role="user",
+        owner="owner-limit",
+        usage_limit=1,
+        created_by="admin",
+    )
+
+    await authenticator.reserve_usage(api_key, consume_usage=False)
+    repository.records[record.lookup_hash] = replace(
+        repository.records[record.lookup_hash],
+        usage_count=1,
+    )
+
+    with pytest.raises(UsageLimitExceededError):
+        await authenticator.consume_usage(record.lookup_hash)
+
+
+@pytest.mark.asyncio
+async def test_consume_usage_rejects_inactive_records() -> None:
+    """Ensure suspended keys cannot be consumed after validation."""
+    repository = FakeRepository()
+    authenticator = auth.APIKeyAuthenticator(repository, clock=fixed_clock)
+
+    api_key, record = await authenticator.create_api_key(
+        role="user",
+        owner="owner-inactive",
+        usage_limit=5,
+        created_by="admin",
+    )
+
+    await authenticator.reserve_usage(api_key, consume_usage=False)
+    await repository.set_status(record.lookup_hash, "suspended")
+    authenticator._cache.pop(record.lookup_hash, None)
+
+    with pytest.raises(auth.InactiveAPIKeyError):
+        await authenticator.consume_usage(record.lookup_hash)
+
+
+@pytest.mark.asyncio
 async def test_reserve_usage_rejects_invalid_key() -> None:
     """Ensure invalid API keys raise ``InvalidAPIKeyError``."""
     repository = FakeRepository()
