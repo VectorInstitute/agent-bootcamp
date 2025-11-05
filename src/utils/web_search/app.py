@@ -21,7 +21,7 @@ from .auth import (
     InactiveAPIKeyError,
     InvalidAPIKeyError,
 )
-from .daily_usage import DailyUsageRepository, UsageReservation
+from .daily_usage import DailyUsageRepository
 from .db import APIKeyRecord, APIKeyRepository, UsageLimitExceededError
 
 
@@ -514,7 +514,6 @@ async def search(
         JSON serialisable response returned by the Gemini model.
     """
     bucket, free_limit = _resolve_usage_bucket(request.model)
-    reservation: UsageReservation | None = None
     consumed_api_quota = False
     reservation = await daily_usage.reserve(bucket, free_limit)
 
