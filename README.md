@@ -111,6 +111,8 @@ uv run --env-file .env gradio src/2_frameworks/2_multi_agent/efficient.py
 
 Python Code Interpreter demo- using the OpenAI Agent SDK, E2B for secure code sandbox, and LangFuse for observability. Refer to [src/2_frameworks/3_code_interpreter/README.md](src/2_frameworks/3_code_interpreter/README.md) for details.
 
+MCP server integration example also via OpenAI Agents SDK with Gradio and Langfuse tracing. Refer to [src/2_frameworks/4_mcp/README.md](src/2_frameworks/4_mcp/README.md) for more details.
+
 
 ### 3. Evals
 
