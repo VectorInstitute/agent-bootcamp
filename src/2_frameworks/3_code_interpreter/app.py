@@ -5,7 +5,6 @@ Logs traces to LangFuse for observability and evaluation.
 You will need your E2B API Key.
 """
 
-import logging
 from pathlib import Path
 
 import agents
@@ -18,6 +17,7 @@ from src.utils import (
     CodeInterpreter,
     oai_agent_stream_to_gradio_messages,
     pretty_print,
+    set_up_logging,
     setup_langfuse_tracer,
 )
 from src.utils.langfuse.shared_client import langfuse_client
@@ -25,8 +25,7 @@ from src.utils.langfuse.shared_client import langfuse_client
 
 load_dotenv(verbose=True)
 
-
-logging.basicConfig(level=logging.INFO)
+set_up_logging()
 
 CODE_INTERPRETER_INSTRUCTIONS = """\
 The `code_interpreter` tool executes Python commands. \
@@ -46,7 +45,10 @@ but you won't be able to install packages.
 AGENT_LLM_NAME = "gemini-2.5-flash"
 async_openai_client = AsyncOpenAI()
 code_interpreter = CodeInterpreter(
-    local_files=[Path("tests/tool_tests/example_files/example_a.csv")]
+    local_files=[
+        Path("sandbox_content/"),
+        Path("tests/tool_tests/example_files/example_a.csv"),
+    ]
 )
 
 
@@ -95,4 +97,4 @@ demo = gr.ChatInterface(
 
 
 if __name__ == "__main__":
-    demo.launch(server_name="0.0.0.0")
+    demo.launch(share=True)

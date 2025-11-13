@@ -1,5 +1,6 @@
 """Code interpreter tool."""
 
+import os
 from pathlib import Path
 from typing import Sequence
 
@@ -77,6 +78,29 @@ async def _upload_files(
     return list(remote_paths)
 
 
+def _enumerate_files(base_path: str | Path) -> list[Path]:
+    """
+    Recursively enumerate all files under a directory.
+
+    Args
+    ----
+        base_path: Path to the starting directory.
+            If input is a file, that file alone will be returned.
+
+    Returns
+    -------
+        list[str]: List of file paths.
+    """
+    if os.path.isfile(base_path):
+        return [Path(base_path)]
+
+    file_list = []
+    for root, _, files in os.walk(base_path):
+        for name in files:
+            file_list.append(Path(root) / name)
+    return file_list
+
+
 class CodeInterpreter:
     """Code Interpreter tool for the agent."""
 
@@ -95,7 +119,7 @@ class CodeInterpreter:
         ----------
             local_files : list[pathlib.Path | str] | None
                 Optionally, specify a list of local files (as paths)
-                to upload to sandbox working directory.
+                to upload to sandbox working directory. Folders will be flattened.
             timeout_seconds : int
                 Limit executions to this duration.
             template_name : str | None
@@ -103,7 +127,13 @@ class CodeInterpreter:
                 See e2b_template.md for details.
         """
         self.timeout_seconds = timeout_seconds
-        self.local_files = local_files if local_files else []
+        self.local_files = []
+        self.template_name = template_name
+
+        # Recursively find files if the given path is a folder.
+        if local_files:
+            for _path in local_files:
+                self.local_files.extend(_enumerate_files(_path))
         self.template_name = template_name
 
     async def run_code(self, code: str) -> str:

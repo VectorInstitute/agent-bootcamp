@@ -71,4 +71,4 @@ demo = gr.Interface(
     ],
 )
 
-demo.launch(server_name="0.0.0.0")
+demo.launch(share=True)
