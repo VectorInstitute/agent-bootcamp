@@ -8,5 +8,3 @@ This folder introduces use of Model Context Protocol (MCP) Servers to allow agen
 ```bash
 uv run --env-file .env python3 src/2_frameworks/4_mcp/app.py
 ```
-
-
