@@ -75,8 +75,10 @@ async def _main(question: str, gr_messages: list[ChatMessage]):
         ),
     )
 
-    with langfuse_client.start_as_current_span(name="Agents-SDK-Trace") as span:
-        span.update(input=question)
+    with langfuse_client.start_as_current_span(
+        name="Agents-SDK-Trace"
+    ) as span:  # NEW to Langfuse implementation
+        span.update(input=question)  # NEW to Langfuse implementation
 
         result_stream = agents.Runner.run_streamed(main_agent, input=question)
         async for _item in result_stream.stream_events():
@@ -84,7 +86,7 @@ async def _main(question: str, gr_messages: list[ChatMessage]):
             if len(gr_messages) > 0:
                 yield gr_messages
 
-        span.update(output=result_stream.final_output)
+        span.update(output=result_stream.final_output)  # NEW to Langfuse implementation
 
     pretty_print(gr_messages)
     yield gr_messages
