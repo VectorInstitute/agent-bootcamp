@@ -90,7 +90,7 @@ async def _main(question: str, gr_messages: list[ChatMessage]):
 
 demo = gr.ChatInterface(
     _main,
-    title="2.1 OAI Agent SDK MCP",
+    title="2.4 OAI Agent SDK MCP",
     type="messages",
     examples=[
         "Summarize the last change in the repository.",

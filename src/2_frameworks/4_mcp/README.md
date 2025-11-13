@@ -6,5 +6,5 @@ This folder introduces use of Model Context Protocol (MCP) Servers to allow agen
 # Running
 
 ```bash
-uv run --env-file .env python3 src/2_frameworks/4_mcp/app.py
+uv run --env-file .env gradio src/2_frameworks/4_mcp/app.py
 ```
