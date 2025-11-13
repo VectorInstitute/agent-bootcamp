@@ -4,7 +4,7 @@ Usage:
 
 uv run \
 --env-file .env \
-gradio src.3_evals/2_synthetic_data/gradio_visualize_diversity.py
+gradio src/3_evals/2_synthetic_data/gradio_visualize_diversity.py
 """
 
 from typing import List
@@ -17,8 +17,8 @@ from plotly.graph_objs import Figure
 from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
 
-from ...utils import Configs, create_batches, gather_with_progress
-from ...utils.langfuse.shared_client import langfuse_client
+from src.utils import Configs, create_batches, gather_with_progress
+from src.utils.langfuse.shared_client import langfuse_client
 
 
 def reduce_dimensions(
@@ -79,7 +79,7 @@ async def get_projection_plot(
     embedding_batch_size: int = 16,
 ) -> Figure:
     """Obtain projection plot for the given dataset up to `limit` items."""
-    lf_dataset_items = langfuse_client.get_dataset(dataset_name).items
+    lf_dataset_items = langfuse_client.get_dataset(dataset_name.strip()).items
 
     # Generate embeddings
     configs = Configs.from_env_var()
