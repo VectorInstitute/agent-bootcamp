@@ -108,6 +108,7 @@ class CodeInterpreter:
         self,
         local_files: "Sequence[Path | str]| None" = None,
         timeout_seconds: int = 30,
+        template_name: str | None = None,
     ):
         """Configure your Code Interpreter session.
 
@@ -121,14 +122,19 @@ class CodeInterpreter:
                 to upload to sandbox working directory. Folders will be flattened.
             timeout_seconds : int
                 Limit executions to this duration.
+            template_name : str | None
+                Optionally, override the default e2b template name.
+                See e2b_template.md for details.
         """
         self.timeout_seconds = timeout_seconds
         self.local_files = []
+        self.template_name = template_name
 
         # Recursively find files if the given path is a folder.
         if local_files:
             for _path in local_files:
                 self.local_files.extend(_enumerate_files(_path))
+        self.template_name = template_name
 
     async def run_code(self, code: str) -> str:
         """Run the given Python code in a sandbox environment.
@@ -138,7 +144,9 @@ class CodeInterpreter:
             code : str
                 Python logic to execute.
         """
-        sbx = await AsyncSandbox.create(timeout=self.timeout_seconds)
+        sbx = await AsyncSandbox.create(
+            timeout=self.timeout_seconds, template=self.template_name
+        )
         await _upload_files(sbx, self.local_files)
 
         try:
