@@ -35,7 +35,7 @@ packages = ["src"]
 
 [dependency-groups]
 dev = [
-    "aieng-platform-onboard>=0.3.5",
+    "aieng-platform-onboard>=0.3.6",
     "codecov>=2.1.13",
     "ipykernel>=6.29.5",
     "ipython>=9.4.0",
