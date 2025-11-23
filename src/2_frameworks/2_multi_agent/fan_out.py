@@ -397,10 +397,10 @@ if __name__ == "__main__":
 
     # Review these O(N) per-document conflicts.
     with langfuse_client.start_as_current_span(name="Conflicts- Review") as span:
-        conflict_reviews: list[
-            ReviewedDocument
-        ] = asyncio.get_event_loop().run_until_complete(
-            process_conflict_reviews(conflicted_documents)
+        conflict_reviews: list[ReviewedDocument] = (
+            asyncio.get_event_loop().run_until_complete(
+                process_conflict_reviews(conflicted_documents)
+            )
         )
         span.update(input=conflicted_documents, output=conflict_reviews)
 
