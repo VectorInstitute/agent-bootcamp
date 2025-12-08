@@ -1,63 +1,104 @@
-0 ToolCallItem(agent=Agent(name='Data Analysis Agent', handoff_description=None, tools=[FunctionTool(name='code_interpreter', 
-description='Run the given Python code in a sandbox environment.', params_json_schema={'properties': {'code': {'title': 'Code', 
-'type': 'string'}}, 'required': ['code'], 'title': 'code_interpreter_args', 'type': 'object', 'additionalProperties': False}, 
-on_invoke_tool=<function function_tool.<locals>._create_function_tool.<locals>._on_invoke_tool at 0x7fc4192d9620>, 
-strict_json_schema=True, is_enabled=True, tool_input_guardrails=None, tool_output_guardrails=None)], mcp_servers=[], mcp_config={}, 
-instructions="The `code_interpreter` tool executes Python commands. Please note that data is not persisted. Each time you invoke this
-tool, you will need to run import and define all variables from scratch.\n\nYou can access the local filesystem using this tool. 
-Instead of asking the user for file inputs, you should try to find the file using this tool.\n\nRecommended packages: Pandas, Numpy, 
-SymPy, Scikit-learn.\n\nYou can also run Jupyter-style shell commands (e.g., `!pip freeze`)\nbut you won't be able to install 
-packages.\n\nLook for data files under /data\n", prompt=None, handoffs=[], 
-model=<agents.models.openai_chatcompletions.OpenAIChatCompletionsModel object at 0x7fc4194873e0>, 
-model_settings=ModelSettings(temperature=None, top_p=None, frequency_penalty=None, presence_penalty=None, tool_choice=None, 
-parallel_tool_calls=None, truncation=None, max_tokens=None, reasoning=None, verbosity=None, metadata=None, store=None, 
-include_usage=None, response_include=None, top_logprobs=None, extra_query=None, extra_body=None, extra_headers=None, 
-extra_args=None), input_guardrails=[], output_guardrails=[], output_type=None, hooks=None, tool_use_behavior='run_llm_again', 
-reset_tool_choice=True), raw_item=ResponseFunctionToolCall(arguments='{"code":"\\nimport sqlite3\\n\\ntry:\\n    conn = 
-sqlite3.connect(\'/data/chinook.sqlite\')\\n    cursor = conn.cursor()\\n\\n    query = \\"SELECT Name FROM artists WHERE ArtistId 
-BETWEEN 10 AND 20\\"\\n    cursor.execute(query)\\n\\n    artists = cursor.fetchall()\\n\\n    for artist in artists:\\n        
-print(artist[0])\\n\\nexcept sqlite3.Error as e:\\n    print(f\\"Error: {e}\\")\\n\\nfinally:\\n    if conn:\\n        
-conn.close()\\n"}', call_id='function-call-15182527534109463163', name='code_interpreter', type='function_call', id='__fake_id__', 
-status=None), type='tool_call_item')
+{
+  "agent": "Agent(name='Data Analysis Agent', handoff_description=None, tools=[FunctionTool(name='code_interpreter', description='Run the given Python code in a sandbox environment.', 
+params_json_schema={'properties': {'code': {'title': 'Code', 'type': 'string'}}, 'required': ['code'], 'title': 'code_interpreter_args', 'type': 'object', 'additionalProperties': 
+False}, on_invoke_tool=<function function_tool.<locals>._create_function_tool.<locals>._on_invoke_tool at 0x7f78a90cd620>, strict_json_schema=True, is_enabled=True, 
+tool_input_guardrails=None, tool_output_guardrails=None)], mcp_servers=[], mcp_config={}, instructions=\"The `code_interpreter` tool executes Python commands. Please note that data is 
+not persisted. Each time you invoke this tool, you will need to run import and define all variables from scratch.\\n\\nYou can access the local filesystem using this tool. Instead of 
+asking the user for file inputs, you should try to find the file using this tool.\\n\\nRecommended packages: Pandas, Numpy, SymPy, Scikit-learn.\\n\\nYou can also run Jupyter-style 
+shell commands (e.g., `!pip freeze`)\\nbut you won't be able to install packages.\\n\\nLook for data files under /data\\n\", prompt=None, handoffs=[], 
+model=<agents.models.openai_chatcompletions.OpenAIChatCompletionsModel object at 0x7f78a918e090>, model_settings=ModelSettings(temperature=None, top_p=None, frequency_penalty=None, 
+presence_penalty=None, tool_choice=None, parallel_tool_calls=None, truncation=None, max_tokens=None, reasoning=None, verbosity=None, metadata=None, store=None, include_usage=None, 
+response_include=None, top_logprobs=None, extra_query=None, extra_body=None, extra_headers=None, extra_args=None), input_guardrails=[], output_guardrails=[], output_type=None, 
+hooks=None, tool_use_behavior='run_llm_again', reset_tool_choice=True)",
+  "raw_item": "ResponseFunctionToolCall(arguments='{\"code\":\"\\\\nimport os\\\\nprint(os.listdir(\\'/data\\'))\\\\n\"}', call_id='function-call-14649977167236659911', 
+name='code_interpreter', type='function_call', id='__fake_id__', status=None)",
+  "type": "tool_call_item"
+}
 
+{
+  "agent": "Agent(name='Data Analysis Agent', handoff_description=None, tools=[FunctionTool(name='code_interpreter', description='Run the given Python code in a sandbox environment.', 
+params_json_schema={'properties': {'code': {'title': 'Code', 'type': 'string'}}, 'required': ['code'], 'title': 'code_interpreter_args', 'type': 'object', 'additionalProperties': 
+False}, on_invoke_tool=<function function_tool.<locals>._create_function_tool.<locals>._on_invoke_tool at 0x7f78a90cd620>, strict_json_schema=True, is_enabled=True, 
+tool_input_guardrails=None, tool_output_guardrails=None)], mcp_servers=[], mcp_config={}, instructions=\"The `code_interpreter` tool executes Python commands. Please note that data is 
+not persisted. Each time you invoke this tool, you will need to run import and define all variables from scratch.\\n\\nYou can access the local filesystem using this tool. Instead of 
+asking the user for file inputs, you should try to find the file using this tool.\\n\\nRecommended packages: Pandas, Numpy, SymPy, Scikit-learn.\\n\\nYou can also run Jupyter-style 
+shell commands (e.g., `!pip freeze`)\\nbut you won't be able to install packages.\\n\\nLook for data files under /data\\n\", prompt=None, handoffs=[], 
+model=<agents.models.openai_chatcompletions.OpenAIChatCompletionsModel object at 0x7f78a918e090>, model_settings=ModelSettings(temperature=None, top_p=None, frequency_penalty=None, 
+presence_penalty=None, tool_choice=None, parallel_tool_calls=None, truncation=None, max_tokens=None, reasoning=None, verbosity=None, metadata=None, store=None, include_usage=None, 
+response_include=None, top_logprobs=None, extra_query=None, extra_body=None, extra_headers=None, extra_args=None), input_guardrails=[], output_guardrails=[], output_type=None, 
+hooks=None, tool_use_behavior='run_llm_again', reset_tool_choice=True)",
+  "raw_item": {
+    "call_id": "function-call-14649977167236659911",
+    "output": "{\"stdout\":[\"['__MACOSX', 'AdventureWorks.sqlite', 'Airlines.sqlite', 'Baseball.sqlite', 'BowlingLeague.sqlite', 'Brazilian_E_Commerce.sqlite', 
+'California_Traffic_Collision.sqlite', 'Db-IMDB.sqlite', 'EU_soccer.sqlite', 'E_commerce.sqlite', 'EntertainmentAgency.sqlite', 'IPL.sqlite', 'Pagila.sqlite', 'WWE.sqlite', 
+'bank_sales_trading.sqlite', 'chinook.sqlite', 'city_legislation.sqlite', 'complex_oracle.sqlite', 'delivery_center.sqlite', 'education_business.sqlite', 'electronic_sales.sqlite', 
+'f1.sqlite', 'imdb_movies.sqlite', 'local-map.jsonl', 'log.sqlite', 'modern_data.sqlite', 'music.sqlite', 'northwind.sqlite', 'oracle_sql.sqlite', 'recipes.json', 
+'school_scheduling.sqlite', 'sqlite-sakila.sqlite', 'stacking.sqlite']\"],\"stderr\":[],\"error\":null}",
+    "type": "function_call_output"
+  },
+  "output": "{\"stdout\":[\"['__MACOSX', 'AdventureWorks.sqlite', 'Airlines.sqlite', 'Baseball.sqlite', 'BowlingLeague.sqlite', 'Brazilian_E_Commerce.sqlite', 
+'California_Traffic_Collision.sqlite', 'Db-IMDB.sqlite', 'EU_soccer.sqlite', 'E_commerce.sqlite', 'EntertainmentAgency.sqlite', 'IPL.sqlite', 'Pagila.sqlite', 'WWE.sqlite', 
+'bank_sales_trading.sqlite', 'chinook.sqlite', 'city_legislation.sqlite', 'complex_oracle.sqlite', 'delivery_center.sqlite', 'education_business.sqlite', 'electronic_sales.sqlite', 
+'f1.sqlite', 'imdb_movies.sqlite', 'local-map.jsonl', 'log.sqlite', 'modern_data.sqlite', 'music.sqlite', 'northwind.sqlite', 'oracle_sql.sqlite', 'recipes.json', 
+'school_scheduling.sqlite', 'sqlite-sakila.sqlite', 'stacking.sqlite']\"],\"stderr\":[],\"error\":null}",
+  "type": "tool_call_output_item"
+}
 
-1 ToolCallOutputItem(agent=Agent(name='Data Analysis Agent', handoff_description=None, tools=[FunctionTool(name='code_interpreter', 
-description='Run the given Python code in a sandbox environment.', params_json_schema={'properties': {'code': {'title': 'Code', 
-'type': 'string'}}, 'required': ['code'], 'title': 'code_interpreter_args', 'type': 'object', 'additionalProperties': False}, 
-on_invoke_tool=<function function_tool.<locals>._create_function_tool.<locals>._on_invoke_tool at 0x7fc4192d9620>, 
-strict_json_schema=True, is_enabled=True, tool_input_guardrails=None, tool_output_guardrails=None)], mcp_servers=[], mcp_config={}, 
-instructions="The `code_interpreter` tool executes Python commands. Please note that data is not persisted. Each time you invoke this
-tool, you will need to run import and define all variables from scratch.\n\nYou can access the local filesystem using this tool. 
-Instead of asking the user for file inputs, you should try to find the file using this tool.\n\nRecommended packages: Pandas, Numpy, 
-SymPy, Scikit-learn.\n\nYou can also run Jupyter-style shell commands (e.g., `!pip freeze`)\nbut you won't be able to install 
-packages.\n\nLook for data files under /data\n", prompt=None, handoffs=[], 
-model=<agents.models.openai_chatcompletions.OpenAIChatCompletionsModel object at 0x7fc4194873e0>, 
-model_settings=ModelSettings(temperature=None, top_p=None, frequency_penalty=None, presence_penalty=None, tool_choice=None, 
-parallel_tool_calls=None, truncation=None, max_tokens=None, reasoning=None, verbosity=None, metadata=None, store=None, 
-include_usage=None, response_include=None, top_logprobs=None, extra_query=None, extra_body=None, extra_headers=None, 
-extra_args=None), input_guardrails=[], output_guardrails=[], output_type=None, hooks=None, tool_use_behavior='run_llm_again', 
-reset_tool_choice=True), raw_item={'call_id': 'function-call-15182527534109463163', 'output': '{"stdout":["Billy Cobham","Black Label
-Society","Black Sabbath","Body Count","Bruce Dickinson","Buddy Guy","Caetano Veloso","Chico Buarque","Chico Science & Nação 
-Zumbi","Cidade Negra","Cláudio Zoli"],"stderr":[],"error":null}', 'type': 'function_call_output'}, output='{"stdout":["Billy 
-Cobham","Black Label Society","Black Sabbath","Body Count","Bruce Dickinson","Buddy Guy","Caetano Veloso","Chico Buarque","Chico 
-Science & Nação Zumbi","Cidade Negra","Cláudio Zoli"],"stderr":[],"error":null}', type='tool_call_output_item')
+{
+  "agent": "Agent(name='Data Analysis Agent', handoff_description=None, tools=[FunctionTool(name='code_interpreter', description='Run the given Python code in a sandbox environment.', 
+params_json_schema={'properties': {'code': {'title': 'Code', 'type': 'string'}}, 'required': ['code'], 'title': 'code_interpreter_args', 'type': 'object', 'additionalProperties': 
+False}, on_invoke_tool=<function function_tool.<locals>._create_function_tool.<locals>._on_invoke_tool at 0x7f78a90cd620>, strict_json_schema=True, is_enabled=True, 
+tool_input_guardrails=None, tool_output_guardrails=None)], mcp_servers=[], mcp_config={}, instructions=\"The `code_interpreter` tool executes Python commands. Please note that data is 
+not persisted. Each time you invoke this tool, you will need to run import and define all variables from scratch.\\n\\nYou can access the local filesystem using this tool. Instead of 
+asking the user for file inputs, you should try to find the file using this tool.\\n\\nRecommended packages: Pandas, Numpy, SymPy, Scikit-learn.\\n\\nYou can also run Jupyter-style 
+shell commands (e.g., `!pip freeze`)\\nbut you won't be able to install packages.\\n\\nLook for data files under /data\\n\", prompt=None, handoffs=[], 
+model=<agents.models.openai_chatcompletions.OpenAIChatCompletionsModel object at 0x7f78a918e090>, model_settings=ModelSettings(temperature=None, top_p=None, frequency_penalty=None, 
+presence_penalty=None, tool_choice=None, parallel_tool_calls=None, truncation=None, max_tokens=None, reasoning=None, verbosity=None, metadata=None, store=None, include_usage=None, 
+response_include=None, top_logprobs=None, extra_query=None, extra_body=None, extra_headers=None, extra_args=None), input_guardrails=[], output_guardrails=[], output_type=None, 
+hooks=None, tool_use_behavior='run_llm_again', reset_tool_choice=True)",
+  "raw_item": "ResponseFunctionToolCall(arguments='{\"code\":\"\\\\nimport sqlite3\\\\n\\\\nconn = sqlite3.connect(\\'/data/chinook.sqlite\\')\\\\ncursor = 
+conn.cursor()\\\\n\\\\ncursor.execute(\\\\\"SELECT Name FROM artists WHERE ArtistId BETWEEN 10 AND 20\\\\\")\\\\nartist_names = cursor.fetchall()\\\\n\\\\nfor name in artist_names:\\\\n
+print(name[0])\\\\n\\\\nconn.close()\\\\n\"}', call_id='function-call-118554723902940038', name='code_interpreter', type='function_call', id='__fake_id__', status=None)",
+  "type": "tool_call_item"
+}
 
-2 MessageOutputItem(agent=Agent(name='Data Analysis Agent', handoff_description=None, tools=[FunctionTool(name='code_interpreter', 
-description='Run the given Python code in a sandbox environment.', params_json_schema={'properties': {'code': {'title': 'Code', 
-'type': 'string'}}, 'required': ['code'], 'title': 'code_interpreter_args', 'type': 'object', 'additionalProperties': False}, 
-on_invoke_tool=<function function_tool.<locals>._create_function_tool.<locals>._on_invoke_tool at 0x7fc4192d9620>, 
-strict_json_schema=True, is_enabled=True, tool_input_guardrails=None, tool_output_guardrails=None)], mcp_servers=[], mcp_config={}, 
-instructions="The `code_interpreter` tool executes Python commands. Please note that data is not persisted. Each time you invoke this
-tool, you will need to run import and define all variables from scratch.\n\nYou can access the local filesystem using this tool. 
-Instead of asking the user for file inputs, you should try to find the file using this tool.\n\nRecommended packages: Pandas, Numpy, 
-SymPy, Scikit-learn.\n\nYou can also run Jupyter-style shell commands (e.g., `!pip freeze`)\nbut you won't be able to install 
-packages.\n\nLook for data files under /data\n", prompt=None, handoffs=[], 
-model=<agents.models.openai_chatcompletions.OpenAIChatCompletionsModel object at 0x7fc4194873e0>, 
-model_settings=ModelSettings(temperature=None, top_p=None, frequency_penalty=None, presence_penalty=None, tool_choice=None, 
-parallel_tool_calls=None, truncation=None, max_tokens=None, reasoning=None, verbosity=None, metadata=None, store=None, 
-include_usage=None, response_include=None, top_logprobs=None, extra_query=None, extra_body=None, extra_headers=None, 
-extra_args=None), input_guardrails=[], output_guardrails=[], output_type=None, hooks=None, tool_use_behavior='run_llm_again', 
-reset_tool_choice=True), raw_item=ResponseOutputMessage(id='__fake_id__', content=[ResponseOutputText(annotations=[], text='The 
-artists with ArtistId between 10 and 20 are: Billy Cobham, Black Label Society, Black Sabbath, Body Count, Bruce Dickinson, Buddy 
-Guy, Caetano Veloso, Chico Buarque, Chico Science & Nação Zumbi, Cidade Negra, and Cláudio Zoli.', type='output_text', 
-logprobs=None)], role='assistant', status='completed', type='message'), type='message_output_item')
+{
+  "agent": "Agent(name='Data Analysis Agent', handoff_description=None, tools=[FunctionTool(name='code_interpreter', description='Run the given Python code in a sandbox environment.', 
+params_json_schema={'properties': {'code': {'title': 'Code', 'type': 'string'}}, 'required': ['code'], 'title': 'code_interpreter_args', 'type': 'object', 'additionalProperties': 
+False}, on_invoke_tool=<function function_tool.<locals>._create_function_tool.<locals>._on_invoke_tool at 0x7f78a90cd620>, strict_json_schema=True, is_enabled=True, 
+tool_input_guardrails=None, tool_output_guardrails=None)], mcp_servers=[], mcp_config={}, instructions=\"The `code_interpreter` tool executes Python commands. Please note that data is 
+not persisted. Each time you invoke this tool, you will need to run import and define all variables from scratch.\\n\\nYou can access the local filesystem using this tool. Instead of 
+asking the user for file inputs, you should try to find the file using this tool.\\n\\nRecommended packages: Pandas, Numpy, SymPy, Scikit-learn.\\n\\nYou can also run Jupyter-style 
+shell commands (e.g., `!pip freeze`)\\nbut you won't be able to install packages.\\n\\nLook for data files under /data\\n\", prompt=None, handoffs=[], 
+model=<agents.models.openai_chatcompletions.OpenAIChatCompletionsModel object at 0x7f78a918e090>, model_settings=ModelSettings(temperature=None, top_p=None, frequency_penalty=None, 
+presence_penalty=None, tool_choice=None, parallel_tool_calls=None, truncation=None, max_tokens=None, reasoning=None, verbosity=None, metadata=None, store=None, include_usage=None, 
+response_include=None, top_logprobs=None, extra_query=None, extra_body=None, extra_headers=None, extra_args=None), input_guardrails=[], output_guardrails=[], output_type=None, 
+hooks=None, tool_use_behavior='run_llm_again', reset_tool_choice=True)",
+  "raw_item": {
+    "call_id": "function-call-118554723902940038",
+    "output": "{\"stdout\":[\"Billy Cobham\",\"Black Label Society\",\"Black Sabbath\",\"Body Count\",\"Bruce Dickinson\",\"Buddy Guy\",\"Caetano Veloso\",\"Chico Buarque\",\"Chico 
+Science & Na\u00e7\u00e3o Zumbi\",\"Cidade Negra\",\"Cl\u00e1udio Zoli\"],\"stderr\":[],\"error\":null}",
+    "type": "function_call_output"
+  },
+  "output": "{\"stdout\":[\"Billy Cobham\",\"Black Label Society\",\"Black Sabbath\",\"Body Count\",\"Bruce Dickinson\",\"Buddy Guy\",\"Caetano Veloso\",\"Chico Buarque\",\"Chico 
+Science & Na\u00e7\u00e3o Zumbi\",\"Cidade Negra\",\"Cl\u00e1udio Zoli\"],\"stderr\":[],\"error\":null}",
+  "type": "tool_call_output_item"
+}
+
+{
+  "agent": "Agent(name='Data Analysis Agent', handoff_description=None, tools=[FunctionTool(name='code_interpreter', description='Run the given Python code in a sandbox environment.', 
+params_json_schema={'properties': {'code': {'title': 'Code', 'type': 'string'}}, 'required': ['code'], 'title': 'code_interpreter_args', 'type': 'object', 'additionalProperties': 
+False}, on_invoke_tool=<function function_tool.<locals>._create_function_tool.<locals>._on_invoke_tool at 0x7f78a90cd620>, strict_json_schema=True, is_enabled=True, 
+tool_input_guardrails=None, tool_output_guardrails=None)], mcp_servers=[], mcp_config={}, instructions=\"The `code_interpreter` tool executes Python commands. Please note that data is 
+not persisted. Each time you invoke this tool, you will need to run import and define all variables from scratch.\\n\\nYou can access the local filesystem using this tool. Instead of 
+asking the user for file inputs, you should try to find the file using this tool.\\n\\nRecommended packages: Pandas, Numpy, SymPy, Scikit-learn.\\n\\nYou can also run Jupyter-style 
+shell commands (e.g., `!pip freeze`)\\nbut you won't be able to install packages.\\n\\nLook for data files under /data\\n\", prompt=None, handoffs=[], 
+model=<agents.models.openai_chatcompletions.OpenAIChatCompletionsModel object at 0x7f78a918e090>, model_settings=ModelSettings(temperature=None, top_p=None, frequency_penalty=None, 
+presence_penalty=None, tool_choice=None, parallel_tool_calls=None, truncation=None, max_tokens=None, reasoning=None, verbosity=None, metadata=None, store=None, include_usage=None, 
+response_include=None, top_logprobs=None, extra_query=None, extra_body=None, extra_headers=None, extra_args=None), input_guardrails=[], output_guardrails=[], output_type=None, 
+hooks=None, tool_use_behavior='run_llm_again', reset_tool_choice=True)",
+  "raw_item": "ResponseOutputMessage(id='__fake_id__', content=[ResponseOutputText(annotations=[], text='The artists with ArtistId between 10 and 20 are:\\n\\n*   Billy Cobham\\n*   
+Black Label Society\\n*   Black Sabbath\\n*   Body Count\\n*   Bruce Dickinson\\n*   Buddy Guy\\n*   Caetano Veloso\\n*   Chico Buarque\\n*   Chico Science & Na\u00e7\u00e3o Zumbi\\n*  
+Cidade Negra\\n*   Cl\u00e1udio Zoli', type='output_text', logprobs=None)], role='assistant', status='completed', type='message')",
+  "type": "message_output_item"
+}
