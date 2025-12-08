@@ -2,6 +2,7 @@
 
 import argparse
 import asyncio
+from typing import Any
 
 import agents
 import pydantic
@@ -11,7 +12,7 @@ from openai import AsyncOpenAI
 from rich.progress import track
 
 from src.utils import (
-    AsyncWeaviateKnowledgeBase,
+    CodeInterpreter,
     Configs,
     gather_with_progress,
     get_weaviate_async_client,
@@ -59,6 +60,7 @@ class LangFuseTracedResponse(pydantic.BaseModel):
 
     answer: str | None
     trace_id: str | None
+    run_result: Any = pydantic.Field(exclude=True)
 
 
 class EvaluatorQuery(pydantic.BaseModel):
@@ -96,9 +98,12 @@ async def run_agent_with_trace(
 
     except agents.MaxTurnsExceeded:
         answer = None
+        result = None
 
     return LangFuseTracedResponse(
-        answer=answer, trace_id=langfuse_client.get_current_trace_id()
+        answer=answer,
+        run_result=result,
+        trace_id=langfuse_client.get_current_trace_id(),
     )
 
 
@@ -134,9 +139,13 @@ async def run_and_evaluate(
         )
         root_span.update(output=traced_response.answer)
 
+    run_result = traced_response.run_result
     answer = traced_response.answer
-    if answer is None:
+    if (answer is None) or (run_result is None):
         return traced_response, None
+
+    for _index, _item in enumerate(run_result.new_items):
+        print(_index, _item)
 
     evaluator_response = await run_evaluator_agent(
         EvaluatorQuery(
@@ -154,6 +163,24 @@ parser.add_argument("--langfuse_dataset_name", required=True)
 parser.add_argument("--run_name", required=True)
 parser.add_argument("--limit", type=int)
 
+CODE_INTERPRETER_INSTRUCTIONS = """\
+The `code_interpreter` tool executes Python commands. \
+Please note that data is not persisted. Each time you invoke this tool, \
+you will need to run import and define all variables from scratch.
+
+You can access the local filesystem using this tool. \
+Instead of asking the user for file inputs, you should try to find the file \
+using this tool.
+
+Recommended packages: Pandas, Numpy, SymPy, Scikit-learn.
+
+You can also run Jupyter-style shell commands (e.g., `!pip freeze`)
+but you won't be able to install packages.
+
+Look for data files under /data
+"""
+
+AGENT_LLM_NAME = "gemini-2.5-flash"
 
 if __name__ == "__main__":
     args = parser.parse_args()
@@ -173,21 +200,26 @@ if __name__ == "__main__":
         api_key=configs.weaviate_api_key,
     )
     async_openai_client = AsyncOpenAI()
-    async_knowledgebase = AsyncWeaviateKnowledgeBase(
-        async_weaviate_client,
-        collection_name="enwiki_20250520",
+    code_interpreter = CodeInterpreter(
+        template_name="9p6favrrqijhasgkq1tv", local_files=[]
+    )
+
+    main_agent = agents.Agent(
+        name="Data Analysis Agent",
+        instructions=CODE_INTERPRETER_INSTRUCTIONS,
+        tools=[
+            agents.function_tool(
+                code_interpreter.run_code,
+                name_override="code_interpreter",
+            )
+        ],
+        model=agents.OpenAIChatCompletionsModel(
+            model=AGENT_LLM_NAME, openai_client=async_openai_client
+        ),
     )
 
     tracer = setup_langfuse_tracer()
 
-    main_agent = agents.Agent(
-        name="Wikipedia Agent",
-        instructions=SYSTEM_MESSAGE,
-        tools=[agents.function_tool(async_knowledgebase.search_knowledgebase)],
-        model=agents.OpenAIChatCompletionsModel(
-            model="gemini-2.5-flash", openai_client=async_openai_client
-        ),
-    )
     coros = [
         run_and_evaluate(
             run_name=args.run_name,
