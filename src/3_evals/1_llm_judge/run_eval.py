@@ -2,6 +2,7 @@
 
 import argparse
 import asyncio
+import json
 from typing import Any
 
 import agents
@@ -145,7 +146,7 @@ async def run_and_evaluate(
         return traced_response, None
 
     for _index, _item in enumerate(run_result.new_items):
-        print(_index, _item)
+        print(_index, json.dumps(_item.__dict__, indent=2, default=str))
 
     evaluator_response = await run_evaluator_agent(
         EvaluatorQuery(
