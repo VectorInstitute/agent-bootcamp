@@ -90,7 +90,7 @@ async def test_weaviate_kb_tool_and_llm(
         },
     ]
     response = await client.chat.completions.create(
-        model="gemini-2.5-flash-lite-preview-06-17", messages=messages
+        model="gemini-2.5-flash-lite", messages=messages
     )
     message = response.choices[0].message
     assert message.role == "assistant"

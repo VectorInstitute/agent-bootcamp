@@ -151,7 +151,7 @@ async def _main(question: str, gr_messages: list[ChatMessage]):
         instructions=RESEARCHER_INSTRUCTIONS,
         tools=[agents.function_tool(async_knowledgebase.search_knowledgebase)],
         model=agents.OpenAIChatCompletionsModel(
-            model="gemini-2.5-flash-lite-preview-06-17",
+            model="gemini-2.5-flash-lite",
             openai_client=async_openai_client,
         ),
         model_settings=agents.ModelSettings(tool_choice="required"),
