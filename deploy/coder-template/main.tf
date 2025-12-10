@@ -46,39 +46,75 @@ resource "coder_agent" "main" {
     echo "Fixing permissions for /home/${local.username}"
     sudo chown -R ${local.username}:${local.username} /home/${local.username}
 
-    # Create project directory early so vscode-web can use it
-    mkdir -p "/home/${local.username}/${local.repo_name}"
-
     # Install uv
     curl -LsSf https://astral.sh/uv/install.sh | sh
     export PATH="/home/${local.username}/.local/bin:$PATH"
 
-    # Clone the GitHub repository
+    # Clone the GitHub repository with proper error handling
     cd "/home/${local.username}"
 
-    if [ ! -d "${local.repo_name}/.git" ] ; then
-      git clone ${var.github_repo} ${local.repo_name}
-      cd ${local.repo_name}
-      git checkout ${var.github_branch}
+    # Handle three scenarios:
+    # 1. Directory doesn't exist - fresh clone
+    # 2. Directory exists with .git - update existing repo
+    # 3. Directory exists without .git - corrupted state, clean and re-clone
+    if [ -d "${local.repo_name}" ]; then
+      if [ -d "${local.repo_name}/.git" ]; then
+        echo "Repository already exists, updating..."
+        cd ${local.repo_name}
+        git pull || echo "Warning: git pull failed, continuing with existing code"
+      else
+        echo "Directory exists but is not a git repository, cleaning up..."
+        rm -rf ${local.repo_name}
+        echo "Cloning repository..."
+        if git clone ${var.github_repo} ${local.repo_name}; then
+          echo "Repository cloned successfully"
+          cd ${local.repo_name}
+          git checkout ${var.github_branch}
+        else
+          echo "ERROR: Failed to clone repository"
+          exit 1
+        fi
+      fi
     else
-      cd ${local.repo_name}
-      git pull || true
+      echo "Cloning repository..."
+      if git clone ${var.github_repo} ${local.repo_name}; then
+        echo "Repository cloned successfully"
+        cd ${local.repo_name}
+        git checkout ${var.github_branch}
+      else
+        echo "ERROR: Failed to clone repository"
+        exit 1
+      fi
     fi
+
+    # Verify we're in the correct directory with a valid repo
+    if [ ! -d ".git" ]; then
+      echo "ERROR: Not in a valid git repository"
+      exit 1
+    fi
+
+    echo "Current directory: $(pwd)"
+    echo "Directory contents: $(ls -la)"
 
     # Run project init steps
     echo "Creating virtual environment and installing dependencies..."
     uv venv .venv
     source .venv/bin/activate
 
-    # Run sync synchronously and wait for completion
-    uv sync --dev
-    sync_exit_code=$?
+    # Run sync synchronously and wait for completion only if pyproject.toml exists
+    if [ -f "pyproject.toml" ]; then
+      echo "Found pyproject.toml, installing dependencies..."
+      uv sync --dev
+      sync_exit_code=$?
 
-    # Ensure sync completed successfully before proceeding
-    if [ $sync_exit_code -eq 0 ]; then
-      echo "Dependencies installed successfully"
+      # Ensure sync completed successfully before proceeding
+      if [ $sync_exit_code -eq 0 ]; then
+        echo "Dependencies installed successfully"
+      else
+        echo "Warning: uv sync exited with code $sync_exit_code"
+      fi
     else
-      echo "Warning: uv sync exited with code $sync_exit_code"
+      echo "No pyproject.toml found in $(pwd), skipping dependency installation"
     fi
 
     # Wait a moment to ensure all installations are finalized
@@ -104,11 +140,11 @@ resource "coder_agent" "main" {
 VSCODE_SETTINGS
 
     # Configure shell to always start in repo with venv activated
-    cat >> "/home/${local.username}/.bashrc" <<'BASHRC'
+    cat >> "/home/${local.username}/.bashrc" <<BASHRC
 
-# Auto-navigate to agent-bootcamp and activate venv
-if [ -f ~/agent-bootcamp/.venv/bin/activate ]; then
-    cd ~/agent-bootcamp
+# Auto-navigate to ${local.repo_name} and activate venv
+if [ -f ~/${local.repo_name}/.venv/bin/activate ]; then
+    cd ~/${local.repo_name}
     source .venv/bin/activate
 fi
 BASHRC
