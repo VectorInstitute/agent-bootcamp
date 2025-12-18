@@ -18,7 +18,7 @@ load_dotenv(verbose=True)
 @pytest.fixture()
 def configs():
     """Load env var configs for testing."""
-    return Configs.from_env_var()
+    return Configs()
 
 
 @pytest_asyncio.fixture()
@@ -35,7 +35,7 @@ async def weaviate_kb(configs):
     )
 
     yield AsyncWeaviateKnowledgeBase(
-        async_client=async_client, collection_name="enwiki_20250520"
+        async_client=async_client, collection_name=configs.weaviate_collection_name
     )
 
     await async_client.close()

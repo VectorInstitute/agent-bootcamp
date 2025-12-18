@@ -17,7 +17,7 @@ def set_up_langfuse_otlp_env_vars():
     Also refer to:
     langfuse.com/docs/integrations/openaiagentssdk/openai-agents
     """
-    configs = Configs.from_env_var()
+    configs = Configs()
 
     langfuse_auth = base64.b64encode(
         f"{configs.langfuse_public_key}:{configs.langfuse_secret_key}".encode()

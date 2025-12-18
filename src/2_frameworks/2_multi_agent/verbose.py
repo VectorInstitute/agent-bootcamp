@@ -142,7 +142,7 @@ async def _main(question: str, gr_messages: list[ChatMessage]):
         name="Planner Agent",
         instructions=PLANNER_INSTRUCTIONS,
         model=agents.OpenAIChatCompletionsModel(
-            model="gemini-2.5-flash", openai_client=async_openai_client
+            model=configs.default_planner_model, openai_client=async_openai_client
         ),
         output_type=SearchPlan,
     )
@@ -151,7 +151,7 @@ async def _main(question: str, gr_messages: list[ChatMessage]):
         instructions=RESEARCHER_INSTRUCTIONS,
         tools=[agents.function_tool(async_knowledgebase.search_knowledgebase)],
         model=agents.OpenAIChatCompletionsModel(
-            model="gemini-2.5-flash-lite",
+            model=configs.default_worker_model,
             openai_client=async_openai_client,
         ),
         model_settings=agents.ModelSettings(tool_choice="required"),
@@ -160,7 +160,7 @@ async def _main(question: str, gr_messages: list[ChatMessage]):
         name="Writer Agent",
         instructions=WRITER_INSTRUCTIONS,
         model=agents.OpenAIChatCompletionsModel(
-            model="gemini-2.5-flash", openai_client=async_openai_client
+            model=configs.default_planner_model, openai_client=async_openai_client
         ),
         output_type=ResearchReport,
     )
@@ -213,7 +213,7 @@ async def _main(question: str, gr_messages: list[ChatMessage]):
 
 
 if __name__ == "__main__":
-    configs = Configs.from_env_var()
+    configs = Configs()
     async_weaviate_client = get_weaviate_async_client(
         http_host=configs.weaviate_http_host,
         http_port=configs.weaviate_http_port,
@@ -225,7 +225,7 @@ if __name__ == "__main__":
     )
     async_knowledgebase = AsyncWeaviateKnowledgeBase(
         async_weaviate_client,
-        collection_name="enwiki_20250520",
+        collection_name=configs.weaviate_collection_name,
     )
 
     async_openai_client = AsyncOpenAI()

@@ -5,6 +5,7 @@ Logs traces to LangFuse for observability and evaluation.
 You will need your E2B API Key.
 """
 
+import os
 from pathlib import Path
 
 import agents
@@ -42,7 +43,6 @@ You can also run Jupyter-style shell commands (e.g., `!pip freeze`)
 but you won't be able to install packages.
 """
 
-AGENT_LLM_NAME = "gemini-2.5-flash"
 async_openai_client = AsyncOpenAI()
 code_interpreter = CodeInterpreter(
     local_files=[
@@ -65,7 +65,8 @@ async def _main(question: str, gr_messages: list[ChatMessage]):
             )
         ],
         model=agents.OpenAIChatCompletionsModel(
-            model=AGENT_LLM_NAME, openai_client=async_openai_client
+            model=os.getenv("DEFAULT_PLANNER_MODEL", "gemini-2.5-flash"),
+            openai_client=async_openai_client,
         ),
     )
 

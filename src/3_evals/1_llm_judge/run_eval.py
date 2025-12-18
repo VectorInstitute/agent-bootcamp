@@ -109,7 +109,7 @@ async def run_evaluator_agent(evaluator_query: EvaluatorQuery) -> EvaluatorRespo
         instructions=EVALUATOR_INSTRUCTIONS,
         output_type=EvaluatorResponse,
         model=agents.OpenAIChatCompletionsModel(
-            model="gemini-2.5-flash", openai_client=async_openai_client
+            model=configs.default_planner_model, openai_client=async_openai_client
         ),
     )
 
@@ -162,7 +162,7 @@ if __name__ == "__main__":
     if args.limit is not None:
         lf_dataset_items = lf_dataset_items[: args.limit]
 
-    configs = Configs.from_env_var()
+    configs = Configs()
     async_weaviate_client = get_weaviate_async_client(
         http_host=configs.weaviate_http_host,
         http_port=configs.weaviate_http_port,
@@ -175,7 +175,7 @@ if __name__ == "__main__":
     async_openai_client = AsyncOpenAI()
     async_knowledgebase = AsyncWeaviateKnowledgeBase(
         async_weaviate_client,
-        collection_name="enwiki_20250520",
+        collection_name=configs.weaviate_collection_name,
     )
 
     tracer = setup_langfuse_tracer()
@@ -185,7 +185,7 @@ if __name__ == "__main__":
         instructions=SYSTEM_MESSAGE,
         tools=[agents.function_tool(async_knowledgebase.search_knowledgebase)],
         model=agents.OpenAIChatCompletionsModel(
-            model="gemini-2.5-flash", openai_client=async_openai_client
+            model=configs.default_planner_model, openai_client=async_openai_client
         ),
     )
     coros = [

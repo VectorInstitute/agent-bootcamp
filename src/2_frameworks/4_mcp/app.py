@@ -5,8 +5,8 @@ Log traces to LangFuse for observability and evaluation.
 
 import asyncio
 import contextlib
-import os
 import signal
+import subprocess
 import sys
 
 import agents
@@ -30,9 +30,8 @@ load_dotenv(verbose=True)
 
 set_up_logging()
 
-AGENT_LLM_NAME = "gemini-2.5-flash"
 
-configs = Configs.from_env_var()
+configs = Configs()
 async_openai_client = AsyncOpenAI()
 
 
@@ -52,7 +51,11 @@ async def _main(question: str, gr_messages: list[ChatMessage]):
     """Initialize MCP Git server and run the agent."""
     setup_langfuse_tracer()
 
-    repo_path = os.path.abspath("/home/coder/agent-bootcamp")
+    # Get the absolute path to the current git repository, regardless of where
+    # the script is run from
+    repo_path = subprocess.check_output(
+        ["git", "rev-parse", "--show-toplevel"], text=True
+    ).strip()
 
     with langfuse_client.start_as_current_span(name="Agents-SDK-Trace") as span:
         span.update(input=question)
@@ -72,7 +75,8 @@ async def _main(question: str, gr_messages: list[ChatMessage]):
                 instructions=f"Answer questions about the git repository at {repo_path}, use that for repo_path",
                 mcp_servers=[mcp_server],
                 model=agents.OpenAIChatCompletionsModel(
-                    model=AGENT_LLM_NAME, openai_client=async_openai_client
+                    model=configs.default_planner_model,
+                    openai_client=async_openai_client,
                 ),
             )
 
@@ -100,7 +104,7 @@ demo = gr.ChatInterface(
 
 
 if __name__ == "__main__":
-    configs = Configs.from_env_var()
+    configs = Configs()
 
     signal.signal(signal.SIGINT, _handle_sigint)
 

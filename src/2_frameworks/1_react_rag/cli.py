@@ -24,12 +24,11 @@ from src.utils import (
 
 load_dotenv(verbose=True)
 
-AGENT_LLM_NAME = "gemini-2.5-flash"
 no_tracing_config = RunConfig(tracing_disabled=True)
 
 
 async def _main(query: str):
-    configs = Configs.from_env_var()
+    configs = Configs()
     async_weaviate_client = get_weaviate_async_client(
         http_host=configs.weaviate_http_host,
         http_port=configs.weaviate_http_port,
@@ -41,7 +40,7 @@ async def _main(query: str):
     )
     async_knowledgebase = AsyncWeaviateKnowledgeBase(
         async_weaviate_client,
-        collection_name="enwiki_20250520",
+        collection_name=configs.weaviate_collection_name,
     )
 
     async_openai_client = AsyncOpenAI()
@@ -51,7 +50,7 @@ async def _main(query: str):
         instructions=REACT_INSTRUCTIONS,
         tools=[function_tool(async_knowledgebase.search_knowledgebase)],
         model=OpenAIChatCompletionsModel(
-            model=AGENT_LLM_NAME, openai_client=async_openai_client
+            model=configs.default_planner_model, openai_client=async_openai_client
         ),
     )
 

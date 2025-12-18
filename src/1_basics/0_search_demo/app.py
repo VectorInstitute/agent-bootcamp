@@ -32,7 +32,7 @@ public dataset.
 
 load_dotenv(verbose=True)
 
-configs = Configs.from_env_var()
+configs = Configs()
 async_weaviate_client = get_weaviate_async_client(
     http_host=configs.weaviate_http_host,
     http_port=configs.weaviate_http_port,
@@ -45,7 +45,7 @@ async_weaviate_client = get_weaviate_async_client(
 async_openai_client = AsyncOpenAI()
 async_knowledgebase = AsyncWeaviateKnowledgeBase(
     async_weaviate_client,
-    collection_name="enwiki_20250520",
+    collection_name=configs.weaviate_collection_name,
 )
 
 
