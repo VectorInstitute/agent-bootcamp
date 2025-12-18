@@ -31,9 +31,8 @@ load_dotenv(verbose=True)
 
 set_up_logging()
 
-AGENT_LLM_NAME = "gemini-2.5-flash"
 
-configs = Configs.from_env_var()
+configs = Configs()
 async_weaviate_client = get_weaviate_async_client(
     http_host=configs.weaviate_http_host,
     http_port=configs.weaviate_http_port,
@@ -46,7 +45,7 @@ async_weaviate_client = get_weaviate_async_client(
 async_openai_client = AsyncOpenAI()
 async_knowledgebase = AsyncWeaviateKnowledgeBase(
     async_weaviate_client,
-    collection_name="enwiki_20250520",
+    collection_name=configs.weaviate_collection_name,
 )
 
 
@@ -71,7 +70,7 @@ async def _main(question: str, gr_messages: list[ChatMessage]):
         instructions=REACT_INSTRUCTIONS,
         tools=[agents.function_tool(async_knowledgebase.search_knowledgebase)],
         model=agents.OpenAIChatCompletionsModel(
-            model=AGENT_LLM_NAME, openai_client=async_openai_client
+            model=configs.default_planner_model, openai_client=async_openai_client
         ),
     )
 
@@ -102,8 +101,6 @@ demo = gr.ChatInterface(
 
 
 if __name__ == "__main__":
-    configs = Configs.from_env_var()
-
     signal.signal(signal.SIGINT, _handle_sigint)
 
     try:

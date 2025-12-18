@@ -27,25 +27,6 @@ load_dotenv(verbose=True)
 logging.basicConfig(level=logging.INFO)
 
 
-AGENT_LLM_NAME = "gemini-2.5-flash"
-
-configs = Configs.from_env_var()
-async_weaviate_client = get_weaviate_async_client(
-    http_host=configs.weaviate_http_host,
-    http_port=configs.weaviate_http_port,
-    http_secure=configs.weaviate_http_secure,
-    grpc_host=configs.weaviate_grpc_host,
-    grpc_port=configs.weaviate_grpc_port,
-    grpc_secure=configs.weaviate_grpc_secure,
-    api_key=configs.weaviate_api_key,
-)
-async_openai_client = AsyncOpenAI()
-async_knowledgebase = AsyncWeaviateKnowledgeBase(
-    async_weaviate_client,
-    collection_name="enwiki_20250520",
-)
-
-
 async def _cleanup_clients() -> None:
     """Close async clients."""
     await async_weaviate_client.close()
@@ -65,8 +46,9 @@ async def _main(question: str, gr_messages: list[ChatMessage]):
         instructions=REACT_INSTRUCTIONS,
         tools=[agents.function_tool(async_knowledgebase.search_knowledgebase)],
         model=agents.OpenAIChatCompletionsModel(
-            model=AGENT_LLM_NAME, openai_client=async_openai_client
+            model=configs.default_planner_model, openai_client=async_openai_client
         ),
+        model_settings=agents.ModelSettings(parallel_tool_calls=True),
     )
 
     result_stream = agents.Runner.run_streamed(main_agent, input=question)
@@ -88,7 +70,7 @@ demo = gr.ChatInterface(
 
 
 if __name__ == "__main__":
-    configs = Configs.from_env_var()
+    configs = Configs()
     async_weaviate_client = get_weaviate_async_client(
         http_host=configs.weaviate_http_host,
         http_port=configs.weaviate_http_port,
@@ -100,7 +82,7 @@ if __name__ == "__main__":
     )
     async_knowledgebase = AsyncWeaviateKnowledgeBase(
         async_weaviate_client,
-        collection_name="enwiki_20250520",
+        collection_name=configs.weaviate_collection_name,
     )
 
     async_openai_client = AsyncOpenAI()

@@ -23,7 +23,6 @@ if TYPE_CHECKING:
 load_dotenv(verbose=True)
 
 MAX_TURNS = 5
-AGENT_LLM_NAME = "gemini-2.5-flash"
 
 tools: list["ChatCompletionToolParam"] = [
     {
@@ -49,7 +48,7 @@ tools: list["ChatCompletionToolParam"] = [
 
 
 async def _main():
-    configs = Configs.from_env_var()
+    configs = Configs()
     async_weaviate_client = get_weaviate_async_client(
         http_host=configs.weaviate_http_host,
         http_port=configs.weaviate_http_port,
@@ -62,7 +61,7 @@ async def _main():
     async_openai_client = AsyncOpenAI()
     async_knowledgebase = AsyncWeaviateKnowledgeBase(
         async_weaviate_client,
-        collection_name="enwiki_20250520",
+        collection_name=configs.weaviate_collection_name,
     )
 
     messages: list = [
@@ -81,7 +80,7 @@ async def _main():
         while True:
             for _ in range(MAX_TURNS):
                 completion = await async_openai_client.chat.completions.create(
-                    model=AGENT_LLM_NAME,
+                    model=configs.default_planner_model,
                     messages=messages,
                     tools=tools,
                 )

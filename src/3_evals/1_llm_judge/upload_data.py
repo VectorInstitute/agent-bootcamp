@@ -26,7 +26,7 @@ parser.add_argument("--limit", type=int)
 
 if __name__ == "__main__":
     args = parser.parse_args()
-    configs = Configs.from_env_var()
+    configs = Configs()
 
     set_up_langfuse_otlp_env_vars()
 

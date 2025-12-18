@@ -100,7 +100,7 @@ if __name__ == "__main__":
     )
     print(f"Items to process: {limit}")
 
-    configs = Configs.from_env_var()
+    configs = Configs()
     async_embed_client = AsyncOpenAI(
         api_key=configs.embedding_api_key,
         base_url=configs.embedding_base_url,
@@ -120,7 +120,7 @@ if __name__ == "__main__":
         batch_embed(
             _batch,
             oai_client=async_embed_client,
-            model_name="@cf/baai/bge-m3",
+            model_name=configs.embedding_model_name,
             run_name=args.run_name,
         )
         for _batch in batches

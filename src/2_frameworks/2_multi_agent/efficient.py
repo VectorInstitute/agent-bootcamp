@@ -33,12 +33,8 @@ load_dotenv(verbose=True)
 
 set_up_logging()
 
-AGENT_LLM_NAMES = {
-    "worker": "gemini-2.5-flash",  # less expensive,
-    "planner": "gemini-2.5-pro",  # more expensive, better at reasoning and planning
-}
 
-configs = Configs.from_env_var()
+configs = Configs()
 async_weaviate_client = get_weaviate_async_client(
     http_host=configs.weaviate_http_host,
     http_port=configs.weaviate_http_port,
@@ -51,8 +47,13 @@ async_weaviate_client = get_weaviate_async_client(
 async_openai_client = AsyncOpenAI()
 async_knowledgebase = AsyncWeaviateKnowledgeBase(
     async_weaviate_client,
-    collection_name="enwiki_20250520",
+    collection_name=configs.weaviate_collection_name,
 )
+
+AGENT_LLM_NAMES = {
+    "worker": configs.default_worker_model,  # less expensive,
+    "planner": configs.default_planner_model,  # more expensive, better at reasoning and planning
+}
 
 
 async def _cleanup_clients() -> None:

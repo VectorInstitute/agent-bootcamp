@@ -96,7 +96,7 @@ async def generate_synthetic_test_cases(
         instructions="Extract the structured output from the given text.",
         output_type=list[_SyntheticTestCase],
         model=agents.OpenAIChatCompletionsModel(
-            model="gemini-2.5-flash", openai_client=async_openai_client
+            model=configs.default_worker_model, openai_client=async_openai_client
         ),
     )
 
@@ -118,7 +118,7 @@ async def generate_synthetic_test_cases(
 if __name__ == "__main__":
     args = parser.parse_args()
 
-    configs = Configs.from_env_var()
+    configs = Configs()
     async_weaviate_client = get_weaviate_async_client(
         http_host=configs.weaviate_http_host,
         http_port=configs.weaviate_http_port,
@@ -130,7 +130,7 @@ if __name__ == "__main__":
     )
     async_knowledgebase = AsyncWeaviateKnowledgeBase(
         async_weaviate_client,
-        collection_name="enwiki_20250520",
+        collection_name=configs.weaviate_collection_name,
         max_concurrency=args.max_concurrency,
     )
 
@@ -167,10 +167,10 @@ if __name__ == "__main__":
             example_questions=example_questions_str,
             json_schema=_SyntheticTestCases.model_json_schema(),
         ),
-        # Hint: replace this tool with your own knowledge base search tool.
+        # HINT: replace this tool with your own knowledge base search tool.
         tools=[agents.function_tool(async_knowledgebase.search_knowledgebase)],
         model=agents.OpenAIChatCompletionsModel(
-            model="gemini-2.5-flash", openai_client=async_openai_client
+            model=configs.default_planner_model, openai_client=async_openai_client
         ),
     )
 

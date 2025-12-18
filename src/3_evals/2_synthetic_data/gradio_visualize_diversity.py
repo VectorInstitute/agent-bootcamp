@@ -82,7 +82,7 @@ async def get_projection_plot(
     lf_dataset_items = langfuse_client.get_dataset(dataset_name.strip()).items
 
     # Generate embeddings
-    configs = Configs.from_env_var()
+    configs = Configs()
     embedding_client = AsyncOpenAI(
         api_key=configs.embedding_api_key,
         base_url=configs.embedding_base_url,
@@ -97,7 +97,9 @@ async def get_projection_plot(
         keep_trailing=True,
     )
     embed_coros = [
-        embedding_client.embeddings.create(input=_batch, model="@cf/baai/bge-m3")
+        embedding_client.embeddings.create(
+            input=_batch, model=configs.embedding_model_name
+        )
         for _batch in text_batches
     ]
     batched_embed_results = await gather_with_progress(
