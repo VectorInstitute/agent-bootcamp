@@ -16,6 +16,7 @@ from src.utils import (
     pretty_print,
 )
 from src.utils.langfuse.otlp_env_setup import set_up_langfuse_otlp_env_vars
+from src.utils.tools.gemini_grounding import GeminiGroundingWithGoogleSearch
 
 
 load_dotenv(verbose=True)
@@ -24,7 +25,7 @@ load_dotenv(verbose=True)
 @pytest.fixture()
 def configs():
     """Load env var configs for testing."""
-    return Configs.from_env_var()
+    return Configs()
 
 
 @pytest_asyncio.fixture()
@@ -43,7 +44,7 @@ async def weaviate_kb(
     )
 
     yield AsyncWeaviateKnowledgeBase(
-        async_client=async_client, collection_name="enwiki_20250520"
+        async_client=async_client, collection_name=configs.weaviate_collection_name
     )
 
     await async_client.close()
@@ -67,6 +68,7 @@ async def test_weaviate_kb(weaviate_kb: AsyncWeaviateKnowledgeBase) -> None:
 
 @pytest.mark.asyncio
 async def test_weaviate_kb_tool_and_llm(
+    configs: Configs,
     weaviate_kb: AsyncWeaviateKnowledgeBase,
 ) -> None:
     """Test weaviate knowledgebase tool integration and LLM API."""
@@ -90,7 +92,7 @@ async def test_weaviate_kb_tool_and_llm(
         },
     ]
     response = await client.chat.completions.create(
-        model="gemini-2.5-flash-lite", messages=messages
+        model=configs.default_worker_model, messages=messages
     )
     message = response.choices[0].message
     assert message.role == "assistant"
@@ -104,3 +106,22 @@ def test_langfuse() -> None:
     langfuse_client = get_client()
 
     assert langfuse_client.auth_check()
+
+
+@pytest.mark.asyncio
+async def test_web_search_with_gemini_grounding(configs: Configs) -> None:
+    """Test Gemini grounding with Google Search integration."""
+    # Skip test if the environment variable is not set
+    # We do this because these are optional env vars and not everyone
+    # running the tests may have them set.
+    if not (configs.web_search_base_url and configs.web_search_api_key):
+        pytest.skip("WEB_SEARCH_BASE_URL and WEB_SEARCH_API_KEY not set in env vars")
+
+    tool_cls = GeminiGroundingWithGoogleSearch()
+    response = await tool_cls.get_web_search_grounded_response(
+        "How does the annual growth in the 50th-percentile income "
+        "in the US compare with that in Canada?"
+    )
+
+    pretty_print(response.text_with_citations)
+    assert response.text_with_citations
