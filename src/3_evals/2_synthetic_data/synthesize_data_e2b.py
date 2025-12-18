@@ -63,6 +63,8 @@ parser.add_argument("--langfuse_dataset_name", required=True)
 parser.add_argument("--limit", type=int, default=18)
 parser.add_argument("--max_concurrency", type=int, default=3)
 
+configs = Configs()
+
 
 class _Citation(pydantic.BaseModel):
     """Represents one cited source."""
@@ -80,7 +82,7 @@ class _SyntheticTestCase(pydantic.BaseModel):
 
 
 code_interpreter = CodeInterpreter(
-    template_name="9p6favrrqijhasgkq1tv",
+    template_name=configs.default_code_interpreter_template,
     local_files=[
         Path("sandbox_content/"),
         Path("tests/tool_tests/example_files/example_a.csv"),
@@ -119,7 +121,7 @@ test_case_generator_agent = agents.Agent(
     ),
     tools=[agents.function_tool(code_interpreter.run_code)],
     model=agents.OpenAIChatCompletionsModel(
-        model="gemini-2.5-pro", openai_client=async_openai_client
+        model=configs.default_planner_model, openai_client=async_openai_client
     ),
 )
 
@@ -143,7 +145,7 @@ async def generate_synthetic_test_cases(
             instructions="Extract the structured output from the given text.",
             output_type=list[_SyntheticTestCase],
             model=agents.OpenAIChatCompletionsModel(
-                model="gemini-2.5-pro", openai_client=async_openai_client
+                model=configs.default_planner_model, openai_client=async_openai_client
             ),
         )
 
@@ -167,8 +169,6 @@ async def generate_synthetic_test_cases(
 
 if __name__ == "__main__":
     args = parser.parse_args()
-
-    configs = Configs.from_env_var()
 
     setup_langfuse_tracer()
     generator = random.Random(0)

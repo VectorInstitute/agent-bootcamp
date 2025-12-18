@@ -58,6 +58,8 @@ class Configs(BaseSettings):
         Langfuse host URL.
     e2b_api_key : str or None
         Optional E2B.dev API key for code interpreter (must start with e2b_).
+    default_code_interpreter_template : str or None
+        Optional default template name or ID for E2B.dev code interpreter.
     web_search_base_url : str or None
         Optional base URL for web search service.
     web_search_api_key : str or None
@@ -113,6 +115,7 @@ class Configs(BaseSettings):
 
     # Optional E2B.dev API key for Python Code Interpreter tool
     e2b_api_key: str | None = Field(default=None, pattern=r"^e2b_.*$")
+    default_code_interpreter_template: str | None = "9p6favrrqijhasgkq1tv"
 
     # Optional configs for web search tool
     web_search_base_url: str | None = None
