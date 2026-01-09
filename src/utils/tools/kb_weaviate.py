@@ -9,9 +9,9 @@ import openai
 import pydantic
 import weaviate
 from weaviate import WeaviateAsyncClient
-from weaviate.config import AdditionalConfig
 
 from ..async_utils import rate_limited
+from ..env_vars import Configs
 
 
 class _Source(pydantic.BaseModel):
@@ -141,18 +141,7 @@ class AsyncWeaviateKnowledgeBase:
         return response.data[0].embedding
 
 
-def get_weaviate_async_client(
-    http_host: str | None = None,
-    http_port: int | None = None,
-    http_secure: bool = False,
-    grpc_host: str | None = None,
-    grpc_port: int | None = None,
-    grpc_secure: bool = False,
-    api_key: str | None = None,
-    headers: dict[str, str] | None = None,
-    additional_config: AdditionalConfig | None = None,
-    skip_init_checks: bool = False,
-) -> WeaviateAsyncClient:
+def get_weaviate_async_client(configs: Configs) -> WeaviateAsyncClient:
     """Get an async Weaviate client.
 
     If no parameters are provided, the function will attempt to connect to a local
@@ -199,16 +188,11 @@ def get_weaviate_async_client(
         An asynchronous Weaviate client configured with the provided parameters.
     """
     return weaviate.use_async_with_custom(
-        http_host=http_host or os.getenv("WEAVIATE_HTTP_HOST", "localhost"),
-        http_port=http_port or int(os.getenv("WEAVIATE_HTTP_PORT", "8080")),
-        http_secure=http_secure
-        or os.getenv("WEAVIATE_HTTP_SECURE", "false").lower() == "true",
-        grpc_host=grpc_host or os.getenv("WEAVIATE_GRPC_HOST", "localhost"),
-        grpc_port=grpc_port or int(os.getenv("WEAVIATE_GRPC_PORT", "50051")),
-        grpc_secure=grpc_secure
-        or os.getenv("WEAVIATE_GRPC_SECURE", "false").lower() == "true",
-        auth_credentials=api_key or os.getenv("WEAVIATE_API_KEY"),
-        headers=headers,
-        additional_config=additional_config,
-        skip_init_checks=skip_init_checks,
+        http_host=configs.weaviate_http_host or "localhost",
+        http_port=configs.weaviate_http_port or 8080,
+        http_secure=configs.weaviate_http_secure or False,
+        grpc_host=configs.weaviate_grpc_host or "localhost",
+        grpc_port=configs.weaviate_grpc_port or 50051,
+        grpc_secure=configs.weaviate_grpc_secure or False,
+        auth_credentials=configs.weaviate_api_key or None,
     )

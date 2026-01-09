@@ -33,15 +33,7 @@ async def weaviate_kb(
     configs: Configs,
 ) -> AsyncGenerator[AsyncWeaviateKnowledgeBase, None]:
     """Weaviate knowledgebase for testing."""
-    async_client = get_weaviate_async_client(
-        http_host=configs.weaviate_http_host,
-        http_port=configs.weaviate_http_port,
-        http_secure=configs.weaviate_http_secure,
-        grpc_host=configs.weaviate_grpc_host,
-        grpc_port=configs.weaviate_grpc_port,
-        grpc_secure=configs.weaviate_grpc_secure,
-        api_key=configs.weaviate_api_key,
-    )
+    async_client = get_weaviate_async_client(configs)
 
     yield AsyncWeaviateKnowledgeBase(
         async_client=async_client, collection_name=configs.weaviate_collection_name
