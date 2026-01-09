@@ -21,7 +21,7 @@ class IgnoreOpenAI401Filter(logging.Filter):
         )
 
 
-def set_up_logging():
+def set_up_logging() -> None:
     """Set up Logging and Warning levels."""
     root_logger = logging.getLogger()
     filter_ = IgnoreOpenAI401Filter()
