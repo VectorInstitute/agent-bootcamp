@@ -7,17 +7,14 @@ import agents
 import pydantic
 from dotenv import load_dotenv
 from langfuse._client.datasets import DatasetItemClient
-from openai import AsyncOpenAI
 from rich.progress import track
 
 from src.utils import (
-    AsyncWeaviateKnowledgeBase,
-    Configs,
     gather_with_progress,
-    get_weaviate_async_client,
     set_up_logging,
     setup_langfuse_tracer,
 )
+from src.utils.client_manager import AsyncClientManager
 from src.utils.langfuse.shared_client import flush_langfuse, langfuse_client
 
 
@@ -109,7 +106,8 @@ async def run_evaluator_agent(evaluator_query: EvaluatorQuery) -> EvaluatorRespo
         instructions=EVALUATOR_INSTRUCTIONS,
         output_type=EvaluatorResponse,
         model=agents.OpenAIChatCompletionsModel(
-            model=configs.default_planner_model, openai_client=async_openai_client
+            model=client_manager.configs.default_planner_model,
+            openai_client=client_manager.openai_client,
         ),
     )
 
@@ -149,55 +147,15 @@ async def run_and_evaluate(
     return traced_response, evaluator_response
 
 
-parser = argparse.ArgumentParser()
-parser.add_argument("--langfuse_dataset_name", required=True)
-parser.add_argument("--run_name", required=True)
-parser.add_argument("--limit", type=int)
-
-
-if __name__ == "__main__":
-    args = parser.parse_args()
-
-    lf_dataset_items = langfuse_client.get_dataset(args.langfuse_dataset_name).items
-    if args.limit is not None:
-        lf_dataset_items = lf_dataset_items[: args.limit]
-
-    configs = Configs()
-    async_weaviate_client = get_weaviate_async_client(
-        http_host=configs.weaviate_http_host,
-        http_port=configs.weaviate_http_port,
-        http_secure=configs.weaviate_http_secure,
-        grpc_host=configs.weaviate_grpc_host,
-        grpc_port=configs.weaviate_grpc_port,
-        grpc_secure=configs.weaviate_grpc_secure,
-        api_key=configs.weaviate_api_key,
-    )
-    async_openai_client = AsyncOpenAI()
-    async_knowledgebase = AsyncWeaviateKnowledgeBase(
-        async_weaviate_client,
-        collection_name=configs.weaviate_collection_name,
-    )
-
-    tracer = setup_langfuse_tracer()
-
-    main_agent = agents.Agent(
-        name="Wikipedia Agent",
-        instructions=SYSTEM_MESSAGE,
-        tools=[agents.function_tool(async_knowledgebase.search_knowledgebase)],
-        model=agents.OpenAIChatCompletionsModel(
-            model=configs.default_planner_model, openai_client=async_openai_client
-        ),
-    )
+async def _main() -> None:
     coros = [
         run_and_evaluate(
-            run_name=args.run_name,
-            main_agent=main_agent,
-            lf_dataset_item=_item,
+            run_name=args.run_name, main_agent=main_agent, lf_dataset_item=_item
         )
         for _item in lf_dataset_items
     ]
-    results = asyncio.run(
-        gather_with_progress(coros, description="Running agent and evaluating")
+    results = await gather_with_progress(
+        coros, description="Running agent and evaluating"
     )
 
     for _traced_response, _eval_output in track(
@@ -213,5 +171,32 @@ if __name__ == "__main__":
             )
 
     flush_langfuse()
+    await client_manager.close()
 
-    asyncio.run(async_weaviate_client.close())
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--langfuse_dataset_name", required=True)
+    parser.add_argument("--run_name", required=True)
+    parser.add_argument("--limit", type=int)
+    args = parser.parse_args()
+
+    lf_dataset_items = langfuse_client.get_dataset(args.langfuse_dataset_name).items
+    if args.limit is not None:
+        lf_dataset_items = lf_dataset_items[: args.limit]
+
+    client_manager = AsyncClientManager()
+
+    setup_langfuse_tracer()
+
+    main_agent = agents.Agent(
+        name="Wikipedia Agent",
+        instructions=SYSTEM_MESSAGE,
+        tools=[agents.function_tool(client_manager.knowledgebase.search_knowledgebase)],
+        model=agents.OpenAIChatCompletionsModel(
+            model=client_manager.configs.default_planner_model,
+            openai_client=client_manager.openai_client,
+        ),
+    )
+
+    asyncio.run(_main())

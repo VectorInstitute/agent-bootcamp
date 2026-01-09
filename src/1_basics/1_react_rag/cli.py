@@ -2,17 +2,13 @@
 
 import asyncio
 import json
-import sys
 from typing import TYPE_CHECKING
 
 from dotenv import load_dotenv
-from openai import AsyncOpenAI
 
 from src.prompts import REACT_INSTRUCTIONS
 from src.utils import (
-    AsyncWeaviateKnowledgeBase,
-    Configs,
-    get_weaviate_async_client,
+    AsyncClientManager,
     pretty_print,
 )
 
@@ -20,7 +16,6 @@ from src.utils import (
 if TYPE_CHECKING:
     from openai.types.chat import ChatCompletionToolParam
 
-load_dotenv(verbose=True)
 
 MAX_TURNS = 5
 
@@ -47,22 +42,12 @@ tools: list["ChatCompletionToolParam"] = [
 ]
 
 
-async def _main():
-    configs = Configs()
-    async_weaviate_client = get_weaviate_async_client(
-        http_host=configs.weaviate_http_host,
-        http_port=configs.weaviate_http_port,
-        http_secure=configs.weaviate_http_secure,
-        grpc_host=configs.weaviate_grpc_host,
-        grpc_port=configs.weaviate_grpc_port,
-        grpc_secure=configs.weaviate_grpc_secure,
-        api_key=configs.weaviate_api_key,
-    )
-    async_openai_client = AsyncOpenAI()
-    async_knowledgebase = AsyncWeaviateKnowledgeBase(
-        async_weaviate_client,
-        collection_name=configs.weaviate_collection_name,
-    )
+async def _main() -> None:
+    # Initialize client manager
+    # This class initializes the OpenAI and Weaviate async clients, as well as the
+    # Weaviate knowledge base tool. The initialization is done once when the clients
+    # are first accessed, and the clients are reused for subsequent calls.
+    client_manager = AsyncClientManager()
 
     messages: list = [
         {
@@ -76,11 +61,19 @@ async def _main():
         },
     ]
 
+    # Show initial system prompt and user query
+    print("System prompt: \n", REACT_INSTRUCTIONS)
+    print("User query: ")
+    pretty_print(messages[-1]["content"])
+
     try:
         while True:
+            # Flag to track if final response is given
+            agent_responded = False
+
             for _ in range(MAX_TURNS):
-                completion = await async_openai_client.chat.completions.create(
-                    model=configs.default_planner_model,
+                completion = await client_manager.openai_client.chat.completions.create(
+                    model=client_manager.configs.default_worker_model,
                     messages=messages,
                     tools=tools,
                 )
@@ -93,11 +86,18 @@ async def _main():
 
                 # Execute function calls if requested.
                 if tool_calls is not None:
+                    # Show thought that led to tool call
+                    print("\nAgent Thought: ")
+                    pretty_print(message.content)
+
                     for tool_call in tool_calls:
+                        print("\nAgent Action: ")
                         pretty_print(tool_call)
                         arguments = json.loads(tool_call.function.arguments)
-                        results = await async_knowledgebase.search_knowledgebase(
-                            arguments["keyword"]
+                        results = (
+                            await client_manager.knowledgebase.search_knowledgebase(
+                                arguments["keyword"]
+                            )
                         )
 
                         messages.append(
@@ -109,19 +109,49 @@ async def _main():
                                 ),
                             }
                         )
+                        print("\nAgent Observation: ")
+                        pretty_print(results)
 
                 # Otherwise, print final response and stop.
-                else:
-                    pretty_print(message.content)
+                elif message.content is not None:
+                    print("\nAgent final response: \n", message.content)
+                    agent_responded = True
                     break
 
-                pretty_print(messages)
+            if not agent_responded:
+                # Add message letting the agent know max turns reached
+                messages.append(
+                    {
+                        "role": "system",
+                        "content": (
+                            "You have reached the maximum number of allowed reasoning "
+                            "steps. Provide a final answer based on the information available."
+                        ),
+                    }
+                )
+
+                # Make one final LLM call to get a response given the history
+                completion = await client_manager.openai_client.chat.completions.create(
+                    model=client_manager.configs.default_worker_model,
+                    messages=messages,
+                )
+                message = completion.choices[0].message
+                print(
+                    "\nAgent final response (after max turns): \n",
+                    message.content,
+                )
+
+                # Remove the last system message for next iteration
+                messages.pop()
+
+                # Append the final message to history
+                messages.append(message)
 
             # Get new user input
-            timeout_secs = 60
+            timeout_secs = 300
             try:
                 user_input = await asyncio.wait_for(
-                    asyncio.to_thread(input, "Ask a question: "),
+                    asyncio.to_thread(input, "Enter your prompt: "),
                     timeout=timeout_secs,
                 )
             except asyncio.TimeoutError:
@@ -135,10 +165,10 @@ async def _main():
 
             messages.append({"role": "user", "content": user_input})
     finally:
-        await async_weaviate_client.close()
-        await async_openai_client.close()
-        sys.exit(0)
+        await client_manager.close()
 
 
 if __name__ == "__main__":
+    load_dotenv(verbose=True)
+
     asyncio.run(_main())

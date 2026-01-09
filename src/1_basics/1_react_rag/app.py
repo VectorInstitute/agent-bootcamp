@@ -4,26 +4,22 @@ With reference to huggingface.co/spaces/gradio/langchain-agent
 """
 
 import asyncio
-import contextlib
 import json
-import signal
-import sys
+from typing import TYPE_CHECKING, Any, AsyncGenerator
 
 import gradio as gr
 from dotenv import load_dotenv
 from gradio.components.chatbot import ChatMessage
-from openai import AsyncOpenAI
-from openai.types.chat import ChatCompletionSystemMessageParam, ChatCompletionToolParam
 
 from src.prompts import REACT_INSTRUCTIONS
-from src.utils import (
-    AsyncWeaviateKnowledgeBase,
-    Configs,
-    get_weaviate_async_client,
-)
+from src.utils.client_manager import AsyncClientManager
 
 
-load_dotenv(verbose=True)
+if TYPE_CHECKING:
+    from openai.types.chat import (
+        ChatCompletionSystemMessageParam,
+        ChatCompletionToolParam,
+    )
 
 MAX_TURNS = 5
 
@@ -55,29 +51,24 @@ system_message: "ChatCompletionSystemMessageParam" = {
 }
 
 
-async def _cleanup_clients() -> None:
-    """Close async clients."""
-    await async_weaviate_client.close()
-    await async_openai_client.close()
-
-
-def _handle_sigint(signum: int, frame: object) -> None:
-    """Handle SIGINT signal to gracefully shutdown."""
-    with contextlib.suppress(Exception):
-        asyncio.get_event_loop().run_until_complete(_cleanup_clients())
-    sys.exit(0)
-
-
-async def react_rag(query: str, history: list[ChatMessage]):
+async def react_rag(
+    query: str, history: list[ChatMessage]
+) -> AsyncGenerator[list[ChatMessage], Any]:
     """Handle ReAct RAG chat for knowledgebase-augmented agents."""
+    # Flag to track if the agent has provided a final response
+    # If the agent exhausts all reasoning steps without a final answer,
+    # we make one last call to get a final response based on the information available.
+    agent_responded = False
+
+    # Construct chat completion messages to pass to LLM
     oai_messages = [system_message, {"role": "user", "content": query}]
 
     for _ in range(MAX_TURNS):
-        completion = await async_openai_client.chat.completions.create(
-            model=configs.default_planner_model,
+        # Call OpenAI chat completions with tools enabled
+        completion = await client_manager.openai_client.chat.completions.create(
+            model=client_manager.configs.default_worker_model,
             messages=oai_messages,
-            tools=tools,
-            reasoning_effort=None,
+            tools=tools,  # This makes the tool defined above available to the LLM
         )
 
         # Print assistant output
@@ -87,20 +78,25 @@ async def react_rag(query: str, history: list[ChatMessage]):
         # Execute tool calls and send results back to LLM if requested.
         # Otherwise, stop, as the conversation would have been finished.
         tool_calls = message.tool_calls
-        history.append(
-            ChatMessage(
-                content=message.content or "",
-                role="assistant",
-            )
-        )
 
-        if tool_calls is None:
+        if tool_calls is None:  # No tool calls, assume final response
+            history.append(ChatMessage(content=message.content or "", role="assistant"))
+            agent_responded = True
             yield history
             break
 
+        history.append(
+            ChatMessage(
+                role="assistant",
+                content=message.content or "",
+                metadata={"title": "🧠 Thought"},
+            )
+        )
+        yield history
+
         for tool_call in tool_calls:
             arguments = json.loads(tool_call.function.arguments)
-            results = await async_knowledgebase.search_knowledgebase(
+            results = await client_manager.knowledgebase.search_knowledgebase(
                 arguments["keyword"]
             )
             results_serialized = json.dumps(
@@ -117,46 +113,59 @@ async def react_rag(query: str, history: list[ChatMessage]):
             history.append(
                 ChatMessage(
                     role="assistant",
-                    content=results_serialized,
+                    content=f"```\n{results_serialized}\n```",
                     metadata={
-                        "title": f"Used tool {tool_call.function.name}",
+                        "title": f"🛠️ Used tool `{tool_call.function.name}`",
                         "log": f"Arguments: {arguments}",
+                        "status": "done",  # This makes it collapsed by default
                     },
                 )
             )
             yield history
 
+    if not agent_responded:
+        # Make one final LLM call to get a response given the history
+        oai_messages.append(
+            {
+                "role": "system",
+                "content": (
+                    "You have reached the maximum number of allowed reasoning "
+                    "steps. Provide a final answer based on the information available."
+                ),
+            }
+        )
+        completion = await client_manager.openai_client.chat.completions.create(
+            model=client_manager.configs.default_planner_model,
+            messages=oai_messages,
+        )
+        message = completion.choices[0].message
+        history.append(ChatMessage(content=message.content or "", role="assistant"))
+        oai_messages.pop()  # Remove the last system message for next iteration
+        oai_messages.append(message)  # Append the final message to history
+        yield history
 
-demo = gr.ChatInterface(
-    react_rag,
-    title="1.1 ReAct Agent for Retrieval-Augmented Generation",
-    type="messages",
-    examples=[
-        "At which university did the SVP Software Engineering"
-        " at Apple (as of June 2025) earn their engineering degree?",
-    ],
-)
 
 if __name__ == "__main__":
-    configs = Configs()
-    async_weaviate_client = get_weaviate_async_client(
-        http_host=configs.weaviate_http_host,
-        http_port=configs.weaviate_http_port,
-        http_secure=configs.weaviate_http_secure,
-        grpc_host=configs.weaviate_grpc_host,
-        grpc_port=configs.weaviate_grpc_port,
-        grpc_secure=configs.weaviate_grpc_secure,
-        api_key=configs.weaviate_api_key,
-    )
-    async_openai_client = AsyncOpenAI()
-    async_knowledgebase = AsyncWeaviateKnowledgeBase(
-        async_weaviate_client,
-        collection_name=configs.weaviate_collection_name,
-    )
+    load_dotenv(verbose=True)
 
-    signal.signal(signal.SIGINT, _handle_sigint)
+    # Initialize client manager
+    # This class initializes the OpenAI and Weaviate async clients, as well as the
+    # Weaviate knowledge base tool. The initialization is done once when the clients
+    # are first accessed, and the clients are reused for subsequent calls.
+    client_manager = AsyncClientManager()
+
+    demo = gr.ChatInterface(
+        react_rag,
+        chatbot=gr.Chatbot(height=600),
+        textbox=gr.Textbox(lines=1, placeholder="Enter your prompt"),
+        examples=[
+            "At which university did the SVP Software Engineering"
+            " at Apple (as of June 2025) earn their engineering degree?",
+        ],
+        title="1.1: ReAct Agent for Retrieval-Augmented Generation",
+    )
 
     try:
         demo.launch(share=True)
     finally:
-        asyncio.run(_cleanup_clients())
+        asyncio.run(client_manager.close())

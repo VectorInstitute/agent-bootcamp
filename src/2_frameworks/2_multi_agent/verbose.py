@@ -8,32 +8,24 @@ Log traces to LangFuse for observability and evaluation.
 """
 
 import asyncio
-import contextlib
-import logging
-import signal
-import sys
+from typing import Any, AsyncGenerator
 
 import agents
 import gradio as gr
 from dotenv import load_dotenv
 from gradio.components.chatbot import ChatMessage
-from openai import AsyncOpenAI
 from pydantic import BaseModel
 
 from src.utils import (
-    AsyncWeaviateKnowledgeBase,
-    Configs,
-    get_weaviate_async_client,
     oai_agent_items_to_gradio_messages,
     pretty_print,
     setup_langfuse_tracer,
 )
+from src.utils.agent_session import get_or_create_session
+from src.utils.client_manager import AsyncClientManager
+from src.utils.gradio import COMMON_GRADIO_CONFIG
 from src.utils.langfuse.shared_client import langfuse_client
-
-
-load_dotenv(verbose=True)
-
-logging.basicConfig(level=logging.INFO)
+from src.utils.logging import set_up_logging
 
 
 PLANNER_INSTRUCTIONS = """\
@@ -94,12 +86,14 @@ class ResearchReport(BaseModel):
     full_report: str
 
 
-async def _create_search_plan(planner_agent: agents.Agent, query: str) -> SearchPlan:
+async def _create_search_plan(
+    planner_agent: agents.Agent, query: str, session: agents.Session | None = None
+) -> SearchPlan:
     """Create a search plan using the planner agent."""
     with langfuse_client.start_as_current_span(
         name="create_search_plan", input=query
     ) as planner_span:
-        response = await agents.Runner.run(planner_agent, input=query)
+        response = await agents.Runner.run(planner_agent, input=query, session=session)
         search_plan = response.final_output_as(SearchPlan)
         planner_span.update(output=search_plan)
 
@@ -107,7 +101,10 @@ async def _create_search_plan(planner_agent: agents.Agent, query: str) -> Search
 
 
 async def _generate_final_report(
-    writer_agent: agents.Agent, search_results: list[str], query: str
+    writer_agent: agents.Agent,
+    search_results: list[str],
+    query: str,
+    session: agents.Session | None = None,
 ) -> agents.RunResult:
     """Generate the final report using the writer agent."""
     input_data = f"Original question: {query}\n"
@@ -118,66 +115,53 @@ async def _generate_final_report(
     with langfuse_client.start_as_current_span(
         name="generate_final_report", input=input_data
     ) as writer_span:
-        response = await agents.Runner.run(writer_agent, input=input_data)
+        response = await agents.Runner.run(
+            writer_agent, input=input_data, session=session
+        )
         writer_span.update(output=response.final_output)
 
     return response
 
 
-async def _cleanup_clients() -> None:
-    """Close async clients."""
-    await async_weaviate_client.close()
-    await async_openai_client.close()
+async def _main(
+    query: str, history: list[ChatMessage], session_state: dict[str, Any]
+) -> AsyncGenerator[list[ChatMessage], Any]:
+    """Run multi-agent planner-researcher setup."""
+    # Initialize list of chat messages for a single turn
+    turn_messages: list[ChatMessage] = []
 
-
-def _handle_sigint(signum: int, frame: object) -> None:
-    """Handle SIGINT signal to gracefully shutdown."""
-    with contextlib.suppress(Exception):
-        asyncio.get_event_loop().run_until_complete(_cleanup_clients())
-    sys.exit(0)
-
-
-async def _main(question: str, gr_messages: list[ChatMessage]):
-    planner_agent = agents.Agent(
-        name="Planner Agent",
-        instructions=PLANNER_INSTRUCTIONS,
-        model=agents.OpenAIChatCompletionsModel(
-            model=configs.default_planner_model, openai_client=async_openai_client
-        ),
-        output_type=SearchPlan,
-    )
-    research_agent = agents.Agent(
-        name="Research Agent",
-        instructions=RESEARCHER_INSTRUCTIONS,
-        tools=[agents.function_tool(async_knowledgebase.search_knowledgebase)],
-        model=agents.OpenAIChatCompletionsModel(
-            model=configs.default_worker_model,
-            openai_client=async_openai_client,
-        ),
-        model_settings=agents.ModelSettings(tool_choice="required"),
-    )
-    writer_agent = agents.Agent(
-        name="Writer Agent",
-        instructions=WRITER_INSTRUCTIONS,
-        model=agents.OpenAIChatCompletionsModel(
-            model=configs.default_planner_model, openai_client=async_openai_client
-        ),
-        output_type=ResearchReport,
-    )
-
-    gr_messages.append(ChatMessage(role="user", content=question))
-    yield gr_messages
+    # Construct an in-memory SQLite session for the agent to maintain
+    # conversation history across multiple turns of a chat
+    # This makes it possible to ask follow-up questions that refer to
+    # previous turns in the conversation
+    session = get_or_create_session(history, session_state)
 
     with langfuse_client.start_as_current_span(
-        name="Multi-Agent-Trace", input=question
+        name="Multi-Agent-Trace", input=query
     ) as agents_span:
         # Create a search plan
-        search_plan = await _create_search_plan(planner_agent, question)
-        gr_messages.append(
-            ChatMessage(role="assistant", content=f"Search Plan:\n{search_plan}")
+        search_plan = await _create_search_plan(planner_agent, query, session=session)
+        turn_messages.append(
+            ChatMessage(
+                role="assistant",
+                content="",
+                metadata={"title": "**Search Plan**", "id": "search-plan"},
+            )
         )
-        pretty_print(gr_messages)
-        yield gr_messages
+        for step in search_plan.search_steps:
+            turn_messages.append(
+                ChatMessage(
+                    role="assistant",
+                    content=(f"_Reasoning:_ {step.reasoning}"),
+                    metadata={
+                        "title": f"**Search Term:** {step.search_term}",
+                        "parent_id": "search-plan",
+                        "status": "done",  # This makes it collapsed by default
+                    },
+                )
+            )
+        pretty_print(turn_messages)
+        yield turn_messages
 
         # Execute the search plan
         search_results = []
@@ -186,59 +170,103 @@ async def _main(question: str, gr_messages: list[ChatMessage]):
                 name="execute_search_step", input=step.search_term
             ) as search_span:
                 response = await agents.Runner.run(
-                    research_agent, input=step.search_term
+                    research_agent, input=step.search_term, session=session
                 )
                 search_result: str = response.final_output
                 search_span.update(output=search_result)
 
             search_results.append(search_result)
-            gr_messages += oai_agent_items_to_gradio_messages(response.new_items)
-            yield gr_messages
+            turn_messages += oai_agent_items_to_gradio_messages(
+                response.new_items, is_final_output=False
+            )
+            yield turn_messages
 
         # Generate the final report
         writer_agent_response = await _generate_final_report(
-            writer_agent, search_results, question
+            writer_agent, search_results, query, session=session
         )
         agents_span.update(output=writer_agent_response.final_output)
 
         report = writer_agent_response.final_output_as(ResearchReport)
-        gr_messages.append(
+        turn_messages.append(
             ChatMessage(
                 role="assistant",
-                content=f"Summary:\n{report.summary}\n\nFull Report:\n{report.full_report}",
+                content=f"## Summary\n{report.summary}\n\n## Full Report\n{report.full_report}",
             )
         )
-        pretty_print(gr_messages)
-        yield gr_messages
+        pretty_print(turn_messages)
+        yield turn_messages
 
 
 if __name__ == "__main__":
-    configs = Configs()
-    async_weaviate_client = get_weaviate_async_client(
-        http_host=configs.weaviate_http_host,
-        http_port=configs.weaviate_http_port,
-        http_secure=configs.weaviate_http_secure,
-        grpc_host=configs.weaviate_grpc_host,
-        grpc_port=configs.weaviate_grpc_port,
-        grpc_secure=configs.weaviate_grpc_secure,
-        api_key=configs.weaviate_api_key,
-    )
-    async_knowledgebase = AsyncWeaviateKnowledgeBase(
-        async_weaviate_client,
-        collection_name=configs.weaviate_collection_name,
-    )
+    load_dotenv(verbose=True)
 
-    async_openai_client = AsyncOpenAI()
+    # Set logging level and suppress some noisy logs from dependencies
+    set_up_logging()
+
+    # Set up LangFuse for tracing
     setup_langfuse_tracer()
 
-    with gr.Blocks(title="OAI Agent SDK - Multi-agent") as app:
-        chatbot = gr.Chatbot(type="messages", label="Agent", height=600)
-        chat_message = gr.Textbox(lines=1, label="Ask a question")
-        chat_message.submit(_main, [chat_message, chatbot], [chatbot])
+    # Initialize client manager
+    # This class initializes the OpenAI and Weaviate async clients, as well as the
+    # Weaviate knowledge base tool. The initialization is done once when the clients
+    # are first accessed, and the clients are reused for subsequent calls.
+    client_manager = AsyncClientManager()
 
-    signal.signal(signal.SIGINT, _handle_sigint)
+    # Use smaller, faster model for focused search tasks
+    worker_model = client_manager.configs.default_worker_model
+    # Use larger, more capable model for complex planning and reasoning
+    planner_model = client_manager.configs.default_planner_model
+
+    planner_agent = agents.Agent(
+        name="Planner Agent",
+        instructions=PLANNER_INSTRUCTIONS,
+        model=agents.OpenAIChatCompletionsModel(
+            model=planner_model,
+            openai_client=client_manager.openai_client,
+        ),
+        output_type=SearchPlan,
+    )
+
+    research_agent = agents.Agent(
+        name="Research Agent",
+        instructions=RESEARCHER_INSTRUCTIONS,
+        tools=[agents.function_tool(client_manager.knowledgebase.search_knowledgebase)],
+        model=agents.OpenAIChatCompletionsModel(
+            model=worker_model,
+            openai_client=client_manager.openai_client,
+        ),
+        # Force the agent to use the search tool for every query
+        model_settings=agents.ModelSettings(tool_choice="required"),
+    )
+
+    writer_agent = agents.Agent(
+        name="Writer Agent",
+        instructions=WRITER_INSTRUCTIONS,
+        model=agents.OpenAIChatCompletionsModel(
+            model=planner_model,  # Stronger model for complex synthesis
+            openai_client=client_manager.openai_client,
+        ),
+        output_type=ResearchReport,
+    )
+
+    demo = gr.ChatInterface(
+        _main,
+        **COMMON_GRADIO_CONFIG,
+        examples=[
+            [
+                "At which university did the SVP Software Engineering"
+                " at Apple (as of June 2025) earn their engineering degree?"
+            ],
+            [
+                "How does the annual growth in the 50th-percentile income "
+                "in the US compare with that in Canada?",
+            ],
+        ],
+        title="2.2.1: Plan-and-Execute Multi-Agent System for Retrieval-Augmented Generation",
+    )
 
     try:
-        app.launch(server_name="0.0.0.0")
+        demo.launch(share=True)
     finally:
-        asyncio.run(_cleanup_clients())
+        asyncio.run(client_manager.close())

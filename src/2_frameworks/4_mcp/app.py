@@ -4,52 +4,38 @@ Log traces to LangFuse for observability and evaluation.
 """
 
 import asyncio
-import contextlib
-import signal
 import subprocess
-import sys
+from typing import Any, AsyncGenerator
 
 import agents
 import gradio as gr
 from agents.mcp import MCPServerStdio, create_static_tool_filter
 from dotenv import load_dotenv
 from gradio.components.chatbot import ChatMessage
-from openai import AsyncOpenAI
 
 from src.utils import (
-    Configs,
     oai_agent_stream_to_gradio_messages,
     pretty_print,
     set_up_logging,
-    setup_langfuse_tracer,
 )
+from src.utils.agent_session import get_or_create_session
+from src.utils.client_manager import AsyncClientManager
+from src.utils.gradio import COMMON_GRADIO_CONFIG
 from src.utils.langfuse.shared_client import langfuse_client
 
 
-load_dotenv(verbose=True)
-
-set_up_logging()
-
-
-configs = Configs()
-async_openai_client = AsyncOpenAI()
-
-
-async def _cleanup_clients() -> None:
-    """Close async clients."""
-    await async_openai_client.close()
-
-
-def _handle_sigint(signum: int, frame: object) -> None:
-    """Handle SIGINT signal to gracefully shutdown."""
-    with contextlib.suppress(Exception):
-        asyncio.get_event_loop().run_until_complete(_cleanup_clients())
-    sys.exit(0)
-
-
-async def _main(question: str, gr_messages: list[ChatMessage]):
+async def _main(
+    query: str, history: list[ChatMessage], session_state: dict[str, Any]
+) -> AsyncGenerator[list[ChatMessage], Any]:
     """Initialize MCP Git server and run the agent."""
-    setup_langfuse_tracer()
+    # Initialize list of chat messages for a single turn
+    turn_messages: list[ChatMessage] = []
+
+    # Construct an in-memory SQLite session for the agent to maintain
+    # conversation history across multiple turns of a chat
+    # This makes it possible to ask follow-up questions that refer to
+    # previous turns in the conversation
+    session = get_or_create_session(history, session_state)
 
     # Get the absolute path to the current git repository, regardless of where
     # the script is run from
@@ -58,7 +44,7 @@ async def _main(question: str, gr_messages: list[ChatMessage]):
     ).strip()
 
     with langfuse_client.start_as_current_span(name="Agents-SDK-Trace") as span:
-        span.update(input=question)
+        span.update(input=query)
 
         async with MCPServerStdio(
             name="Git server",
@@ -75,40 +61,50 @@ async def _main(question: str, gr_messages: list[ChatMessage]):
                 instructions=f"Answer questions about the git repository at {repo_path}, use that for repo_path",
                 mcp_servers=[mcp_server],
                 model=agents.OpenAIChatCompletionsModel(
-                    model=configs.default_planner_model,
-                    openai_client=async_openai_client,
+                    model=client_manager.configs.default_planner_model,
+                    openai_client=client_manager.openai_client,
                 ),
             )
 
-            result_stream = agents.Runner.run_streamed(agent, input=question)
+            result_stream = agents.Runner.run_streamed(
+                agent, input=query, session=session
+            )
             async for _item in result_stream.stream_events():
-                gr_messages += oai_agent_stream_to_gradio_messages(_item)
-                if len(gr_messages) > 0:
-                    yield gr_messages
+                turn_messages += oai_agent_stream_to_gradio_messages(_item)
+                if len(turn_messages) > 0:
+                    yield turn_messages
 
         span.update(output=result_stream.final_output)
 
-    pretty_print(gr_messages)
-    yield gr_messages
+    pretty_print(turn_messages)
+    yield turn_messages
 
-
-demo = gr.ChatInterface(
-    _main,
-    title="2.4 OAI Agent SDK MCP",
-    type="messages",
-    examples=[
-        "Summarize the last change in the repository.",
-        "How many branches currently exist on the remote?",
-    ],
-)
+    # Clear the turn messages after yielding to prepare for the next turn
+    turn_messages.clear()
 
 
 if __name__ == "__main__":
-    configs = Configs()
+    load_dotenv(verbose=True)
 
-    signal.signal(signal.SIGINT, _handle_sigint)
+    set_up_logging()
+
+    # Initialize client manager
+    # This class initializes the OpenAI and Weaviate async clients, as well as the
+    # Weaviate knowledge base tool. The initialization is done once when the clients
+    # are first accessed, and the clients are reused for subsequent calls.
+    client_manager = AsyncClientManager()
+
+    demo = gr.ChatInterface(
+        _main,
+        **COMMON_GRADIO_CONFIG,
+        examples=[
+            ["Summarize the last change in the repository."],
+            ["How many branches currently exist on the remote?"],
+        ],
+        title="2.4 OAI Agent SDK + Git MCP Server",
+    )
 
     try:
         demo.launch(share=True)
     finally:
-        asyncio.run(_cleanup_clients())
+        asyncio.run(client_manager.close())
