@@ -5,28 +5,26 @@ Logs traces to LangFuse for observability and evaluation.
 You will need your E2B API Key.
 """
 
-import os
+import asyncio
 from pathlib import Path
+from typing import Any, AsyncGenerator
 
 import agents
 import gradio as gr
 from dotenv import load_dotenv
 from gradio.components.chatbot import ChatMessage
-from openai import AsyncOpenAI
 
 from src.utils import (
     CodeInterpreter,
     oai_agent_stream_to_gradio_messages,
     pretty_print,
     set_up_logging,
-    setup_langfuse_tracer,
 )
+from src.utils.agent_session import get_or_create_session
+from src.utils.client_manager import AsyncClientManager
+from src.utils.gradio import COMMON_GRADIO_CONFIG
 from src.utils.langfuse.shared_client import langfuse_client
 
-
-load_dotenv(verbose=True)
-
-set_up_logging()
 
 CODE_INTERPRETER_INSTRUCTIONS = """\
 The `code_interpreter` tool executes Python commands. \
@@ -43,17 +41,59 @@ You can also run Jupyter-style shell commands (e.g., `!pip freeze`)
 but you won't be able to install packages.
 """
 
-async_openai_client = AsyncOpenAI()
-code_interpreter = CodeInterpreter(
-    local_files=[
-        Path("sandbox_content/"),
-        Path("tests/tool_tests/example_files/example_a.csv"),
-    ]
-)
+
+async def _main(
+    query: str, history: list[ChatMessage], session_state: dict[str, Any]
+) -> AsyncGenerator[list[ChatMessage], Any]:
+    # Initialize list of chat messages for a single turn
+    turn_messages: list[ChatMessage] = []
+
+    # Construct an in-memory SQLite session for the agent to maintain
+    # conversation history across multiple turns of a chat
+    # This makes it possible to ask follow-up questions that refer to
+    # previous turns in the conversation
+    session = get_or_create_session(history, session_state)
+
+    with langfuse_client.start_as_current_span(name="Agents-SDK-Trace") as span:
+        span.update(input=query)
+
+        # Run the agent in streaming mode to get and display intermediate outputs
+        result_stream = agents.Runner.run_streamed(
+            main_agent, input=query, session=session
+        )
+
+        async for _item in result_stream.stream_events():
+            turn_messages += oai_agent_stream_to_gradio_messages(_item)
+            if len(turn_messages) > 0:
+                yield turn_messages
+
+        span.update(output=result_stream.final_output)
+
+    pretty_print(turn_messages)
+    yield turn_messages
+
+    # Clear the turn messages after yielding to prepare for the next turn
+    turn_messages.clear()
 
 
-async def _main(question: str, gr_messages: list[ChatMessage]):
-    setup_langfuse_tracer()
+if __name__ == "__main__":
+    load_dotenv(verbose=True)
+
+    set_up_logging()
+
+    # Initialize client manager
+    # This class initializes the OpenAI and Weaviate async clients, as well as the
+    # Weaviate knowledge base tool. The initialization is done once when the clients
+    # are first accessed, and the clients are reused for subsequent calls.
+    client_manager = AsyncClientManager()
+
+    # Initialize code interpreter with local files that will be available to the agent
+    code_interpreter = CodeInterpreter(
+        local_files=[
+            Path("sandbox_content/"),
+            Path("tests/tool_tests/example_files/example_a.csv"),
+        ]
+    )
 
     main_agent = agents.Agent(
         name="Data Analysis Agent",
@@ -65,37 +105,23 @@ async def _main(question: str, gr_messages: list[ChatMessage]):
             )
         ],
         model=agents.OpenAIChatCompletionsModel(
-            model=os.getenv("DEFAULT_PLANNER_MODEL", "gemini-2.5-flash"),
-            openai_client=async_openai_client,
+            model=client_manager.configs.default_planner_model,
+            openai_client=client_manager.openai_client,
         ),
     )
 
-    with langfuse_client.start_as_current_span(name="Agents-SDK-Trace") as span:
-        span.update(input=question)
+    demo = gr.ChatInterface(
+        _main,
+        **COMMON_GRADIO_CONFIG,
+        examples=[
+            ["What is the sum of the column `x` in this example_a.csv?"],
+            ["What is the sum of the column `y` in this example_a.csv?"],
+            ["Create a linear best-fit line for the data in example_a.csv."],
+        ],
+        title="2.3. OAI Agent SDK ReAct + Code Interpreter Tool",
+    )
 
-        result_stream = agents.Runner.run_streamed(main_agent, input=question)
-        async for _item in result_stream.stream_events():
-            gr_messages += oai_agent_stream_to_gradio_messages(_item)
-            if len(gr_messages) > 0:
-                yield gr_messages
-
-        span.update(output=result_stream.final_output)
-
-    pretty_print(gr_messages)
-    yield gr_messages
-
-
-demo = gr.ChatInterface(
-    _main,
-    title="2.1 OAI Agent SDK ReAct + LangFuse Code Interpreter",
-    type="messages",
-    examples=[
-        "What is the sum of the column `x` in this example_a.csv?",
-        "What is the sum of the column `y` in this example_a.csv?",
-        "Create a linear best-fit line for the data in example_a.csv.",
-    ],
-)
-
-
-if __name__ == "__main__":
-    demo.launch(share=True)
+    try:
+        demo.launch(share=True)
+    finally:
+        asyncio.run(client_manager.close())

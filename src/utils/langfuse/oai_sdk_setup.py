@@ -5,7 +5,6 @@ langfuse.com/docs/integrations/openaiagentssdk/openai-agents
 """
 
 import logfire
-import nest_asyncio
 from opentelemetry import trace
 from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
 from opentelemetry.sdk.trace import TracerProvider
@@ -16,7 +15,6 @@ from .otlp_env_setup import set_up_langfuse_otlp_env_vars
 
 def configure_oai_agents_sdk(service_name: str) -> None:
     """Register Langfuse as tracing provider for OAI Agents SDK."""
-    nest_asyncio.apply()
     logfire.configure(service_name=service_name, send_to_logfire=False, scrubbing=False)
     logfire.instrument_openai_agents()
 

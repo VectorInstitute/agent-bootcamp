@@ -25,25 +25,20 @@ from pathlib import Path
 import agents
 import pydantic
 from dotenv import load_dotenv
-from openai import AsyncOpenAI
 from rich.progress import track
 
 from src.utils import (
     CodeInterpreter,
-    Configs,
     gather_with_progress,
     pretty_print,
     rate_limited,
     set_up_logging,
     setup_langfuse_tracer,
 )
+from src.utils.client_manager import AsyncClientManager
 from src.utils.data import get_dataset_url_hash
 from src.utils.langfuse.shared_client import langfuse_client
 
-
-load_dotenv(verbose=True)
-set_up_logging()
-async_openai_client = AsyncOpenAI()
 
 SYSTEM_MESSAGE = """\
 Example questions: \
@@ -57,13 +52,6 @@ For each test case, you should produce a JSON output of this format:
 Be specific with your question and name the SQL file and table involved,
 so each "question" is self-contained and can be answered on its own.
 """
-
-parser = argparse.ArgumentParser()
-parser.add_argument("--langfuse_dataset_name", required=True)
-parser.add_argument("--limit", type=int, default=18)
-parser.add_argument("--max_concurrency", type=int, default=3)
-
-configs = Configs()
 
 
 class _Citation(pydantic.BaseModel):
@@ -79,51 +67,6 @@ class _SyntheticTestCase(pydantic.BaseModel):
     question: str
     expected_answer: str
     citations: list[_Citation]
-
-
-code_interpreter = CodeInterpreter(
-    template_name=configs.default_code_interpreter_template,
-    local_files=[
-        Path("sandbox_content/"),
-        Path("tests/tool_tests/example_files/example_a.csv"),
-    ],
-)
-
-example_questions = [
-    _SyntheticTestCase(
-        question="How many airports are listed in Airlines.sqlite?",
-        expected_answer="104",
-        citations=[
-            _Citation(
-                title="Airlines.sqlite",
-                section="SELECT COUNT(DISTINCT airport_code) FROM airports_data;",
-            )
-        ],
-    ),
-    _SyntheticTestCase(
-        question="What unique aircraft codes are listed in Airlines.sqlite?",
-        expected_answer="773,763,SU9,320,321,319,733,CN1,CR2",
-        citations=[
-            _Citation(
-                title="Airlines.sqlite",
-                section="SELECT DISTINCT aircraft_code FROM aircrafts_data;",
-            )
-        ],
-    ),
-]
-example_questions_str = pretty_print(example_questions)
-
-test_case_generator_agent = agents.Agent(
-    name="Test Case Generator Agent",
-    instructions=SYSTEM_MESSAGE.format(
-        example_questions=example_questions_str,
-        json_schema=_SyntheticTestCase.model_json_schema(),
-    ),
-    tools=[agents.function_tool(code_interpreter.run_code)],
-    model=agents.OpenAIChatCompletionsModel(
-        model=configs.default_planner_model, openai_client=async_openai_client
-    ),
-)
 
 
 async def generate_synthetic_test_cases(
@@ -145,7 +88,8 @@ async def generate_synthetic_test_cases(
             instructions="Extract the structured output from the given text.",
             output_type=list[_SyntheticTestCase],
             model=agents.OpenAIChatCompletionsModel(
-                model=configs.default_planner_model, openai_client=async_openai_client
+                model=client_manager.configs.default_planner_model,
+                openai_client=client_manager.openai_client,
             ),
         )
 
@@ -168,9 +112,64 @@ async def generate_synthetic_test_cases(
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--langfuse_dataset_name", required=True)
+    parser.add_argument("--limit", type=int, default=18)
+    parser.add_argument("--max_concurrency", type=int, default=3)
     args = parser.parse_args()
 
+    load_dotenv(verbose=True)
+
+    set_up_logging()
+
+    client_manager = AsyncClientManager()
     setup_langfuse_tracer()
+
+    code_interpreter = CodeInterpreter(
+        template_name=client_manager.configs.default_code_interpreter_template,
+        local_files=[
+            Path("sandbox_content/"),
+            Path("tests/tool_tests/example_files/example_a.csv"),
+        ],
+    )
+
+    example_questions = [
+        _SyntheticTestCase(
+            question="How many airports are listed in Airlines.sqlite?",
+            expected_answer="104",
+            citations=[
+                _Citation(
+                    title="Airlines.sqlite",
+                    section="SELECT COUNT(DISTINCT airport_code) FROM airports_data;",
+                )
+            ],
+        ),
+        _SyntheticTestCase(
+            question="What unique aircraft codes are listed in Airlines.sqlite?",
+            expected_answer="773,763,SU9,320,321,319,733,CN1,CR2",
+            citations=[
+                _Citation(
+                    title="Airlines.sqlite",
+                    section="SELECT DISTINCT aircraft_code FROM aircrafts_data;",
+                )
+            ],
+        ),
+    ]
+    example_questions_str = pretty_print(example_questions)
+
+    test_case_generator_agent = agents.Agent(
+        name="Test Case Generator Agent",
+        instructions=SYSTEM_MESSAGE.format(
+            example_questions=example_questions_str,
+            json_schema=_SyntheticTestCase.model_json_schema(),
+        ),
+        tools=[agents.function_tool(code_interpreter.run_code)],
+        model=agents.OpenAIChatCompletionsModel(
+            model=client_manager.configs.default_planner_model,
+            openai_client=client_manager.openai_client,
+        ),
+    )
+
     generator = random.Random(0)
     dataset_name_hash = get_dataset_url_hash(args.langfuse_dataset_name)
 

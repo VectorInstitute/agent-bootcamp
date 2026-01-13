@@ -4,106 +4,100 @@ Log traces to LangFuse for observability and evaluation.
 """
 
 import asyncio
-import contextlib
-import signal
-import sys
+from typing import Any, AsyncGenerator
 
 import agents
 import gradio as gr
 from dotenv import load_dotenv
 from gradio.components.chatbot import ChatMessage
-from openai import AsyncOpenAI
 
 from src.prompts import REACT_INSTRUCTIONS
 from src.utils import (
-    AsyncWeaviateKnowledgeBase,
-    Configs,
-    get_weaviate_async_client,
     oai_agent_stream_to_gradio_messages,
     pretty_print,
     set_up_logging,
     setup_langfuse_tracer,
 )
+from src.utils.agent_session import get_or_create_session
+from src.utils.client_manager import AsyncClientManager
+from src.utils.gradio import COMMON_GRADIO_CONFIG
 from src.utils.langfuse.shared_client import langfuse_client
 
 
-load_dotenv(verbose=True)
+async def _main(
+    query: str, history: list[ChatMessage], session_state: dict[str, Any]
+) -> AsyncGenerator[list[ChatMessage], Any]:
+    # Initialize list of chat messages for a single turn
+    turn_messages: list[ChatMessage] = []
 
-set_up_logging()
+    # Construct an in-memory SQLite session for the agent to maintain
+    # conversation history across multiple turns of a chat
+    # This makes it possible to ask follow-up questions that refer to
+    # previous turns in the conversation
+    session = get_or_create_session(history, session_state)
 
-
-configs = Configs()
-async_weaviate_client = get_weaviate_async_client(
-    http_host=configs.weaviate_http_host,
-    http_port=configs.weaviate_http_port,
-    http_secure=configs.weaviate_http_secure,
-    grpc_host=configs.weaviate_grpc_host,
-    grpc_port=configs.weaviate_grpc_port,
-    grpc_secure=configs.weaviate_grpc_secure,
-    api_key=configs.weaviate_api_key,
-)
-async_openai_client = AsyncOpenAI()
-async_knowledgebase = AsyncWeaviateKnowledgeBase(
-    async_weaviate_client,
-    collection_name=configs.weaviate_collection_name,
-)
-
-
-async def _cleanup_clients() -> None:
-    """Close async clients."""
-    await async_weaviate_client.close()
-    await async_openai_client.close()
-
-
-def _handle_sigint(signum: int, frame: object) -> None:
-    """Handle SIGINT signal to gracefully shutdown."""
-    with contextlib.suppress(Exception):
-        asyncio.get_event_loop().run_until_complete(_cleanup_clients())
-    sys.exit(0)
-
-
-async def _main(question: str, gr_messages: list[ChatMessage]):
-    setup_langfuse_tracer()
-
+    # Define an agent using the OpenAI Agent SDK
     main_agent = agents.Agent(
-        name="Wikipedia Agent",
-        instructions=REACT_INSTRUCTIONS,
-        tools=[agents.function_tool(async_knowledgebase.search_knowledgebase)],
+        name="Wikipedia Agent",  # Agent name for logging and debugging purposes
+        instructions=REACT_INSTRUCTIONS,  # System instructions for the agent
+        # Tools available to the agent
+        # We wrap the `search_knowledgebase` method with `function_tool`, which
+        # will construct the tool definition JSON schema by extracting the necessary
+        # information from the method signature and docstring.
+        tools=[agents.function_tool(client_manager.knowledgebase.search_knowledgebase)],
         model=agents.OpenAIChatCompletionsModel(
-            model=configs.default_planner_model, openai_client=async_openai_client
+            model=client_manager.configs.default_worker_model,
+            openai_client=client_manager.openai_client,
         ),
     )
 
     with langfuse_client.start_as_current_span(name="Agents-SDK-Trace") as span:
-        span.update(input=question)
+        span.update(input=query)
 
-        result_stream = agents.Runner.run_streamed(main_agent, input=question)
+        # Run the agent in streaming mode to get and display intermediate outputs
+        result_stream = agents.Runner.run_streamed(
+            main_agent, input=query, session=session
+        )
+
         async for _item in result_stream.stream_events():
-            gr_messages += oai_agent_stream_to_gradio_messages(_item)
-            if len(gr_messages) > 0:
-                yield gr_messages
+            turn_messages += oai_agent_stream_to_gradio_messages(_item)
+            if len(turn_messages) > 0:
+                yield turn_messages
 
         span.update(output=result_stream.final_output)
 
-    pretty_print(gr_messages)
-    yield gr_messages
-
-
-demo = gr.ChatInterface(
-    _main,
-    title="2.1 OAI Agent SDK ReAct + LangFuse",
-    type="messages",
-    examples=[
-        "At which university did the SVP Software Engineering"
-        " at Apple (as of June 2025) earn their engineering degree?",
-    ],
-)
+    pretty_print(turn_messages)
+    yield turn_messages
 
 
 if __name__ == "__main__":
-    signal.signal(signal.SIGINT, _handle_sigint)
+    load_dotenv(verbose=True)
+
+    # Set logging level and suppress some noisy logs from dependencies
+    set_up_logging()
+
+    # Set up LangFuse for tracing
+    setup_langfuse_tracer()
+
+    # Initialize client manager
+    # This class initializes the OpenAI and Weaviate async clients, as well as the
+    # Weaviate knowledge base tool. The initialization is done once when the clients
+    # are first accessed, and the clients are reused for subsequent calls.
+    client_manager = AsyncClientManager()
+
+    demo = gr.ChatInterface(
+        _main,
+        **COMMON_GRADIO_CONFIG,
+        examples=[
+            [
+                "At which university did the SVP Software Engineering"
+                " at Apple (as of June 2025) earn their engineering degree?",
+            ]
+        ],
+        title="2.1: ReAct for Retrieval-Augmented Generation with OpenAI Agent SDK + LangFuse",
+    )
 
     try:
         demo.launch(share=True)
     finally:
-        asyncio.run(_cleanup_clients())
+        asyncio.run(client_manager.close())

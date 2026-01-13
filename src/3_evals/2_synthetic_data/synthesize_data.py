@@ -14,26 +14,20 @@ import random
 import agents
 import pydantic
 from dotenv import load_dotenv
-from openai import AsyncOpenAI
 from rich.progress import track
 
 from src.utils import (
-    AsyncWeaviateKnowledgeBase,
-    Configs,
     gather_with_progress,
-    get_weaviate_async_client,
     pretty_print,
     rate_limited,
     set_up_logging,
     setup_langfuse_tracer,
 )
+from src.utils.client_manager import AsyncClientManager
 from src.utils.data import get_dataset, get_dataset_url_hash
 from src.utils.langfuse.shared_client import langfuse_client
 from src.utils.tools.news_events import NewsEvent, get_news_events
 
-
-load_dotenv(verbose=True)
-set_up_logging()
 
 SYSTEM_MESSAGE = """\
 Example questions: \
@@ -96,7 +90,8 @@ async def generate_synthetic_test_cases(
         instructions="Extract the structured output from the given text.",
         output_type=list[_SyntheticTestCase],
         model=agents.OpenAIChatCompletionsModel(
-            model=configs.default_worker_model, openai_client=async_openai_client
+            model=client_manager.configs.default_worker_model,
+            openai_client=client_manager.openai_client,
         ),
     )
 
@@ -118,28 +113,15 @@ async def generate_synthetic_test_cases(
 if __name__ == "__main__":
     args = parser.parse_args()
 
-    configs = Configs()
-    async_weaviate_client = get_weaviate_async_client(
-        http_host=configs.weaviate_http_host,
-        http_port=configs.weaviate_http_port,
-        http_secure=configs.weaviate_http_secure,
-        grpc_host=configs.weaviate_grpc_host,
-        grpc_port=configs.weaviate_grpc_port,
-        grpc_secure=configs.weaviate_grpc_secure,
-        api_key=configs.weaviate_api_key,
-    )
-    async_knowledgebase = AsyncWeaviateKnowledgeBase(
-        async_weaviate_client,
-        collection_name=configs.weaviate_collection_name,
-        max_concurrency=args.max_concurrency,
-    )
+    load_dotenv(verbose=True)
+    set_up_logging()
 
     setup_langfuse_tracer()
 
     generator = random.Random(0)
     dataset_name_hash = get_dataset_url_hash(args.langfuse_dataset_name)
 
-    async_openai_client = AsyncOpenAI()
+    client_manager = AsyncClientManager()
 
     # Create langfuse dataset and upload.
     langfuse_client.create_dataset(
@@ -168,9 +150,10 @@ if __name__ == "__main__":
             json_schema=_SyntheticTestCases.model_json_schema(),
         ),
         # HINT: replace this tool with your own knowledge base search tool.
-        tools=[agents.function_tool(async_knowledgebase.search_knowledgebase)],
+        tools=[agents.function_tool(client_manager.knowledgebase.search_knowledgebase)],
         model=agents.OpenAIChatCompletionsModel(
-            model=configs.default_planner_model, openai_client=async_openai_client
+            model=client_manager.configs.default_planner_model,
+            openai_client=client_manager.openai_client,
         ),
     )
 

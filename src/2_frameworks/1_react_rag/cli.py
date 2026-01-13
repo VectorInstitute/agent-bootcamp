@@ -11,46 +11,20 @@ from agents import (
     function_tool,
 )
 from dotenv import load_dotenv
-from openai import AsyncOpenAI
 
 from src.prompts import REACT_INSTRUCTIONS
-from src.utils import (
-    AsyncWeaviateKnowledgeBase,
-    Configs,
-    get_weaviate_async_client,
-    pretty_print,
-)
+from src.utils import pretty_print
+from src.utils.client_manager import AsyncClientManager
 
 
-load_dotenv(verbose=True)
-
-no_tracing_config = RunConfig(tracing_disabled=True)
-
-
-async def _main(query: str):
-    configs = Configs()
-    async_weaviate_client = get_weaviate_async_client(
-        http_host=configs.weaviate_http_host,
-        http_port=configs.weaviate_http_port,
-        http_secure=configs.weaviate_http_secure,
-        grpc_host=configs.weaviate_grpc_host,
-        grpc_port=configs.weaviate_grpc_port,
-        grpc_secure=configs.weaviate_grpc_secure,
-        api_key=configs.weaviate_api_key,
-    )
-    async_knowledgebase = AsyncWeaviateKnowledgeBase(
-        async_weaviate_client,
-        collection_name=configs.weaviate_collection_name,
-    )
-
-    async_openai_client = AsyncOpenAI()
-
+async def _main(query: str) -> None:
     wikipedia_agent = Agent(
         name="Wikipedia Agent",
         instructions=REACT_INSTRUCTIONS,
-        tools=[function_tool(async_knowledgebase.search_knowledgebase)],
+        tools=[function_tool(client_manager.knowledgebase.search_knowledgebase)],
         model=OpenAIChatCompletionsModel(
-            model=configs.default_planner_model, openai_client=async_openai_client
+            model=client_manager.configs.default_worker_model,
+            openai_client=client_manager.openai_client,
         ),
     )
 
@@ -77,15 +51,23 @@ async def _main(query: str):
     #     if len(event_parsed) > 0:
     #         pretty_print(event_parsed)
 
-    await async_weaviate_client.close()
-    await async_openai_client.close()
-
 
 if __name__ == "__main__":
+    load_dotenv(verbose=True)
+
+    logging.basicConfig(level=logging.INFO)
+
+    no_tracing_config = RunConfig(tracing_disabled=True)
+
+    # Initialize client manager
+    # This class initializes the OpenAI and Weaviate async clients, as well as the
+    # Weaviate knowledge base tool. The initialization is done once when the clients
+    # are first accessed, and the clients are reused for subsequent calls.
+    client_manager = AsyncClientManager()
+
     query = (
         "At which university did the SVP Software Engineering"
         " at Apple (as of June 2025) earn their engineering degree?"
     )
 
-    logging.basicConfig(level=logging.INFO)
     asyncio.run(_main(query))
