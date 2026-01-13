@@ -29,23 +29,13 @@ import pydantic
 
 from src.utils import set_up_logging, setup_langfuse_tracer
 from src.utils.async_utils import gather_with_progress, rate_limited
+from src.utils.client_manager import AsyncClientManager
 from src.utils.langfuse.shared_client import langfuse_client
 
-
-AGENT_LLM_NAMES = {
-    "worker": "gemini-2.5-flash",  # less expensive,
-    "reviewer": "gemini-2.5-pro",  # more expenive, better at reasoning
-}
 
 MAX_CONCURRENCY = {"worker": 50, "reviewer": 50}
 MAX_GENERATED_TOKENS = {"worker": 16384, "reviewer": 32768}
 
-parser = argparse.ArgumentParser()
-parser.add_argument("--source_dataset", required=True)
-parser.add_argument(
-    "--num_rows", default=-1, type=int, help="Set to -1 to select all rows."
-)
-parser.add_argument("--output_report", default="report.md")
 
 Document = dict[str, Any]
 
@@ -246,26 +236,6 @@ def group_conflicts(
     ]
 
 
-async_openai_client = openai.AsyncOpenAI()
-
-worker_agent = agents.Agent(
-    "Conflict-detection Agent",
-    instructions=(
-        "Identify conflicting information (if any) in and between these documents. "
-        "Be sure to show your reasoning, even if there is no conflict. "
-        "If no conflict is found between the two documents, use an empty list."
-    ),
-    output_type=ConflictSummary,
-    model=agents.OpenAIChatCompletionsModel(
-        model=AGENT_LLM_NAMES["worker"], openai_client=async_openai_client
-    ),
-    model_settings=agents.ModelSettings(
-        reasoning=openai.types.Reasoning(effort="high", generate_summary="detailed"),
-        max_tokens=MAX_GENERATED_TOKENS["worker"],
-    ),
-)
-
-
 async def process_document_pair(document_pair: DocumentPair) -> ConflictSummary | None:
     """Process one document pair.
 
@@ -304,23 +274,6 @@ async def process_fan_out(
         for pair, summary in zip(document_pairs, results)
         if summary and (len(summary.conflicts) > 0)
     ]
-
-
-conflict_review_agent = agents.Agent(
-    "Conflict-review agent",
-    instructions=(
-        "Given the documents suggested to be in conflict with information "
-        "in the current document, analyze whether the suggestions are valid."
-    ),
-    output_type=ConflictReview,
-    model=agents.OpenAIChatCompletionsModel(
-        model=AGENT_LLM_NAMES["reviewer"], openai_client=async_openai_client
-    ),
-    model_settings=agents.ModelSettings(
-        reasoning=openai.types.Reasoning(effort="high", generate_summary="detailed"),
-        max_tokens=MAX_GENERATED_TOKENS["reviewer"],
-    ),
-)
 
 
 async def process_one_review(
@@ -371,9 +324,57 @@ async def process_conflict_reviews(
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--source_dataset", required=True)
+    parser.add_argument(
+        "--num_rows", default=-1, type=int, help="Set to -1 to select all rows."
+    )
+    parser.add_argument("--output_report", default="report.md")
     args = parser.parse_args()
+
     set_up_logging()
     setup_langfuse_tracer()
+
+    client_manager = AsyncClientManager()
+
+    worker_agent = agents.Agent(
+        "Conflict-detection Agent",
+        instructions=(
+            "Identify conflicting information (if any) in and between these documents. "
+            "Be sure to show your reasoning, even if there is no conflict. "
+            "If no conflict is found between the two documents, use an empty list."
+        ),
+        output_type=ConflictSummary,
+        model=agents.OpenAIChatCompletionsModel(
+            model=client_manager.configs.default_worker_model,
+            openai_client=client_manager.openai_client,
+        ),
+        model_settings=agents.ModelSettings(
+            reasoning=openai.types.Reasoning(
+                effort="high", generate_summary="detailed"
+            ),
+            max_tokens=MAX_GENERATED_TOKENS["worker"],
+        ),
+    )
+
+    conflict_review_agent = agents.Agent(
+        "Conflict-review agent",
+        instructions=(
+            "Given the documents suggested to be in conflict with information "
+            "in the current document, analyze whether the suggestions are valid."
+        ),
+        output_type=ConflictReview,
+        model=agents.OpenAIChatCompletionsModel(
+            model=client_manager.configs.default_planner_model,
+            openai_client=client_manager.openai_client,
+        ),
+        model_settings=agents.ModelSettings(
+            reasoning=openai.types.Reasoning(
+                effort="high", generate_summary="detailed"
+            ),
+            max_tokens=MAX_GENERATED_TOKENS["reviewer"],
+        ),
+    )
 
     dataset_dict = datasets.load_dataset(args.source_dataset)
     assert isinstance(dataset_dict, datasets.DatasetDict)
