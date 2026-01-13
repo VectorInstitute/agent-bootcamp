@@ -159,8 +159,14 @@ if __name__ == "__main__":
         chatbot=gr.Chatbot(height=600),
         textbox=gr.Textbox(lines=1, placeholder="Enter your prompt"),
         examples=[
-            "At which university did the SVP Software Engineering"
-            " at Apple (as of June 2025) earn their engineering degree?",
+            [
+                "At which university did the SVP Software Engineering"
+                " at Apple (as of June 2025) earn their engineering degree?"
+            ],
+            [
+                "Où le vice-président senior actuel d'Apple en charge de l'ingénierie "
+                "logicielle a-t-il obtenu son diplôme d'ingénieur?"
+            ],
         ],
         title="1.1: ReAct Agent for Retrieval-Augmented Generation",
     )
