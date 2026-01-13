@@ -164,6 +164,8 @@ async def _main(
         yield turn_messages
 
         # Execute the search plan
+        # NOTE: searches are done sequentially here for simplicity.
+        # TODO: As an exercise, try to paralleize the execution of the search steps.
         search_results = []
         for step in search_plan.search_steps:
             with langfuse_client.start_as_current_span(
