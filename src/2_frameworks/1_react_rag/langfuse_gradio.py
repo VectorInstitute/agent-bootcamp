@@ -10,6 +10,7 @@ import agents
 import gradio as gr
 from dotenv import load_dotenv
 from gradio.components.chatbot import ChatMessage
+from langfuse import propagate_attributes
 
 from src.prompts import REACT_INSTRUCTIONS
 from src.utils import (
@@ -51,9 +52,14 @@ async def _main(
         ),
     )
 
-    with langfuse_client.start_as_current_span(name="Agents-SDK-Trace") as span:
-        span.update(input=query)
-
+    with (
+        langfuse_client.start_as_current_observation(
+            name="Agents-SDK-Trace", as_type="agent", input=query
+        ) as obs,
+        propagate_attributes(
+            session_id=session.session_id  # Propagate session_id to all child observations
+        ),
+    ):
         # Run the agent in streaming mode to get and display intermediate outputs
         result_stream = agents.Runner.run_streamed(
             main_agent, input=query, session=session
@@ -64,7 +70,7 @@ async def _main(
             if len(turn_messages) > 0:
                 yield turn_messages
 
-        span.update(output=result_stream.final_output)
+        obs.update(output=result_stream.final_output)
 
     pretty_print(turn_messages)
     yield turn_messages
@@ -92,7 +98,7 @@ if __name__ == "__main__":
             [
                 "At which university did the SVP Software Engineering"
                 " at Apple (as of June 2025) earn their engineering degree?",
-            ]
+            ],
         ],
         title="2.1: ReAct for Retrieval-Augmented Generation with OpenAI Agent SDK + LangFuse",
     )

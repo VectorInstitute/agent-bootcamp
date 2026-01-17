@@ -13,6 +13,7 @@ import agents
 import gradio as gr
 from dotenv import load_dotenv
 from gradio.components.chatbot import ChatMessage
+from langfuse import propagate_attributes
 
 from src.prompts import REACT_INSTRUCTIONS
 from src.utils import (
@@ -39,12 +40,20 @@ async def _main(
     session = get_or_create_session(history, session_state)
 
     # Use the main agent as the entry point- not the worker agent.
-    with langfuse_client.start_as_current_span(name="Agents-SDK-Trace") as span:
-        span.update(input=query)
-
+    with (
+        langfuse_client.start_as_current_observation(
+            name="Orchestrator-Worker", as_type="agent", input=query
+        ) as obs,
+        propagate_attributes(
+            session_id=session.session_id  # Propagate session_id to all child observations
+        ),
+    ):
         # Run the agent in streaming mode to get and display intermediate outputs
         result_stream = agents.Runner.run_streamed(
-            main_agent, input=query, session=session
+            main_agent,
+            input=query,
+            session=session,
+            max_turns=30,  # Increase max turns to support more complex queries
         )
 
         async for _item in result_stream.stream_events():
@@ -52,7 +61,7 @@ async def _main(
             if len(turn_messages) > 0:
                 yield turn_messages
 
-        span.update(output=result_stream.final_output)
+        obs.update(output=result_stream.final_output)
 
 
 if __name__ == "__main__":
@@ -81,7 +90,11 @@ if __name__ == "__main__":
         instructions=(
             "You are a search agent. You receive a single search query as input. "
             "Use the search tool to perform a search, then produce a concise "
-            "'search summary' of the key findings. Do NOT return raw search results."
+            "'search summary' of the key findings. "
+            "For every fact you include in the summary, ALWAYS include a citation "
+            "both in-line and at the end of the summary as a numbered list. The "
+            "citation at the end should include relevant metadata from the search "
+            "results. Do NOT return raw search results. "
         ),
         tools=[
             agents.function_tool(client_manager.knowledgebase.search_knowledgebase),
@@ -118,12 +131,13 @@ if __name__ == "__main__":
         **COMMON_GRADIO_CONFIG,
         examples=[
             [
-                "At which university did the SVP Software Engineering"
-                " at Apple (as of June 2025) earn their engineering degree?"
+                "Write a structured report on the history of AI, covering: "
+                "1) the start in the 50s, 2) the first AI winter, 3) the second AI winter, "
+                "4) the modern AI boom, 5) the evolution of AI hardware, and "
+                "6) the societal impacts of modern AI"
             ],
             [
-                "How does the annual growth in the 50th-percentile income "
-                "in the US compare with that in Canada?",
+                "Compare the box office performance of 'Oppenheimer' with the third Avatar movie"
             ],
         ],
         title="2.2.2: Multi-Agent Orchestrator-worker for Retrieval-Augmented Generation",
