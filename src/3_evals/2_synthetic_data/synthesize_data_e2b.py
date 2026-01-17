@@ -93,8 +93,8 @@ async def generate_synthetic_test_cases(
             ),
         )
 
-        with langfuse_client.start_as_current_span(
-            name="generate_synthetic_test_cases"
+        with langfuse_client.start_as_current_observation(
+            name="generate_synthetic_test_cases", as_type="agent"
         ):
             raw_response = await agents.Runner.run(
                 test_case_generator_agent,
