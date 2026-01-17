@@ -241,7 +241,9 @@ async def process_document_pair(document_pair: DocumentPair) -> ConflictSummary 
 
     Returns None if exception is encountered.
     """
-    with langfuse_client.start_as_current_observation(name="Conflict- suggest") as span:
+    with langfuse_client.start_as_current_observation(
+        name="Conflict - suggest", as_type="agent"
+    ) as obs:
         try:
             result = await agents.Runner.run(
                 worker_agent, input=document_pair.get_prompt()
@@ -251,7 +253,7 @@ async def process_document_pair(document_pair: DocumentPair) -> ConflictSummary 
             print(e)
             return None
 
-        span.update(input=document_pair, output=output)
+        obs.update(input=document_pair, output=output)
 
     return output
 
@@ -283,7 +285,9 @@ async def process_one_review(
 
     Return None upon error.
     """
-    with langfuse_client.start_as_current_observation(name="Review proposal") as span:
+    with langfuse_client.start_as_current_observation(
+        name="Review proposal", as_type="agent"
+    ) as obs:
         try:
             result = await agents.Runner.run(
                 conflict_review_agent, input=conflicted_document.model_dump_json()
@@ -293,7 +297,7 @@ async def process_one_review(
             print(e)
             return None
 
-        span.update(input=conflicted_document, output=output)
+        obs.update(input=conflicted_document, output=output)
 
     return output
 
@@ -380,33 +384,43 @@ if __name__ == "__main__":
     assert isinstance(dataset_dict, datasets.DatasetDict)
     documents = list(dataset_dict["train"])[: args.num_rows]
 
-    # Run O(N^2) agents on N documents to identify pairwise e.g., conflicts.
-    document_pairs = build_document_pairs(documents)  # type: ignore[arg-type]
-    print(f"Built {len(document_pairs)} pair(s) from {len(documents)} document(s).")
+    with langfuse_client.start_as_current_observation(
+        name="Fan-Out", as_type="chain", input=args.source_dataset
+    ) as span:
+        # Run O(N^2) agents on N documents to identify pairwise e.g., conflicts.
+        document_pairs = build_document_pairs(documents)  # type: ignore[arg-type]
+        print(f"Built {len(document_pairs)} pair(s) from {len(documents)} document(s).")
 
-    with langfuse_client.start_as_current_span(name="Conflicts- Pairwise") as span:
-        flagged_pairs = asyncio.get_event_loop().run_until_complete(
-            process_fan_out(document_pairs)
-        )
-        span.update(
-            input=args.source_dataset, output=f"{len(flagged_pairs)} pairs identified."
-        )
-
-    # Collect conflicts related to each document.
-    # from O(N^2) pairs to O(N) summarized per-document conflicts.
-    conflicted_documents = group_conflicts(flagged_pairs)
-
-    # Review these O(N) per-document conflicts.
-    with langfuse_client.start_as_current_span(name="Conflicts- Review") as span:
-        conflict_reviews: list[ReviewedDocument] = (
-            asyncio.get_event_loop().run_until_complete(
-                process_conflict_reviews(conflicted_documents)
+        with langfuse_client.start_as_current_observation(
+            name="Conflicts - Pairwise", as_type="chain"
+        ) as obs:
+            flagged_pairs = asyncio.get_event_loop().run_until_complete(
+                process_fan_out(document_pairs)
             )
-        )
-        span.update(input=conflicted_documents, output=conflict_reviews)
+            obs.update(
+                input=args.source_dataset,
+                output=f"{len(flagged_pairs)} pairs identified.",
+            )
 
-    # Generate markdown output
-    with open(args.output_report, "w") as output_file:
-        reports = [_review.get_report() for _review in conflict_reviews]
-        output_file.write("\n".join(reports))
-        print(f"Writing report to {args.output_report}.")
+        # Collect conflicts related to each document.
+        # from O(N^2) pairs to O(N) summarized per-document conflicts.
+        conflicted_documents = group_conflicts(flagged_pairs)
+
+        # Review these O(N) per-document conflicts.
+        with langfuse_client.start_as_current_observation(
+            name="Conflicts - Review", as_type="chain"
+        ) as obs:
+            conflict_reviews: list[ReviewedDocument] = (
+                asyncio.get_event_loop().run_until_complete(
+                    process_conflict_reviews(conflicted_documents)
+                )
+            )
+            obs.update(input=conflicted_documents, output=conflict_reviews)
+
+        # Generate markdown output
+        with open(args.output_report, "w") as output_file:
+            reports = [_review.get_report() for _review in conflict_reviews]
+            output_file.write("\n".join(reports))
+            print(f"Writing report to {args.output_report}.")
+
+        span.update(output="Wrote report to " + args.output_report)

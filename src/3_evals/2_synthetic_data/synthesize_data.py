@@ -95,13 +95,14 @@ async def generate_synthetic_test_cases(
         ),
     )
 
-    with langfuse_client.start_as_current_span(name="generate_synthetic_test_cases"):
+    with langfuse_client.start_as_current_observation(
+        name="generate_synthetic_test_cases", as_type="agent"
+    ):
         raw_response = await agents.Runner.run(
             test_case_generator_agent,
             input="Generate test question-answer pairs based on this news event: \n"
             + news_event.model_dump_json(indent=2),
         )
-        print(raw_response.final_output)
         structured_response = await agents.Runner.run(
             structured_output_agent,
             input=raw_response.final_output,

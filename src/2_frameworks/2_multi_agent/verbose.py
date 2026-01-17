@@ -1,4 +1,4 @@
-"""Multi-agent Planner-Researcher Setup via OpenAI Agents SDK.
+"""Multi-agent Plan-and-Execute workflow via OpenAI Agents SDK.
 
 Note: this implementation does not unlock the full potential and flexibility
 of LLM agents. Use this reference implementation only if your use case requires
@@ -14,6 +14,7 @@ import agents
 import gradio as gr
 from dotenv import load_dotenv
 from gradio.components.chatbot import ChatMessage
+from langfuse import propagate_attributes
 from pydantic import BaseModel
 
 from src.utils import (
@@ -34,21 +35,32 @@ Given a user's query, produce a list of search terms that can be used to retriev
 relevant information from a knowledge base to answer the question. \
 As you are not able to clarify from the user what they are looking for, \
 your search terms should be broad and cover various aspects of the query. \
-Output between 5 to 10 search terms to query the knowledge base. \
+Output up to 10 search terms to query the knowledge base. \
 Note that the knowledge base is a Wikipedia dump and cuts off at May 2025.
 """
 
 RESEARCHER_INSTRUCTIONS = """\
 You are a research assistant with access to a knowledge base. \
-Given a potentially broad search term, use the search tool to \
-retrieve relevant information from the knowledge base and produce a short
-summary of at most 300 words.
+Given a potentially broad search term, your task is to use the search tool to \
+retrieve relevant information from the knowledge base and produce a short \
+summary of at most 300 words. You must pass the initial search term directly to \
+the search tool without any modifications and, only if necessary, refine your \
+search based on the results you get back. Your summary must be based solely on \
+a synthesis of all the search results and should not include any information that \
+is not present in the search results. For every fact you include in the summary, \
+ALWAYS include a citation both in-line and at the end of the summary as a numbered \
+list. The citation at the end should include relevant metadata from the search \
+results. Do NOT return raw search results.
 """
 
 WRITER_INSTRUCTIONS = """\
 You are an expert at synthesizing information and writing coherent reports. \
 Given a user's query and a set of search summaries, synthesize these into a \
-coherent report (at least a few paragraphs long) that answers the user's question. \
+coherent report that answers the user's question. The length of the report should be \
+proportional to the complexity of the question. For queries that are more complex, \
+ensure that the report is well-structured, with clear sections and headings where \
+appropriate. Make sure to use the citations from the search summaries to back up \
+any factual claims you make. \
 Do not make up any information outside of the search summaries.
 """
 
@@ -90,14 +102,8 @@ async def _create_search_plan(
     planner_agent: agents.Agent, query: str, session: agents.Session | None = None
 ) -> SearchPlan:
     """Create a search plan using the planner agent."""
-    with langfuse_client.start_as_current_span(
-        name="create_search_plan", input=query
-    ) as planner_span:
-        response = await agents.Runner.run(planner_agent, input=query, session=session)
-        search_plan = response.final_output_as(SearchPlan)
-        planner_span.update(output=search_plan)
-
-    return search_plan
+    response = await agents.Runner.run(planner_agent, input=query, session=session)
+    return response.final_output_as(SearchPlan)
 
 
 async def _generate_final_report(
@@ -112,15 +118,14 @@ async def _generate_final_report(
         f"{i + 1}. {result}" for i, result in enumerate(search_results)
     )
 
-    with langfuse_client.start_as_current_span(
-        name="generate_final_report", input=input_data
-    ) as writer_span:
+    with langfuse_client.start_as_current_observation(
+        name="Writer-Agent", as_type="chain", input=input_data
+    ) as obs:
         response = await agents.Runner.run(
             writer_agent, input=input_data, session=session
         )
-        writer_span.update(output=response.final_output)
-
-    return response
+        obs.update(output=response.final_output)
+        return response
 
 
 async def _main(
@@ -136,11 +141,23 @@ async def _main(
     # previous turns in the conversation
     session = get_or_create_session(history, session_state)
 
-    with langfuse_client.start_as_current_span(
-        name="Multi-Agent-Trace", input=query
-    ) as agents_span:
+    with (
+        langfuse_client.start_as_current_observation(
+            name="Plan-and-Execute-Workflow", as_type="chain", input=query
+        ) as obs,
+        propagate_attributes(
+            session_id=session.session_id  # Propagate session_id to all child observations
+        ),
+    ):
         # Create a search plan
-        search_plan = await _create_search_plan(planner_agent, query, session=session)
+        with langfuse_client.start_as_current_observation(
+            name="Planner-Agent", as_type="chain", input=query
+        ) as planner_obs:
+            search_plan = await _create_search_plan(
+                planner_agent, query, session=session
+            )
+            planner_obs.update(output=str(search_plan))
+
         turn_messages.append(
             ChatMessage(
                 role="assistant",
@@ -168,14 +185,17 @@ async def _main(
         # TODO: As an exercise, try to paralleize the execution of the search steps.
         search_results = []
         for step in search_plan.search_steps:
-            with langfuse_client.start_as_current_span(
-                name="execute_search_step", input=step.search_term
-            ) as search_span:
+            with langfuse_client.start_as_current_observation(
+                name="Researcher-Agent", as_type="chain", input=step.search_term
+            ) as researcher_obs:
                 response = await agents.Runner.run(
-                    research_agent, input=step.search_term, session=session
+                    research_agent,
+                    input=step.search_term,
+                    session=session,
+                    max_turns=30,  # Allow more turns for complex searches
                 )
                 search_result: str = response.final_output
-                search_span.update(output=search_result)
+                researcher_obs.update(output=search_result)
 
             search_results.append(search_result)
             turn_messages += oai_agent_items_to_gradio_messages(
@@ -187,9 +207,9 @@ async def _main(
         writer_agent_response = await _generate_final_report(
             writer_agent, search_results, query, session=session
         )
-        agents_span.update(output=writer_agent_response.final_output)
 
         report = writer_agent_response.final_output_as(ResearchReport)
+        obs.update(output=report)
         turn_messages.append(
             ChatMessage(
                 role="assistant",
@@ -257,12 +277,13 @@ if __name__ == "__main__":
         **COMMON_GRADIO_CONFIG,
         examples=[
             [
-                "At which university did the SVP Software Engineering"
-                " at Apple (as of June 2025) earn their engineering degree?"
+                "Write a structured report on the history of AI, covering: "
+                "1) the start in the 50s, 2) the first AI winter, 3) the second AI winter, "
+                "4) the modern AI boom, 5) the evolution of AI hardware, and "
+                "6) the societal impacts of modern AI"
             ],
             [
-                "How does the annual growth in the 50th-percentile income "
-                "in the US compare with that in Canada?",
+                "Compare the box office performance of 'Oppenheimer' with the third Avatar movie"
             ],
         ],
         title="2.2.1: Plan-and-Execute Multi-Agent System for Retrieval-Augmented Generation",
