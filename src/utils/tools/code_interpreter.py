@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Sequence
 
 from e2b_code_interpreter import AsyncSandbox
+from e2b_code_interpreter.models import serialize_results
 from pydantic import BaseModel
 
 from ..async_utils import gather_with_progress
@@ -23,9 +24,10 @@ class CodeInterpreterOutput(BaseModel):
 
     stdout: list[str]
     stderr: list[str]
+    results: list[dict[str, str]] | None = None
     error: _CodeInterpreterOutputError | None = None
 
-    def __init__(self, stdout: list[str], stderr: list[str], **kwargs):
+    def __init__(self, stdout: list[str], stderr: list[str], **kwargs) -> None:
         """Split lines in stdout and stderr."""
         stdout_processed = []
         for _line in stdout:
@@ -109,7 +111,7 @@ class CodeInterpreter:
         local_files: "Sequence[Path | str]| None" = None,
         timeout_seconds: int = 30,
         template_name: str | None = None,
-    ):
+    ) -> None:
         """Configure your Code Interpreter session.
 
         Note that the sandbox is not persistent, and each run_code will
@@ -160,6 +162,9 @@ class CodeInterpreter:
                 response.error = _CodeInterpreterOutputError.model_validate_json(
                     error.to_json()
                 )
+
+            if result.results:
+                response.results = serialize_results(result.results)
 
             return response.model_dump_json()
         finally:
