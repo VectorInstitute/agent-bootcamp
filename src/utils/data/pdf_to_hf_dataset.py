@@ -704,7 +704,6 @@ def _save_dataset(
 )
 @click.option(
     "--model",
-    "--gemini-model",
     default="gemini-2.5-flash",
     show_default=True,
     help="Model used for OCR (OpenAI-compatible endpoint).",
