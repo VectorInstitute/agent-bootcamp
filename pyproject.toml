@@ -44,6 +44,7 @@ dev = [
     "nbqa>=1.9.1",
     "pip-audit>=2.7.3",
     "pre-commit>=4.1.0",
+    "pymupdf>=1.26.7",
     "pytest>=8.3.4",
     "pytest-asyncio>=1.2.0",
     "pytest-cov>=7.0.0",
