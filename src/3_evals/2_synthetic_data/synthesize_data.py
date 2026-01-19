@@ -42,12 +42,6 @@ You MUST produce a JSON output of this format:
 {json_schema}
 """
 
-parser = argparse.ArgumentParser()
-parser.add_argument("--source_dataset", required=True)
-parser.add_argument("--langfuse_dataset_name", required=True)
-parser.add_argument("--limit", type=int, default=18)
-parser.add_argument("--max_concurrency", type=int, default=3)
-
 
 class _Citation(pydantic.BaseModel):
     """Represents one cited source/article."""
@@ -112,6 +106,11 @@ async def generate_synthetic_test_cases(
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--source_dataset", required=True)
+    parser.add_argument("--langfuse_dataset_name", required=True)
+    parser.add_argument("--limit", type=int, default=18)
+    parser.add_argument("--max_concurrency", type=int, default=3)
     args = parser.parse_args()
 
     load_dotenv(verbose=True)

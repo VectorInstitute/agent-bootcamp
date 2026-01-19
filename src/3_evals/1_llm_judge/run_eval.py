@@ -18,10 +18,6 @@ from src.utils.client_manager import AsyncClientManager
 from src.utils.langfuse.shared_client import flush_langfuse, langfuse_client
 
 
-load_dotenv(verbose=True)
-set_up_logging()
-
-
 SYSTEM_MESSAGE = """\
 Answer the question using the search tool. \
 EACH TIME before invoking the function, you must explain your reasons for doing so. \
@@ -148,6 +144,16 @@ async def run_and_evaluate(
 
 
 async def _main() -> None:
+    main_agent = agents.Agent(
+        name="Wikipedia Agent",
+        instructions=SYSTEM_MESSAGE,
+        tools=[agents.function_tool(client_manager.knowledgebase.search_knowledgebase)],
+        model=agents.OpenAIChatCompletionsModel(
+            model=client_manager.configs.default_planner_model,
+            openai_client=client_manager.openai_client,
+        ),
+    )
+
     coros = [
         run_and_evaluate(
             run_name=args.run_name, main_agent=main_agent, lf_dataset_item=_item
@@ -181,22 +187,15 @@ if __name__ == "__main__":
     parser.add_argument("--limit", type=int)
     args = parser.parse_args()
 
-    lf_dataset_items = langfuse_client.get_dataset(args.langfuse_dataset_name).items
-    if args.limit is not None:
-        lf_dataset_items = lf_dataset_items[: args.limit]
-
-    client_manager = AsyncClientManager()
+    load_dotenv(verbose=True)
+    set_up_logging()
 
     setup_langfuse_tracer()
 
-    main_agent = agents.Agent(
-        name="Wikipedia Agent",
-        instructions=SYSTEM_MESSAGE,
-        tools=[agents.function_tool(client_manager.knowledgebase.search_knowledgebase)],
-        model=agents.OpenAIChatCompletionsModel(
-            model=client_manager.configs.default_planner_model,
-            openai_client=client_manager.openai_client,
-        ),
-    )
+    client_manager = AsyncClientManager()
+
+    lf_dataset_items = langfuse_client.get_dataset(args.langfuse_dataset_name).items
+    if args.limit is not None:
+        lf_dataset_items = lf_dataset_items[: args.limit]
 
     asyncio.run(_main())
