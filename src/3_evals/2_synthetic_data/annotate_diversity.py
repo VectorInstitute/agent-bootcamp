@@ -28,13 +28,6 @@ if TYPE_CHECKING:
     from langfuse._client.datasets import DatasetItemClient
 
 
-parser = argparse.ArgumentParser()
-parser.add_argument("--langfuse_dataset_name", required=True)
-parser.add_argument("--run_name", default="cosine_similarity")
-parser.add_argument("--limit", type=int)
-parser.add_argument("--embed_batch_size", type=int, default=18)
-
-
 class EmbeddingResult(pydantic.BaseModel):
     """Tracks trace_id and embedding vector for an instance."""
 
@@ -91,6 +84,11 @@ def _avg_cosine_similarity(matrix: np.ndarray) -> np.ndarray:
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--langfuse_dataset_name", required=True)
+    parser.add_argument("--run_name", default="cosine_similarity")
+    parser.add_argument("--limit", type=int)
+    parser.add_argument("--embed_batch_size", type=int, default=18)
     args = parser.parse_args()
     assert args.embed_batch_size > 0, "args.embed_batch_size must be at least 1."
 

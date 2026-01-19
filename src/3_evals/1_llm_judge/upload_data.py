@@ -15,17 +15,15 @@ from src.utils.langfuse.otlp_env_setup import set_up_langfuse_otlp_env_vars
 from src.utils.langfuse.shared_client import langfuse_client
 
 
-load_dotenv(verbose=True)
-
-
-parser = argparse.ArgumentParser()
-parser.add_argument("--source_dataset", required=True)
-parser.add_argument("--langfuse_dataset_name", required=True)
-parser.add_argument("--limit", type=int)
-
-
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--source_dataset", required=True)
+    parser.add_argument("--langfuse_dataset_name", required=True)
+    parser.add_argument("--limit", type=int)
     args = parser.parse_args()
+
+    load_dotenv(verbose=True)
+
     configs = Configs()
 
     set_up_langfuse_otlp_env_vars()
