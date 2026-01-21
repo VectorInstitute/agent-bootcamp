@@ -19,7 +19,7 @@ from weaviate.classes.init import Auth
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s"
 )
-load_dotenv(".env.participants")
+load_dotenv()
 logger = logging.getLogger(__name__)
 
 HF_TO_WEAVIATE_TYPE_MAP = {
