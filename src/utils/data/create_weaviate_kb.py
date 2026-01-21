@@ -72,10 +72,10 @@ def _create_properties(features: Features) -> list[wc.Property]:
                 if name != "id"
                 else "id_",
                 data_type=weaviate_type,
-                index_filterable=name != "searchable_embedding_text",
-                index_searchable=name != "searchable_embedding_text"
+                index_filterable=name != "text",
+                index_searchable=name != "text"
                 and weaviate_type in [WDataType.TEXT, WDataType.TEXT_ARRAY],
-                skip_vectorization=name != "searchable_embedding_text",
+                skip_vectorization=name != "text",
             )
         )
     return properties
@@ -144,9 +144,7 @@ async def _producer(
         # Filter out None or empty strings from the batch
         # Get index of empty or None text entries
         null_indices = [
-            i
-            for i, text in enumerate(batch["searchable_embedding_text"])
-            if text is None or text == ""
+            i for i, text in enumerate(batch["text"]) if text is None or text == ""
         ]
         # Remove empty or None text entries from the batch
         if null_indices:
@@ -159,7 +157,7 @@ async def _producer(
 
         # Get embeddings for the batch
         embeddings = await _get_embeddings(
-            objects["searchable_embedding_text"], embedding_client, model_name
+            objects["text"], embedding_client, model_name
         )
 
         # Rename "id" to "id_" to avoid conflict with Weaviate's reserved field
@@ -184,7 +182,7 @@ async def _consumer(
             batch_size=len(objects), concurrent_requests=1
         ) as batch:
             vectors = objects.pop("vector")
-            for i in range(len(objects["searchable_embedding_text"])):
+            for i in range(len(objects["text"])):
                 obj = {
                     k.replace("-", "_").replace(" ", "_"): v[i]
                     for k, v in objects.items()
@@ -254,9 +252,7 @@ async def main(
             if isinstance(dataset.features[col], dict) or "Unnamed" in col
         ]
     )
-    assert "searchable_embedding_text" in dataset.column_names, (
-        "Dataset must contain a 'text' column"
-    )
+    assert "text" in dataset.column_names, "Dataset must contain a 'text' column"
 
     # Create Weaviate Client
     weaviate_client = weaviate.connect_to_weaviate_cloud(
