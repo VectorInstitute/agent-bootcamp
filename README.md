@@ -38,16 +38,11 @@ A minimal Reason-and-Act (ReAct) agent for knowledge retrieval, implemented with
 - **[1.1 ReAct Agent for RAG](src/1_basics/1_react_rag/README.md)**
   Basic ReAct agent for step-by-step retrieval and answer generation.
 
-
 ## Getting Started
 
-Set your API keys in `.env`. Use `.env.example` as a template.
+If you successfully created a workspace in Coder, you should already have a `.env` file in the repo.
 
-```bash
-cp -v .env.example .env
-```
-
-Run integration tests to validate that your API keys are set up correctly.
+In that case you can verify that the API keys work by running integration tests with the following command:
 
 ```bash
 uv run --env-file .env pytest -sv tests/tool_tests/test_integration.py
@@ -91,7 +86,6 @@ As noted above, these are unnecessarily verbose for real applications.
 # uv run --env-file .env gradio src/1_basics/1_react_rag/app.py
 ```
 
-
 ### 2. Frameworks
 
 Reason-and-Act Agent without the boilerplate- using the OpenAI Agent SDK.
@@ -105,14 +99,13 @@ Multi-agent examples, also via the OpenAI Agent SDK.
 
 ```bash
 uv run --env-file .env gradio src/2_frameworks/2_multi_agent/efficient.py
-# Verbose option- greater control over the agent flow, but less flexible.
+# Verbose option - greater control over the agent flow, but less flexible.
 # uv run --env-file .env gradio src/2_frameworks/2_multi_agent/verbose.py
 ```
 
 Python Code Interpreter demo- using the OpenAI Agent SDK, E2B for secure code sandbox, and LangFuse for observability. Refer to [src/2_frameworks/3_code_interpreter/README.md](src/2_frameworks/3_code_interpreter/README.md) for details.
 
 MCP server integration example also via OpenAI Agents SDK with Gradio and Langfuse tracing. Refer to [src/2_frameworks/4_mcp/README.md](src/2_frameworks/4_mcp/README.md) for more details.
-
 
 ### 3. Evals
 
