@@ -6,5 +6,5 @@ uv run --env-file .env pytest -sv aieng-agents-utils/tests/tools/test_weaviate.p
 uv run --env-file .env pytest -sv aieng-agents-utils/tests/tools/test_code_interpreter.py
 uv run --env-file .env pytest -sv aieng-agents-utils/tests/tools/test_gemini_grounding.py
 uv run --env-file .env pytest -sv aieng-agents-utils/tests/tools/test_get_news_events.py
-uv run --env-file .env pytest -sv aieng-agents-utils/tests/web_search_test_web_search_auth.py
+uv run --env-file .env pytest -sv aieng-agents-utils/tests/web_search/test_web_search_auth.py
 ```

@@ -36,7 +36,7 @@ Use the search tool to perform a search, then produce a concise \
 For every fact you include in the summary, ALWAYS include a citation \
 both in-line and at the end of the summary as a numbered list. The \
 citation at the end should include relevant metadata from the search \
-results. Do NOT return raw search results. "
+results. Do NOT return raw search results."
 """
 
 WIKI_SEARCH_PLANNER_INSTRUCTIONS = """\
