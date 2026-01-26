@@ -12,57 +12,24 @@ from typing import Any, AsyncGenerator
 
 import agents
 import gradio as gr
+from aieng.agents import (
+    get_or_create_agent_session,
+    oai_agent_items_to_gradio_messages,
+    pretty_print,
+    set_up_logging,
+)
+from aieng.agents.client_manager import AsyncClientManager
+from aieng.agents.gradio import COMMON_GRADIO_CONFIG
+from aieng.agents.langfuse import langfuse_client, setup_langfuse_tracer
+from aieng.agents.prompts import (
+    KB_RESEARCHER_INSTRUCTIONS,
+    WIKI_SEARCH_PLANNER_INSTRUCTIONS,
+    WRITER_INSTRUCTIONS,
+)
 from dotenv import load_dotenv
 from gradio.components.chatbot import ChatMessage
 from langfuse import propagate_attributes
 from pydantic import BaseModel
-
-from src.utils import (
-    oai_agent_items_to_gradio_messages,
-    pretty_print,
-    setup_langfuse_tracer,
-)
-from src.utils.agent_session import get_or_create_session
-from src.utils.client_manager import AsyncClientManager
-from src.utils.gradio import COMMON_GRADIO_CONFIG
-from src.utils.langfuse.shared_client import langfuse_client
-from src.utils.logging import set_up_logging
-
-
-PLANNER_INSTRUCTIONS = """\
-You are a research planner. \
-Given a user's query, produce a list of search terms that can be used to retrieve
-relevant information from a knowledge base to answer the question. \
-As you are not able to clarify from the user what they are looking for, \
-your search terms should be broad and cover various aspects of the query. \
-Output up to 10 search terms to query the knowledge base. \
-Note that the knowledge base is a Wikipedia dump and cuts off at May 2025.
-"""
-
-RESEARCHER_INSTRUCTIONS = """\
-You are a research assistant with access to a knowledge base. \
-Given a potentially broad search term, your task is to use the search tool to \
-retrieve relevant information from the knowledge base and produce a short \
-summary of at most 300 words. You must pass the initial search term directly to \
-the search tool without any modifications and, only if necessary, refine your \
-search based on the results you get back. Your summary must be based solely on \
-a synthesis of all the search results and should not include any information that \
-is not present in the search results. For every fact you include in the summary, \
-ALWAYS include a citation both in-line and at the end of the summary as a numbered \
-list. The citation at the end should include relevant metadata from the search \
-results. Do NOT return raw search results.
-"""
-
-WRITER_INSTRUCTIONS = """\
-You are an expert at synthesizing information and writing coherent reports. \
-Given a user's query and a set of search summaries, synthesize these into a \
-coherent report that answers the user's question. The length of the report should be \
-proportional to the complexity of the question. For queries that are more complex, \
-ensure that the report is well-structured, with clear sections and headings where \
-appropriate. Make sure to use the citations from the search summaries to back up \
-any factual claims you make. \
-Do not make up any information outside of the search summaries.
-"""
 
 
 class SearchItem(BaseModel):
@@ -139,7 +106,7 @@ async def _main(
     # conversation history across multiple turns of a chat
     # This makes it possible to ask follow-up questions that refer to
     # previous turns in the conversation
-    session = get_or_create_session(history, session_state)
+    session = get_or_create_agent_session(history, session_state)
 
     with (
         langfuse_client.start_as_current_observation(
@@ -242,7 +209,7 @@ if __name__ == "__main__":
 
     planner_agent = agents.Agent(
         name="Planner Agent",
-        instructions=PLANNER_INSTRUCTIONS,
+        instructions=WIKI_SEARCH_PLANNER_INSTRUCTIONS,
         model=agents.OpenAIChatCompletionsModel(
             model=planner_model,
             openai_client=client_manager.openai_client,
@@ -252,7 +219,7 @@ if __name__ == "__main__":
 
     research_agent = agents.Agent(
         name="Research Agent",
-        instructions=RESEARCHER_INSTRUCTIONS,
+        instructions=KB_RESEARCHER_INSTRUCTIONS,
         tools=[agents.function_tool(client_manager.knowledgebase.search_knowledgebase)],
         model=agents.OpenAIChatCompletionsModel(
             model=worker_model,

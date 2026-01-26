@@ -10,20 +10,18 @@ from typing import Any, AsyncGenerator
 import agents
 import gradio as gr
 from agents.mcp import MCPServerStdio, create_static_tool_filter
-from dotenv import load_dotenv
-from gradio.components.chatbot import ChatMessage
-from langfuse import propagate_attributes
-
-from src.utils import (
+from aieng.agents import (
+    get_or_create_agent_session,
     oai_agent_stream_to_gradio_messages,
     pretty_print,
     set_up_logging,
 )
-from src.utils.agent_session import get_or_create_session
-from src.utils.client_manager import AsyncClientManager
-from src.utils.gradio import COMMON_GRADIO_CONFIG
-from src.utils.langfuse.oai_sdk_setup import setup_langfuse_tracer
-from src.utils.langfuse.shared_client import langfuse_client
+from aieng.agents.client_manager import AsyncClientManager
+from aieng.agents.gradio import COMMON_GRADIO_CONFIG
+from aieng.agents.langfuse import langfuse_client, setup_langfuse_tracer
+from dotenv import load_dotenv
+from gradio.components.chatbot import ChatMessage
+from langfuse import propagate_attributes
 
 
 async def _main(
@@ -37,7 +35,7 @@ async def _main(
     # conversation history across multiple turns of a chat
     # This makes it possible to ask follow-up questions that refer to
     # previous turns in the conversation
-    session = get_or_create_session(history, session_state)
+    session = get_or_create_agent_session(history, session_state)
 
     # Get the absolute path to the current git repository, regardless of where
     # the script is run from

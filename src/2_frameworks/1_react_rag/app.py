@@ -6,14 +6,15 @@ from typing import Any, AsyncGenerator
 
 import agents
 import gradio as gr
+from aieng.agents import (
+    get_or_create_agent_session,
+    oai_agent_stream_to_gradio_messages,
+)
+from aieng.agents.client_manager import AsyncClientManager
+from aieng.agents.gradio import COMMON_GRADIO_CONFIG
+from aieng.agents.prompts import REACT_INSTRUCTIONS
 from dotenv import load_dotenv
 from gradio.components.chatbot import ChatMessage
-
-from src.prompts import REACT_INSTRUCTIONS
-from src.utils import oai_agent_stream_to_gradio_messages
-from src.utils.agent_session import get_or_create_session
-from src.utils.client_manager import AsyncClientManager
-from src.utils.gradio import COMMON_GRADIO_CONFIG
 
 
 async def _main(
@@ -26,7 +27,7 @@ async def _main(
     # conversation history across multiple turns of a chat
     # This makes it possible to ask follow-up questions that refer to
     # previous turns in the conversation
-    session = get_or_create_session(history, session_state)
+    session = get_or_create_agent_session(history, session_state)
 
     # Define an agent using the OpenAI Agent SDK
     main_agent = agents.Agent(

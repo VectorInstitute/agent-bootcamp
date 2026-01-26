@@ -3,9 +3,8 @@
 import asyncio
 
 import gradio as gr
+from aieng.agents import AsyncClientManager, pretty_print
 from dotenv import load_dotenv
-
-from src.utils import AsyncClientManager, pretty_print
 
 
 DESCRIPTION = """\

@@ -8,11 +8,10 @@ import json
 from typing import TYPE_CHECKING, Any, AsyncGenerator
 
 import gradio as gr
+from aieng.agents.client_manager import AsyncClientManager
+from aieng.agents.prompts import REACT_INSTRUCTIONS
 from dotenv import load_dotenv
 from gradio.components.chatbot import ChatMessage
-
-from src.prompts import REACT_INSTRUCTIONS
-from src.utils.client_manager import AsyncClientManager
 
 
 if TYPE_CHECKING:

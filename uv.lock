@@ -7,27 +7,21 @@ resolution-markers = [
     "python_full_version < '3.13'",
 ]
 
+[manifest]
+members = [
+    "agent-bootcamp",
+    "aieng-agents-utils",
+]
+
 [[package]]
-name = "agent-bootcamp-202507"
+name = "agent-bootcamp"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
-    { name = "aiohttp" },
-    { name = "beautifulsoup4" },
-    { name = "datasets" },
-    { name = "e2b-code-interpreter" },
-    { name = "gradio" },
-    { name = "langfuse" },
-    { name = "lxml" },
-    { name = "nest-asyncio" },
+    { name = "aieng-agents-utils" },
     { name = "numpy" },
-    { name = "openai" },
-    { name = "openai-agents" },
     { name = "plotly" },
-    { name = "pydantic" },
-    { name = "pydantic-ai-slim", extra = ["logfire"] },
     { name = "scikit-learn" },
-    { name = "weaviate-client" },
 ]
 
 [package.dev-dependencies]
@@ -42,13 +36,11 @@ dev = [
     { name = "nbqa" },
     { name = "pip-audit" },
     { name = "pre-commit" },
-    { name = "pymupdf" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
     { name = "pytest-mock" },
     { name = "ruff" },
-    { name = "transformers" },
 ]
 docs = [
     { name = "ipykernel" },
@@ -59,31 +51,13 @@ docs = [
     { name = "mkdocstrings" },
     { name = "mkdocstrings-python" },
 ]
-web-search = [
-    { name = "fastapi", extra = ["standard"] },
-    { name = "google-cloud-firestore" },
-    { name = "google-genai" },
-    { name = "simplejson" },
-]
 
 [package.metadata]
 requires-dist = [
-    { name = "aiohttp", specifier = ">=3.12.14" },
-    { name = "beautifulsoup4", specifier = ">=4.13.4" },
-    { name = "datasets", specifier = ">=4.4.0" },
-    { name = "e2b-code-interpreter", specifier = ">=2.3.0" },
-    { name = "gradio", specifier = ">=6.1.0" },
-    { name = "langfuse", specifier = ">=3.9.0" },
-    { name = "lxml", specifier = ">=6.0.0" },
-    { name = "nest-asyncio", specifier = ">=1.6.0" },
+    { name = "aieng-agents-utils", editable = "aieng-agents-utils" },
     { name = "numpy", specifier = "<2.3.0" },
-    { name = "openai", specifier = ">=2.6.0" },
-    { name = "openai-agents", specifier = ">=0.4.0" },
     { name = "plotly", specifier = ">=6.2.0" },
-    { name = "pydantic", specifier = ">=2.11.7" },
-    { name = "pydantic-ai-slim", extras = ["logfire"], specifier = ">=0.3.7" },
     { name = "scikit-learn", specifier = ">=1.7.0" },
-    { name = "weaviate-client", specifier = ">=4.15.4" },
 ]
 
 [package.metadata.requires-dev]
@@ -98,13 +72,11 @@ dev = [
     { name = "nbqa", specifier = ">=1.9.1" },
     { name = "pip-audit", specifier = ">=2.7.3" },
     { name = "pre-commit", specifier = ">=4.1.0" },
-    { name = "pymupdf", specifier = ">=1.26.7" },
     { name = "pytest", specifier = ">=8.3.4" },
     { name = "pytest-asyncio", specifier = ">=1.2.0" },
     { name = "pytest-cov", specifier = ">=7.0.0" },
     { name = "pytest-mock", specifier = ">=3.14.0" },
     { name = "ruff", specifier = ">=0.12.2" },
-    { name = "transformers", specifier = ">=4.54.1" },
 ]
 docs = [
     { name = "ipykernel", specifier = ">=6.29.5" },
@@ -115,11 +87,74 @@ docs = [
     { name = "mkdocstrings", specifier = ">=0.24.1" },
     { name = "mkdocstrings-python", specifier = ">=1.16.12" },
 ]
-web-search = [
+
+[[package]]
+name = "aieng-agents-utils"
+version = "0.1.0"
+source = { editable = "aieng-agents-utils" }
+dependencies = [
+    { name = "backoff" },
+    { name = "beautifulsoup4" },
+    { name = "click" },
+    { name = "datasets" },
+    { name = "e2b-code-interpreter" },
+    { name = "fastapi", extra = ["standard"] },
+    { name = "google-cloud-firestore" },
+    { name = "google-genai" },
+    { name = "gradio" },
+    { name = "httpx" },
+    { name = "langfuse" },
+    { name = "lxml" },
+    { name = "nest-asyncio" },
+    { name = "openai" },
+    { name = "openai-agents" },
+    { name = "pandas" },
+    { name = "pillow" },
+    { name = "pydantic" },
+    { name = "pydantic-ai-slim", extra = ["logfire"] },
+    { name = "pymupdf" },
+    { name = "simplejson" },
+    { name = "transformers" },
+    { name = "weaviate-client" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "pytest" },
+    { name = "pytest-asyncio" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "backoff", specifier = ">=2.2.1" },
+    { name = "beautifulsoup4", specifier = ">=4.13.4" },
+    { name = "click", specifier = ">=8.3.0" },
+    { name = "datasets", specifier = ">=4.4.0" },
+    { name = "e2b-code-interpreter", specifier = ">=2.3.0" },
     { name = "fastapi", extras = ["standard"], specifier = ">=0.116.1" },
     { name = "google-cloud-firestore", specifier = ">=2.21.0" },
     { name = "google-genai", specifier = ">=1.46.0" },
+    { name = "gradio", specifier = ">=6.1.0" },
+    { name = "httpx", specifier = ">=0.28.1" },
+    { name = "langfuse", specifier = ">=3.9.0" },
+    { name = "lxml", specifier = ">=6.0.0" },
+    { name = "nest-asyncio", specifier = ">=1.6.0" },
+    { name = "openai", specifier = ">=2.6.0" },
+    { name = "openai-agents", specifier = ">=0.4.0" },
+    { name = "pandas", specifier = ">=2.3.3" },
+    { name = "pillow", specifier = ">=11.3.0" },
+    { name = "pydantic", specifier = ">=2.11.7" },
+    { name = "pydantic-ai-slim", extras = ["logfire"], specifier = ">=0.3.7" },
+    { name = "pymupdf", specifier = ">=1.26.7" },
     { name = "simplejson", specifier = ">=3.20.2" },
+    { name = "transformers", specifier = ">=4.54.1" },
+    { name = "weaviate-client", specifier = ">=4.15.4" },
+]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "pytest", specifier = ">=8.3.4" },
+    { name = "pytest-asyncio", specifier = ">=1.2.0" },
 ]
 
 [[package]]

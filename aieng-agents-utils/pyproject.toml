@@ -1,0 +1,57 @@
+[project]
+name = "aieng-agents-utils"
+version = "0.1.0"
+description = "Helper modules for Vector Institute AI Engineering Agents Bootcamp implementations"
+authors = [{name = "Vector AI Engineering", email = "ai_engineering@vectorinstitute.ai"}]
+requires-python = ">=3.12"
+readme = "README.md"
+license = "MIT"
+dependencies = [
+    "backoff>=2.2.1",
+    "beautifulsoup4>=4.13.4",
+    "click>=8.3.0",
+    "datasets>=4.4.0",
+    "e2b-code-interpreter>=2.3.0",
+    "fastapi[standard]>=0.116.1",
+    "google-cloud-firestore>=2.21.0",
+    "google-genai>=1.46.0",
+    "gradio>=6.1.0",
+    "httpx>=0.28.1",
+    "langfuse>=3.9.0",
+    "lxml>=6.0.0",
+    "nest-asyncio>=1.6.0",
+    "openai>=2.6.0",
+    "openai-agents>=0.4.0",
+    "pandas>=2.3.3",
+    "pillow>=11.3.0",
+    "pydantic>=2.11.7",
+    "pydantic-ai-slim[logfire]>=0.3.7",
+    "pymupdf>=1.26.7",
+    "simplejson>=3.20.2",
+    "transformers>=4.54.1",
+    "weaviate-client>=4.15.4",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.sdist]
+include = ["aieng/"]
+
+[tool.hatch.build.targets.wheel]
+include = ["aieng/"]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3.4",
+    "pytest-asyncio>=1.2.0",
+]
+
+# Default dependency groups to be installed
+[tool.uv]
+default-groups = ["dev"]
+
+[project.scripts]
+pdf_to_hf_dataset = "aieng.agents.data.pdf_to_hf_dataset:main"
+chunk_hf_dataset = "aieng.agents.data.chunk_hf_dataset:main"

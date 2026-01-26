@@ -24,20 +24,18 @@ from pathlib import Path
 
 import agents
 import pydantic
-from dotenv import load_dotenv
-from rich.progress import track
-
-from src.utils import (
-    CodeInterpreter,
+from aieng.agents import (
     gather_with_progress,
     pretty_print,
     rate_limited,
     set_up_logging,
-    setup_langfuse_tracer,
 )
-from src.utils.client_manager import AsyncClientManager
-from src.utils.data import get_dataset_url_hash
-from src.utils.langfuse.shared_client import langfuse_client
+from aieng.agents.client_manager import AsyncClientManager
+from aieng.agents.data import get_dataset_url_hash
+from aieng.agents.langfuse import langfuse_client, setup_langfuse_tracer
+from aieng.agents.tools import CodeInterpreter
+from dotenv import load_dotenv
+from rich.progress import track
 
 
 SYSTEM_MESSAGE = """\
@@ -129,7 +127,7 @@ if __name__ == "__main__":
         template_name=client_manager.configs.default_code_interpreter_template,
         local_files=[
             Path("sandbox_content/"),
-            Path("tests/tool_tests/example_files/example_a.csv"),
+            Path("aieng-agents-utils/tests/example_files/example_a.csv"),
         ],
     )
 

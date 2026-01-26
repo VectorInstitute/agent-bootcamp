@@ -5,18 +5,16 @@ from typing import AsyncGenerator
 
 import pytest
 import pytest_asyncio
+from aieng.agents import Configs, pretty_print
+from aieng.agents.langfuse import set_up_langfuse_otlp_env_vars
+from aieng.agents.tools import (
+    AsyncWeaviateKnowledgeBase,
+    GeminiGroundingWithGoogleSearch,
+    get_weaviate_async_client,
+)
 from dotenv import load_dotenv
 from langfuse import get_client
 from openai import AsyncOpenAI
-
-from src.utils import (
-    AsyncWeaviateKnowledgeBase,
-    Configs,
-    get_weaviate_async_client,
-    pretty_print,
-)
-from src.utils.langfuse.otlp_env_setup import set_up_langfuse_otlp_env_vars
-from src.utils.tools.gemini_grounding import GeminiGroundingWithGoogleSearch
 
 
 load_dotenv(verbose=True)

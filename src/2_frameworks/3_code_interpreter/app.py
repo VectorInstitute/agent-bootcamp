@@ -11,40 +11,20 @@ from typing import Any, AsyncGenerator
 
 import agents
 import gradio as gr
+from aieng.agents import (
+    get_or_create_agent_session,
+    oai_agent_stream_to_gradio_messages,
+    pretty_print,
+    set_up_logging,
+)
+from aieng.agents.client_manager import AsyncClientManager
+from aieng.agents.gradio import COMMON_GRADIO_CONFIG
+from aieng.agents.langfuse import langfuse_client, setup_langfuse_tracer
+from aieng.agents.prompts import CODE_INTERPRETER_INSTRUCTIONS
+from aieng.agents.tools import CodeInterpreter
 from dotenv import load_dotenv
 from gradio.components.chatbot import ChatMessage
 from langfuse import propagate_attributes
-
-from src.utils import (
-    CodeInterpreter,
-    oai_agent_stream_to_gradio_messages,
-    set_up_logging,
-)
-from src.utils.agent_session import get_or_create_session
-from src.utils.client_manager import AsyncClientManager
-from src.utils.gradio import COMMON_GRADIO_CONFIG
-from src.utils.langfuse.oai_sdk_setup import setup_langfuse_tracer
-from src.utils.langfuse.shared_client import langfuse_client
-from src.utils.pretty_printing import pretty_print
-
-
-CODE_INTERPRETER_INSTRUCTIONS = """\
-The `code_interpreter` tool executes Python commands. \
-Please note that data is not persisted. Each time you invoke this tool, \
-you will need to run import and define all variables from scratch.
-
-You can access the local filesystem using this tool. \
-Instead of asking the user for file inputs, you should try to find the file \
-using this tool.
-
-Recommended packages: Pandas, Numpy, SymPy, Scikit-learn, Matplotlib, Seaborn.
-
-Use Matplotlib to create visualizations. Make sure to call `plt.show()` so that
-the plot is captured and returned to the user.
-
-You can also run Jupyter-style shell commands (e.g., `!pip freeze`)
-but you won't be able to install packages.
-"""
 
 
 async def _main(
@@ -57,7 +37,7 @@ async def _main(
     # conversation history across multiple turns of a chat
     # This makes it possible to ask follow-up questions that refer to
     # previous turns in the conversation
-    session = get_or_create_session(history, session_state)
+    session = get_or_create_agent_session(history, session_state)
 
     with (
         langfuse_client.start_as_current_observation(
@@ -102,7 +82,7 @@ if __name__ == "__main__":
     code_interpreter = CodeInterpreter(
         local_files=[
             Path("sandbox_content/"),
-            Path("tests/tool_tests/example_files/example_a.csv"),
+            Path("aieng-agents-utils/tests/example_files/example_a.csv"),
         ]
     )
 
