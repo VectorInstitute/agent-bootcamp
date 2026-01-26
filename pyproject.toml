@@ -1,28 +1,16 @@
 [project]
-name = "agent-bootcamp-202507"
+name = "agent-bootcamp"
 version = "0.1.0"
-description = "Vector Institute Agent Bootcamp 202507"
+description = "Vector Institute Agent Bootcamp"
 readme = "README.md"
 authors = [ {name = "Vector AI Engineering", email = "ai_engineering@vectorinstitute.ai"}]
-license = "Apache-2.0"
+license = "MIT"
 requires-python = ">=3.12"
 dependencies = [
-    "aiohttp>=3.12.14",
-    "beautifulsoup4>=4.13.4",
-    "datasets>=4.4.0",
-    "e2b-code-interpreter>=2.3.0",
-    "gradio>=6.1.0",
-    "langfuse>=3.9.0",
-    "lxml>=6.0.0",
-    "nest-asyncio>=1.6.0",
+    "aieng-agents-utils>=0.1.0",
     "numpy<2.3.0",
-    "openai>=2.6.0",
-    "openai-agents>=0.4.0",
     "plotly>=6.2.0",
-    "pydantic>=2.11.7",
-    "pydantic-ai-slim[logfire]>=0.3.7",
     "scikit-learn>=1.7.0",
-    "weaviate-client>=4.15.4",
 ]
 
 [build-system]
@@ -44,13 +32,11 @@ dev = [
     "nbqa>=1.9.1",
     "pip-audit>=2.7.3",
     "pre-commit>=4.1.0",
-    "pymupdf>=1.26.7",
     "pytest>=8.3.4",
     "pytest-asyncio>=1.2.0",
     "pytest-cov>=7.0.0",
     "pytest-mock>=3.14.0",
     "ruff>=0.12.2",
-    "transformers>=4.54.1",
 ]
 docs = [
     "jinja2>=3.1.6", # Pinning version to address vulnerability GHSA-cpwx-vrp4-4pq7
@@ -61,16 +47,18 @@ docs = [
     "ipykernel>=6.29.5",
     "ipython>=9.4.0",
 ]
-web-search = [
-    "google-cloud-firestore>=2.21.0",
-    "fastapi[standard]>=0.116.1",
-    "google-genai>=1.46.0",
-    "simplejson>=3.20.2",
-]
 
 # Default dependency groups to be installed
 [tool.uv]
 default-groups = ["dev", "docs"]
+
+[tool.uv.workspace]
+members = [
+  "aieng-agents-utils",
+]
+
+[tool.uv.sources]
+aieng-agents-utils = { workspace = true }
 
 [tool.ruff]
 include = ["*.py", "pyproject.toml", "*.ipynb"]
@@ -119,8 +107,6 @@ ignore = [
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["E402", "F401", "F403", "F811", "D104"]
 
-
-
 [tool.ruff.lint.pep8-naming]
 ignore-names = ["X*", "setUp"]
 
@@ -140,5 +126,5 @@ markers = [
 
 [tool.coverage]
     [tool.coverage.run]
-    source=["aieng_template"]
-    omit=["tests/*", "*__init__.py"]
+    source=["aieng-agents-utils/aieng"]
+    omit=["aieng-agents-utils/aieng/tests/*", "tests/*", "*__init__.py"]

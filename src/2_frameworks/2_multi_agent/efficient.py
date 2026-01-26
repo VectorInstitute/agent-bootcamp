@@ -11,20 +11,18 @@ from typing import Any, AsyncGenerator
 
 import agents
 import gradio as gr
+from aieng.agents import (
+    get_or_create_agent_session,
+    oai_agent_stream_to_gradio_messages,
+    set_up_logging,
+)
+from aieng.agents.client_manager import AsyncClientManager
+from aieng.agents.gradio import COMMON_GRADIO_CONFIG
+from aieng.agents.langfuse import langfuse_client, setup_langfuse_tracer
+from aieng.agents.prompts import REACT_INSTRUCTIONS, SEARCH_AGENT_INSTRUCTIONS
 from dotenv import load_dotenv
 from gradio.components.chatbot import ChatMessage
 from langfuse import propagate_attributes
-
-from src.prompts import REACT_INSTRUCTIONS
-from src.utils import (
-    oai_agent_stream_to_gradio_messages,
-    set_up_logging,
-    setup_langfuse_tracer,
-)
-from src.utils.agent_session import get_or_create_session
-from src.utils.client_manager import AsyncClientManager
-from src.utils.gradio import COMMON_GRADIO_CONFIG
-from src.utils.langfuse.shared_client import langfuse_client
 
 
 async def _main(
@@ -37,7 +35,7 @@ async def _main(
     # conversation history across multiple turns of a chat
     # This makes it possible to ask follow-up questions that refer to
     # previous turns in the conversation
-    session = get_or_create_session(history, session_state)
+    session = get_or_create_agent_session(history, session_state)
 
     # Use the main agent as the entry point- not the worker agent.
     with (
@@ -87,15 +85,7 @@ if __name__ == "__main__":
     # Worker Agent: handles long context efficiently
     search_agent = agents.Agent(
         name="SearchAgent",
-        instructions=(
-            "You are a search agent. You receive a single search query as input. "
-            "Use the search tool to perform a search, then produce a concise "
-            "'search summary' of the key findings. "
-            "For every fact you include in the summary, ALWAYS include a citation "
-            "both in-line and at the end of the summary as a numbered list. The "
-            "citation at the end should include relevant metadata from the search "
-            "results. Do NOT return raw search results. "
-        ),
+        instructions=SEARCH_AGENT_INSTRUCTIONS,
         tools=[
             agents.function_tool(client_manager.knowledgebase.search_knowledgebase),
         ],

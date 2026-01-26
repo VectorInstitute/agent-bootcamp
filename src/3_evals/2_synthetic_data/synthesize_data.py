@@ -13,20 +13,19 @@ import random
 
 import agents
 import pydantic
-from dotenv import load_dotenv
-from rich.progress import track
-
-from src.utils import (
+from aieng.agents import (
     gather_with_progress,
     pretty_print,
     rate_limited,
     set_up_logging,
     setup_langfuse_tracer,
 )
-from src.utils.client_manager import AsyncClientManager
-from src.utils.data import get_dataset, get_dataset_url_hash
-from src.utils.langfuse.shared_client import langfuse_client
-from src.utils.tools.news_events import NewsEvent, get_news_events
+from aieng.agents.client_manager import AsyncClientManager
+from aieng.agents.data import get_dataset, get_dataset_url_hash
+from aieng.agents.langfuse import langfuse_client
+from aieng.agents.tools import NewsEvent, get_news_events
+from dotenv import load_dotenv
+from rich.progress import track
 
 
 SYSTEM_MESSAGE = """\

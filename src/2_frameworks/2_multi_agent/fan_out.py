@@ -26,11 +26,9 @@ import agents
 import datasets
 import openai
 import pydantic
-
-from src.utils import set_up_logging, setup_langfuse_tracer
-from src.utils.async_utils import gather_with_progress, rate_limited
-from src.utils.client_manager import AsyncClientManager
-from src.utils.langfuse.shared_client import langfuse_client
+from aieng.agents import gather_with_progress, rate_limited, set_up_logging
+from aieng.agents.client_manager import AsyncClientManager
+from aieng.agents.langfuse import langfuse_client, setup_langfuse_tracer
 
 
 MAX_CONCURRENCY = {"worker": 50, "reviewer": 50}

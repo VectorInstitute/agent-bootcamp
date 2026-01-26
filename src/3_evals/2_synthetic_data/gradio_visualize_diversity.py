@@ -12,13 +12,13 @@ from typing import List
 import gradio as gr
 import numpy as np
 import plotly.express as px
+from aieng.agents import Configs, gather_with_progress
+from aieng.agents.data import create_batches
+from aieng.agents.langfuse import langfuse_client
 from openai import AsyncOpenAI
 from plotly.graph_objs import Figure
 from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
-
-from src.utils import Configs, create_batches, gather_with_progress
-from src.utils.langfuse.shared_client import langfuse_client
 
 
 def reduce_dimensions(

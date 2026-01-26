@@ -5,23 +5,22 @@ from typing import Any, AsyncGenerator
 
 import agents
 import gradio as gr
-from dotenv import load_dotenv
-from gradio.components.chatbot import ChatMessage
-from langfuse import propagate_attributes
-
-from src.utils import (
+from aieng.agents import (
+    get_or_create_agent_session,
     oai_agent_stream_to_gradio_messages,
     set_up_logging,
-    setup_langfuse_tracer,
 )
-from src.utils.agent_session import get_or_create_session
-from src.utils.client_manager import AsyncClientManager
-from src.utils.gradio import COMMON_GRADIO_CONFIG
-from src.utils.langfuse.shared_client import langfuse_client
-from src.utils.tools.gemini_grounding import (
+from aieng.agents.client_manager import AsyncClientManager
+from aieng.agents.gradio import COMMON_GRADIO_CONFIG
+from aieng.agents.langfuse import langfuse_client, setup_langfuse_tracer
+from aieng.agents.prompts import WIKI_AND_WEB_ORCHESTRATOR_INSTRUCTIONS
+from aieng.agents.tools.gemini_grounding import (
     GeminiGroundingWithGoogleSearch,
     ModelSettings,
 )
+from dotenv import load_dotenv
+from gradio.components.chatbot import ChatMessage
+from langfuse import propagate_attributes
 
 
 async def _main(
@@ -34,7 +33,7 @@ async def _main(
     # conversation history across multiple turns of a chat
     # This makes it possible to ask follow-up questions that refer to
     # previous turns in the conversation
-    session = get_or_create_session(history, session_state)
+    session = get_or_create_agent_session(history, session_state)
 
     # Use the main agent as the entry point- not the worker agent.
     with (
@@ -112,53 +111,7 @@ if __name__ == "__main__":
     # Main Agent: more expensive and slower, but better at complex planning
     main_agent = agents.Agent(
         name="MainAgent",
-        instructions="""
-            You are a deep research agent and your goal is to conduct in-depth, multi-turn
-            research by breaking down complex queries, using the provided tools, and
-            synthesizing the information into a comprehensive report.
-
-            You have access to the following tools:
-            1. 'search_knowledgebase' - use this tool to search for information in a
-                knowledge base. The knowledge base reflects a subset of Wikipedia as
-                of May 2025.
-            2. 'get_web_search_grounded_response' - use this tool for current events,
-                news, fact-checking or when the information in the knowledge base is
-                not sufficient to answer the question.
-
-            Both tools will not return raw search results or the sources themselves.
-            Instead, they will return a concise summary of the key findings, along
-            with the sources used to generate the summary.
-
-            For best performance, divide complex queries into simpler sub-queries
-            Before calling either tool, always explain your reasoning for doing so.
-
-            Note that the 'get_web_search_grounded_response' tool will expand the query
-            into multiple search queries and execute them. It will also return the
-            queries it executed. Do not repeat them.
-
-            **Routing Guidelines:**
-            - When answering a question, you should first try to use the 'search_knowledgebase'
-            tool, unless the question requires recent information after May 2025 or
-            has explicit recency cues.
-            - If either tool returns insufficient information for a given query, try
-            reformulating or using the other tool. You can call either tool multiple
-            times to get the information you need to answer the user's question.
-
-            **Guidelines for synthesis**
-            - After collecting results, write the final answer from your own synthesis.
-            - Add a "Sources" section listing unique sources, formatted as:
-                [1] Publisher - URL
-                [2] Wikipedia: <Page Title> (Section: <section>)
-            Order by first mention in your text. Every factual sentence in your final
-            response must map to at least one source.
-            - If web and knowledge base disagree, surface the disagreement and prefer sources
-            with newer publication dates.
-            - Do not invent URLs or sources.
-            - If both tools fail, say so and suggest 2–3 refined queries.
-
-            Be sure to mention the sources in your response, including the URL if available,
-            and do not make up information.
-        """,
+        instructions=WIKI_AND_WEB_ORCHESTRATOR_INSTRUCTIONS,
         # Allow the planner agent to invoke the worker agent.
         # The long context provided to the worker agent is hidden from the main agent.
         tools=[

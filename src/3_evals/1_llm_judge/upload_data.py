@@ -6,13 +6,11 @@ langfuse.com/docs/integrations/openaiagentssdk/example-evaluating-openai-agents
 
 import argparse
 
+from aieng.agents import Configs
+from aieng.agents.data import get_dataset, get_dataset_url_hash
+from aieng.agents.langfuse import langfuse_client, set_up_langfuse_otlp_env_vars
 from dotenv import load_dotenv
 from rich.progress import track
-
-from src.utils.data import get_dataset, get_dataset_url_hash
-from src.utils.env_vars import Configs
-from src.utils.langfuse.otlp_env_setup import set_up_langfuse_otlp_env_vars
-from src.utils.langfuse.shared_client import langfuse_client
 
 
 if __name__ == "__main__":
