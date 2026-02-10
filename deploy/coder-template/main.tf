@@ -97,8 +97,16 @@ resource "coder_agent" "main" {
     echo "Directory contents: $(ls -la)"
 
     # Run project init steps
-    echo "Creating virtual environment and installing dependencies..."
-    uv venv .venv
+    echo "Setting up virtual environment and installing dependencies..."
+
+    # Create virtual environment only if it doesn't exist (idempotent)
+    if [ ! -d ".venv" ]; then
+      echo "Creating new virtual environment..."
+      uv venv .venv
+    else
+      echo "Virtual environment already exists, skipping creation"
+    fi
+
     source .venv/bin/activate
 
     # Run sync synchronously and wait for completion only if pyproject.toml exists
@@ -140,7 +148,9 @@ resource "coder_agent" "main" {
 VSCODE_SETTINGS
 
     # Configure shell to always start in repo with venv activated
-    cat >> "/home/${local.username}/.bashrc" <<BASHRC
+    # Only add to bashrc if not already present (idempotent)
+    if ! grep -q "Auto-navigate to ${local.repo_name}" "/home/${local.username}/.bashrc" 2>/dev/null; then
+      cat >> "/home/${local.username}/.bashrc" <<BASHRC
 
 # Auto-navigate to ${local.repo_name} and activate venv
 if [ -f ~/${local.repo_name}/.venv/bin/activate ]; then
@@ -148,6 +158,7 @@ if [ -f ~/${local.repo_name}/.venv/bin/activate ]; then
     source .venv/bin/activate
 fi
 BASHRC
+    fi
 
     echo "Startup script ran successfully!"
 
