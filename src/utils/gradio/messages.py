@@ -128,12 +128,14 @@ def _oai_response_output_item_to_gradio(
             ChatMessage(
                 role="assistant",
                 content=_text,
-                metadata={
-                    "title": "Intermediate Step",
-                    "status": "done",  # This makes it collapsed by default
-                }
-                if not is_final_output
-                else MetadataDict(),
+                metadata=(
+                    {
+                        "title": "Intermediate Step",
+                        "status": "done",  # This makes it collapsed by default
+                    }
+                    if not is_final_output
+                    else MetadataDict()
+                ),
             )
             for _text in output_texts
         ]
@@ -169,7 +171,6 @@ def oai_agent_stream_to_gradio_messages(
     if isinstance(stream_event, stream_events.RawResponsesStreamEvent):
         data = stream_event.data
         if isinstance(data, ResponseCompletedEvent):
-            print(stream_event)
             # The completed event may contain multiple output messages,
             # including tool calls and final outputs.
             # If there is at least one tool call, we mark the response as a thought.
@@ -186,12 +187,14 @@ def oai_agent_stream_to_gradio_messages(
                                 ChatMessage(
                                     role="assistant",
                                     content=_item.text,
-                                    metadata={
-                                        "title": "🧠 Thought",
-                                        "id": data.sequence_number,
-                                    }
-                                    if is_thought
-                                    else MetadataDict(),
+                                    metadata=(
+                                        {
+                                            "title": "🧠 Thought",
+                                            "id": data.sequence_number,
+                                        }
+                                        if is_thought
+                                        else MetadataDict()
+                                    ),
                                 )
                             )
                 elif isinstance(message, ResponseFunctionToolCall):
@@ -210,7 +213,6 @@ def oai_agent_stream_to_gradio_messages(
         item = stream_event.item
 
         if name == "tool_output" and isinstance(item, ToolCallOutputItem):
-            print(stream_event)
             text_content, images = _process_tool_output_for_images(item.output)
 
             output.append(
@@ -238,5 +240,4 @@ def oai_agent_stream_to_gradio_messages(
                         ),
                     )
                 )
-
     return output
