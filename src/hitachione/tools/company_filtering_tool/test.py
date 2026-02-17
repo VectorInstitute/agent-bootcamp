@@ -13,6 +13,7 @@ from pathlib import Path
 # Load .env file (project root is 5 levels up from this file)
 load_dotenv(Path(__file__).resolve().parents[4] / ".env")
 
+import os
 from tool import (
     find_relevant_symbols,
     find_relevant_sp500_symbols,
@@ -34,7 +35,8 @@ def test_symbol_extraction():
     print_section("Testing Symbol Extraction from Weaviate")
     
     print("Extracting all unique tickers from Weaviate collection...")
-    print("(Iterates through Hitachi_finance_news collection)\n")
+    collection = os.getenv('WEAVIATE_COLLECTION_NAME', 'hitachi-finance-news')
+    print(f"(Iterates through {collection} collection)\n")
     
     try:
         import time

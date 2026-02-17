@@ -1,7 +1,7 @@
 """
 Tool for finding relevant stock symbols from the Weaviate financial news knowledge base.
 
-This tool queries the Weaviate `Hitachi_finance_news` collection to retrieve unique
+This tool queries the Weaviate financial news collection to retrieve unique
 stock tickers and uses an LLM to filter them based on user queries.
 """
 
@@ -28,8 +28,8 @@ _cached_symbols: List[str] | None = None
 _cached_companies: dict[str, str] | None = None  # ticker -> company name
 _client_manager = None
 
-# Weaviate collection name
-WEAVIATE_COLLECTION = "Hitachi_finance_news"
+# Weaviate collection name (from WEAVIATE_COLLECTION_NAME env var)
+WEAVIATE_COLLECTION = os.getenv("WEAVIATE_COLLECTION_NAME", "Hitachi_finance_news")
 
 
 def get_client_manager() -> AsyncClientManager:
@@ -71,7 +71,7 @@ def get_all_symbols() -> List[str]:
     """
     Get all unique stock tickers from the Weaviate knowledge base.
 
-    Iterates through the Hitachi_finance_news collection and collects
+    Iterates through the Weaviate collection and collects
     unique ticker symbols and their corresponding company names.
 
     Returns:
@@ -254,7 +254,7 @@ TOOL_SCHEMA = {
         "name": "find_relevant_symbols",
         "description": (
             "Find relevant stock symbols from the Weaviate financial news knowledge base "
-            "(Hitachi_finance_news collection). The tool uses an LLM internally to filter "
+            "The tool uses an LLM internally to filter "
             "symbols based on the query, returning only symbols that match the specified "
             "criteria (sector, industry, time period, ranking, etc.)."
         ),
