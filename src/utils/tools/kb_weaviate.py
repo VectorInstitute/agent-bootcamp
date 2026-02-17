@@ -47,7 +47,7 @@ class AsyncWeaviateKnowledgeBase:
         self,
         async_client: WeaviateAsyncClient,
         collection_name: str,
-        num_results: int = 5,
+        num_results: int = 500,
         snippet_length: int = 1000,
         max_concurrency: int = 3,
         embedding_model_name: str = "@cf/baai/bge-m3",
@@ -107,20 +107,22 @@ class AsyncWeaviateKnowledgeBase:
 
         self.logger.info(f"Query: {keyword}; Returned matches: {len(response.objects)}")
 
-        hits = []
-        for obj in response.objects:
-            hit = {
-                "_source": {
-                    "title": obj.properties.get("title", ""),
-                    "section": obj.properties.get("section", None),
-                },
-                "highlight": {
-                    "text": [obj.properties.get("text", "")[: self.snippet_length]]
-                },
-            }
-            hits.append(hit)
+        return [response.objects]
 
-        return [_SearchResult.model_validate(_hit) for _hit in hits]
+        # hits = []
+        # for obj in response.objects:
+        #     hit = {
+        #         "_source": {
+        #             "title": obj.properties.get("title", ""),
+        #             "section": obj.properties.get("section", None),
+        #         },
+        #         "highlight": {
+        #             "text": [obj.properties.get("text", "")[: self.snippet_length]]
+        #         },
+        #     }
+        #     hits.append(hit)
+
+        # return [_SearchResult.model_validate(_hit) for _hit in hits]
 
     def _vectorize(self, text: str) -> list[float]:
         """Vectorize text using the embedding client.

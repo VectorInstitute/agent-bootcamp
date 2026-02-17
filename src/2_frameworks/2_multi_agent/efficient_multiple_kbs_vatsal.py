@@ -47,7 +47,7 @@ async def _main(
     ):
         # Run the agent in streaming mode to get and display intermediate outputs
         result_stream = agents.Runner.run_streamed(
-            main_agent,
+            kb_agent,
             input=query,
             session=session,
             max_turns=30,  # Increase max turns to support more complex queries
@@ -89,17 +89,41 @@ if __name__ == "__main__":
     kb_agent = agents.Agent(
         name="KnowledgeBaseAgent",
         instructions="""
-            You are an agent specialized in searching a knowledge base.
+            You are an agent specialized in searching a product knowledge base.
             You will receive a single search query as input.
-            Use the 'search_knowledgebase' tool to perform a search, then return a
-            JSON object with:
-            - 'summary': a concise synthesis of the retrieved information in your own words
-            - 'sources': a list of citations with {type: "kb", title: "...", section: "..."}
-            - 'no_results': true/false
-
-            If the tool returns no matches, set "no_results": true and keep "sources" empty.
+            Use the search_knowledgebase tool to perform the search.
+            Search specifically within the product_description column to identify products that match the query.
+            Return the results as:
+            A LIST of objects containing in the order it appears in the dataset:
+                - product_id
+                - product_description
+            After the list, return a separate string stating:
+                - "Total count: X"
+            where X is the number of matching product_ids.
+            Requirements:
+                -Return all matching products.
+                -If no matches are found, return an empty list: []
+                -Do not fabricate or infer information.
+                -Do not return raw search results.
+                -Do not include long quotations.
+                -Only return structured, relevant results.
+            If the tool returns no matches, return an empty LIST.
             Do NOT make up information. Do NOT return raw search results or long quotes.
         """,
+        # instructions="""
+        #     You are an agent specialized in searching a knowledge base.
+        #     You will receive a single search query as input.
+        #     Use the 'search_knowledgebase' tool to perform a search.
+        #     Use the product_description column to find products that match the query.
+        #     Then return the respective product_ids and product_decription as a LIST.
+        #     Return all of the product_ids from product_description that match.
+        #     Also return the final count of product_ids as a seperate string in the end.
+        #     If the tool returns no matches, return an empty LIST.
+        #     Do NOT make up information. Do NOT return raw search results or long quotes.
+        # """,
+
+            # LIST of product_ids that has a product_description that match the query.
+
         tools=[
             agents.function_tool(client_manager.knowledgebase.search_knowledgebase),
         ],
@@ -195,7 +219,7 @@ if __name__ == "__main__":
                 "6) the societal impacts of modern AI"
             ],
             [
-                "Compare the box office performance of 'Oppenheimer' with the third Avatar movie"
+                "Get a list of ALL product codes which has candle in its description"
             ],
         ],
         title="2.2.3: Multi-Agent Orchestrator-worker for Retrieval-Augmented Generation with Multiple Tools",
