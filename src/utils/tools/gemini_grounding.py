@@ -9,6 +9,7 @@ import backoff
 import httpx
 from pydantic import BaseModel
 from pydantic.fields import Field
+import copy
 
 
 RETRYABLE_STATUS = {429, 500, 502, 503, 504}
@@ -129,6 +130,7 @@ class GeminiGroundingWithGoogleSearch:
         response_json = response.json()
 
         candidates: list[dict[str, Any]] | None = response_json.get("candidates")
+
         grounding_metadata: dict[str, Any] | None = (
             candidates[0].get("grounding_metadata") if candidates else None
         )
@@ -205,11 +207,13 @@ def add_citations(response: dict[str, object]) -> tuple[str, dict[int, str]]:
     raw_chunks = meta.get("grounding_chunks") if isinstance(meta, dict) else []
     chunks = raw_chunks if isinstance(raw_chunks, list) else []
 
+    filtered_candidate = filter_omers_websites(candidate)
+
     citations: dict[int, str] = {}
     chunk_to_id: dict[int, int] = {}
 
     if supports and chunks:
-        citations, chunk_to_id = _collect_citations(candidate)
+        citations, chunk_to_id = _collect_citations(filtered_candidate)
 
     # Sort supports by end_index in descending order to avoid shifting issues
     # when inserting.
@@ -242,6 +246,27 @@ def add_citations(response: dict[str, object]) -> tuple[str, dict[int, str]]:
             text = text[:end_index] + citation_string + text[end_index:]
 
     return text, citations
+
+
+def filter_omers_websites(candidate: dict):
+
+    filtered_candidate = copy.deepcopy(candidate)
+
+    chunks = filtered_candidate.get("grounding_metadata", {}).get(
+        "grounding_chunks", []
+    )
+
+    filtered_chunks = [
+        chunk
+        for chunk in chunks
+        if "omers" in chunk.get("web", {}).get("title", "").lower()
+    ]
+
+    # Replace grounding_chunks with filtered version
+    if "grounding_metadata" in filtered_candidate:
+        filtered_candidate["grounding_metadata"]["grounding_chunks"] = filtered_chunks
+
+    return filtered_candidate
 
 
 def _collect_citations(candidate: dict) -> tuple[dict[int, str], dict[int, int]]:
