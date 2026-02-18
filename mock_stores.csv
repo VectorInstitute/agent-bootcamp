@@ -1,0 +1,269 @@
+banner_name,store_id,division_name
+Australia,10,Oceania
+Australia,9,Oceania
+Australia,3,Oceania
+Australia,4,Oceania
+Australia,6,Oceania
+Australia,2,Oceania
+Australia,5,Oceania
+Australia,1,Oceania
+Australia,8,Oceania
+Australia,7,Oceania
+Austria,11,Europe
+Austria,17,Europe
+Austria,16,Europe
+Austria,20,Europe
+Austria,19,Europe
+Austria,14,Europe
+Austria,15,Europe
+Austria,12,Europe
+Austria,18,Europe
+Bahrain,22,Asia
+Bahrain,26,Asia
+Bahrain,27,Asia
+Bahrain,24,Asia
+Belgium,39,Europe
+Belgium,40,Europe
+Belgium,33,Europe
+Belgium,31,Europe
+Belgium,37,Europe
+Belgium,35,Europe
+Belgium,34,Europe
+Belgium,32,Europe
+Belgium,38,Europe
+Belgium,36,Europe
+Brazil,43,South America
+Canada,60,North America
+Canada,56,North America
+Canada,53,North America
+Canada,58,North America
+Channel Islands,62,Europe
+Channel Islands,63,Europe
+Channel Islands,61,Europe
+Channel Islands,69,Europe
+Channel Islands,66,Europe
+Channel Islands,70,Europe
+Channel Islands,67,Europe
+Channel Islands,65,Europe
+Channel Islands,68,Europe
+Channel Islands,64,Europe
+Cyprus,80,Europe
+Cyprus,71,Europe
+Cyprus,77,Europe
+Cyprus,72,Europe
+Cyprus,79,Europe
+Cyprus,75,Europe
+Cyprus,76,Europe
+Cyprus,78,Europe
+Cyprus,73,Europe
+Czech Republic,84,Europe
+Czech Republic,85,Europe
+Czech Republic,83,Europe
+Czech Republic,90,Europe
+Denmark,99,Europe
+Denmark,91,Europe
+Denmark,93,Europe
+Denmark,95,Europe
+Denmark,98,Europe
+Denmark,97,Europe
+Denmark,94,Europe
+Denmark,92,Europe
+Denmark,96,Europe
+EIRE,108,Europe
+EIRE,107,Europe
+EIRE,109,Europe
+EIRE,104,Europe
+EIRE,105,Europe
+EIRE,101,Europe
+EIRE,106,Europe
+EIRE,102,Europe
+EIRE,110,Europe
+EIRE,103,Europe
+European Community,119,Europe
+European Community,113,Europe
+European Community,112,Europe
+Finland,124,Europe
+Finland,123,Europe
+Finland,128,Europe
+Finland,125,Europe
+Finland,126,Europe
+Finland,127,Europe
+Finland,129,Europe
+Finland,130,Europe
+Finland,121,Europe
+Finland,122,Europe
+France,139,Europe
+France,140,Europe
+France,134,Europe
+France,138,Europe
+France,136,Europe
+France,133,Europe
+France,135,Europe
+France,131,Europe
+France,132,Europe
+France,137,Europe
+Germany,145,Europe
+Germany,146,Europe
+Germany,150,Europe
+Germany,141,Europe
+Germany,142,Europe
+Germany,148,Europe
+Germany,149,Europe
+Germany,144,Europe
+Germany,147,Europe
+Germany,143,Europe
+Greece,158,Europe
+Greece,157,Europe
+Greece,159,Europe
+Greece,160,Europe
+Greece,153,Europe
+Hong Kong,161,Asia
+Hong Kong,168,Asia
+Hong Kong,169,Asia
+Hong Kong,167,Asia
+Hong Kong,165,Asia
+Hong Kong,164,Asia
+Hong Kong,162,Asia
+Iceland,178,Europe
+Iceland,173,Europe
+Iceland,177,Europe
+Iceland,179,Europe
+Israel,187,Asia
+Israel,185,Asia
+Israel,182,Asia
+Israel,190,Asia
+Israel,181,Asia
+Israel,189,Asia
+Italy,198,Europe
+Italy,199,Europe
+Italy,193,Europe
+Italy,195,Europe
+Italy,194,Europe
+Italy,191,Europe
+Italy,192,Europe
+Italy,196,Europe
+Italy,200,Europe
+Italy,197,Europe
+Japan,201,Asia
+Japan,208,Asia
+Japan,210,Asia
+Japan,204,Asia
+Japan,205,Asia
+Japan,206,Asia
+Japan,203,Asia
+Japan,207,Asia
+Japan,202,Asia
+Japan,209,Asia
+Lebanon,213,Asia
+Lithuania,229,Europe
+Lithuania,225,Europe
+Lithuania,221,Europe
+Malta,240,Europe
+Malta,233,Europe
+Malta,239,Europe
+Malta,236,Europe
+Netherlands,250,Europe
+Netherlands,246,Europe
+Netherlands,241,Europe
+Netherlands,247,Europe
+Netherlands,243,Europe
+Netherlands,248,Europe
+Netherlands,244,Europe
+Netherlands,245,Europe
+Netherlands,249,Europe
+Netherlands,242,Europe
+Norway,260,Europe
+Norway,251,Europe
+Norway,259,Europe
+Norway,257,Europe
+Norway,258,Europe
+Norway,256,Europe
+Norway,254,Europe
+Norway,255,Europe
+Norway,253,Europe
+Norway,252,Europe
+Poland,269,Europe
+Poland,270,Europe
+Poland,264,Europe
+Poland,267,Europe
+Poland,266,Europe
+Poland,261,Europe
+Poland,268,Europe
+Poland,265,Europe
+Poland,262,Europe
+Portugal,272,Europe
+Portugal,275,Europe
+Portugal,271,Europe
+Portugal,273,Europe
+Portugal,280,Europe
+Portugal,276,Europe
+Portugal,277,Europe
+Portugal,278,Europe
+Portugal,279,Europe
+Portugal,274,Europe
+RSA,286,Africa
+Saudi Arabia,297,Asia
+Saudi Arabia,300,Asia
+Singapore,304,Asia
+Singapore,302,Asia
+Singapore,310,Asia
+Singapore,305,Asia
+Singapore,303,Asia
+Singapore,308,Asia
+Singapore,307,Asia
+Spain,316,Europe
+Spain,320,Europe
+Spain,315,Europe
+Spain,312,Europe
+Spain,319,Europe
+Spain,317,Europe
+Spain,313,Europe
+Spain,314,Europe
+Spain,318,Europe
+Spain,311,Europe
+Sweden,326,Europe
+Sweden,328,Europe
+Sweden,329,Europe
+Sweden,323,Europe
+Sweden,324,Europe
+Sweden,330,Europe
+Sweden,322,Europe
+Sweden,327,Europe
+Sweden,321,Europe
+Sweden,325,Europe
+Switzerland,332,Europe
+Switzerland,338,Europe
+Switzerland,333,Europe
+Switzerland,331,Europe
+Switzerland,337,Europe
+Switzerland,339,Europe
+Switzerland,334,Europe
+Switzerland,336,Europe
+Switzerland,335,Europe
+Switzerland,340,Europe
+United Arab Emirates,342,Asia
+United Arab Emirates,341,Asia
+United Arab Emirates,348,Asia
+United Kingdom,353,Europe
+United Kingdom,358,Europe
+United Kingdom,354,Europe
+United Kingdom,352,Europe
+United Kingdom,356,Europe
+United Kingdom,360,Europe
+United Kingdom,351,Europe
+United Kingdom,355,Europe
+United Kingdom,359,Europe
+United Kingdom,357,Europe
+Unspecified,369,Unspecified
+Unspecified,361,Unspecified
+Unspecified,362,Unspecified
+Unspecified,363,Unspecified
+Unspecified,370,Unspecified
+Unspecified,367,Unspecified
+Unspecified,365,Unspecified
+USA,373,North America
+USA,380,North America
+USA,374,North America
+USA,375,North America
+USA,378,North America
+USA,379,North America
