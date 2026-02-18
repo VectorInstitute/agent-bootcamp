@@ -125,6 +125,11 @@ class Orchestrator:
                 f"timeframe={ctx.timeframe}, sector={ctx.sector}"
             )
 
+            # Track whether user explicitly provided entities in the prompt.
+            # If not, we should run company filtering even if KB retrieval yields
+            # noisy hints, because broad sector/list queries rely on this step.
+            explicit_entities_in_query = bool(ctx.entities)
+
         answer = SynthesizedAnswer()
 
         for iteration in range(1, self.max_iter + 1):
@@ -147,13 +152,27 @@ class Orchestrator:
                     if hint not in ctx.entities:
                         ctx.entities.append(hint)
 
-            # ── STEP 3b: Act – Company retrieval (if entities empty) ───
-            if not ctx.entities:
+            # ── STEP 3b: Act – Company retrieval for broad queries ─────
+            if not explicit_entities_in_query and iteration == 1:
                 with tracer.span("company_retrieval") as sp:
-                    ctx.observations.append("No entities yet – calling company filter")
+                    original_hints = list(ctx.entities)
+                    ctx.observations.append(
+                        "No explicit entities in prompt – calling company filter"
+                    )
                     symbols = _find_symbols(ctx.user_query)
-                    ctx.entities = symbols
-                    sp.update(output=symbols)
+                    # Use company filter as authoritative for broad queries.
+                    # Fall back to KB hints only if filter returns nothing.
+                    if symbols:
+                        ctx.entities = symbols
+                        source = "company_filter"
+                    else:
+                        ctx.entities = original_hints
+                        source = "kb_hints"
+                    sp.update(output={
+                        "symbols": symbols,
+                        "kb_hints": original_hints,
+                        "source": source,
+                    })
 
             if not ctx.entities:
                 ctx.uncertainties.append("Could not identify any tickers")

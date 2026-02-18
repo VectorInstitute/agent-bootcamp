@@ -10,6 +10,12 @@ from pathlib import Path
 import os
 import json
 import asyncio
+import re
+import difflib
+import csv
+import io
+import logging
+from urllib import request
 
 import weaviate
 from weaviate.auth import AuthApiKey
@@ -23,6 +29,9 @@ import sys
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 from utils.client_manager import AsyncClientManager
 
+
+logger = logging.getLogger(__name__)
+
 # Cache for symbols and company mapping
 _cached_symbols: List[str] | None = None
 _cached_companies: dict[str, str] | None = None  # ticker -> company name
@@ -30,6 +39,103 @@ _client_manager = None
 
 # Weaviate collection name (from WEAVIATE_COLLECTION_NAME env var)
 WEAVIATE_COLLECTION = os.getenv("WEAVIATE_COLLECTION_NAME", "Hitachi_finance_news")
+SP500_CONSTITUENTS_URL = os.getenv(
+    "SP500_CONSTITUENTS_URL",
+    "https://datahub.io/core/s-and-p-500-companies/r/constituents.csv",
+)
+SP500_UNIVERSE_ENABLED = os.getenv("SP500_UNIVERSE_ENABLED", "true").lower() == "true"
+
+_COMMON_TYPO_FIXES = {
+    "enery": "energy",
+    "techonology": "technology",
+    "teh": "the",
+}
+
+_SECTOR_TERMS = [
+    "energy",
+    "technology",
+    "tech",
+    "automotive",
+    "healthcare",
+    "financial",
+    "finance",
+    "retail",
+]
+
+_SECTOR_TICKER_MAP = {
+    "energy": {"TSLA"},
+    "technology": {"AAPL", "AMZN", "GOOGL", "META", "MSFT", "NVDA"},
+    "tech": {"AAPL", "AMZN", "GOOGL", "META", "MSFT", "NVDA"},
+    "automotive": {"TSLA"},
+    "financial": {"JPM", "V"},
+    "finance": {"JPM", "V"},
+    "retail": {"AMZN", "WMT"},
+}
+
+
+def _normalize_query(query: str) -> str:
+    """Normalize obvious typos in user queries (e.g., 'enery' -> 'energy')."""
+    normalized = query
+
+    for wrong, right in _COMMON_TYPO_FIXES.items():
+        normalized = re.sub(rf"\b{re.escape(wrong)}\b", right, normalized, flags=re.IGNORECASE)
+
+    words = normalized.split()
+    fixed_words: list[str] = []
+    for word in words:
+        clean = re.sub(r"[^a-zA-Z]", "", word).lower()
+        if len(clean) >= 5 and clean not in _SECTOR_TERMS:
+            matches = difflib.get_close_matches(clean, _SECTOR_TERMS, n=1, cutoff=0.86)
+            if matches:
+                fixed_words.append(word.lower().replace(clean, matches[0]))
+                continue
+        fixed_words.append(word)
+
+    return " ".join(fixed_words)
+
+
+def _deterministic_sector_filter(query: str, symbols: List[str]) -> List[str]:
+    """Apply deterministic sector-based filtering when sector terms are present."""
+    q = query.lower()
+    symbol_set = set(symbols)
+    matched: set[str] = set()
+
+    for sector, sector_symbols in _SECTOR_TICKER_MAP.items():
+        if re.search(rf"\b{re.escape(sector)}\b", q):
+            matched |= (sector_symbols & symbol_set)
+
+    return sorted(matched)
+
+
+def _has_explicit_sector_term(query: str) -> bool:
+    """Whether the query explicitly mentions a known sector term."""
+    q = query.lower()
+    return any(re.search(rf"\b{re.escape(sector)}\b", q) for sector in _SECTOR_TICKER_MAP)
+
+
+def _load_sp500_constituents() -> tuple[list[str], dict[str, str]]:
+    """Load S&P 500 constituents (ticker + company) from a CSV source."""
+    try:
+        with request.urlopen(SP500_CONSTITUENTS_URL, timeout=10) as resp:
+            raw = resp.read().decode("utf-8", errors="ignore")
+
+        reader = csv.DictReader(io.StringIO(raw))
+        symbols: set[str] = set()
+        companies: dict[str, str] = {}
+
+        for row in reader:
+            symbol = (row.get("Symbol") or "").strip().upper()
+            name = (row.get("Name") or "").strip()
+            if not symbol:
+                continue
+            symbols.add(symbol)
+            if name:
+                companies[symbol] = name
+
+        return sorted(symbols), companies
+    except Exception as exc:
+        logger.warning("Failed to load S&P500 constituents from %s: %s", SP500_CONSTITUENTS_URL, exc)
+        return [], {}
 
 
 def get_client_manager() -> AsyncClientManager:
@@ -96,9 +202,18 @@ def get_all_symbols() -> List[str]:
             ticker = obj.properties.get("ticker")
             company = obj.properties.get("company")
             if ticker:
+                ticker = str(ticker).upper()
                 tickers.add(ticker)
                 if company and ticker not in companies:
-                    companies[ticker] = company
+                    companies[ticker] = str(company)
+
+        # Merge in full S&P500 constituents universe so retrieval is not limited
+        # to currently indexed Weaviate objects.
+        if SP500_UNIVERSE_ENABLED:
+            sp500_symbols, sp500_companies = _load_sp500_constituents()
+            tickers.update(sp500_symbols)
+            for symbol, name in sp500_companies.items():
+                companies.setdefault(symbol, name)
 
         _cached_symbols = sorted(tickers)
         _cached_companies = companies
@@ -227,20 +342,47 @@ def find_relevant_symbols(query: str, use_llm_filter: bool = True) -> List[str]:
         Sorted list of filtered stock symbols relevant to the query.
     """
     all_symbols = get_all_symbols()
+    normalized_query = _normalize_query(query)
+
+    deterministic = _deterministic_sector_filter(normalized_query, all_symbols)
 
     if not use_llm_filter:
-        return all_symbols
+        # For non-LLM mode, prefer deterministic matches when available.
+        return deterministic or all_symbols
 
     # Check if API key is available
     api_key = os.getenv("OPENAI_API_KEY") or os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
     if not api_key:
         print("Warning: No LLM API key set, returning all symbols without filtering")
-        return all_symbols
+        return deterministic or all_symbols
 
     # Use LLM to filter symbols based on query
-    filtered = filter_symbols_with_llm(query, all_symbols)
+    filtered = filter_symbols_with_llm(normalized_query, all_symbols)
 
-    return sorted(filtered)
+    explicit_sector = _has_explicit_sector_term(normalized_query)
+
+    # If the user explicitly asked for a known sector, constrain to that sector
+    # to avoid model drift (e.g. TSLA leaking into "tech").
+    # Only hard-constrain to deterministic matches when that rule has enough
+    # coverage. A single-ticker deterministic hit (e.g., energy -> TSLA) is too
+    # narrow for broad sector queries and should not suppress LLM discoveries.
+    if explicit_sector and deterministic and len(deterministic) >= 2:
+        constrained = sorted(set(filtered) & set(deterministic))
+        if constrained:
+            return constrained
+        return deterministic
+
+    # Otherwise combine LLM output with deterministic hints so obvious matches
+    # are not dropped by the model.
+    merged = sorted(set(filtered) | set(deterministic))
+
+    # Prefer merged candidate set; fall back gracefully if model returned nothing.
+    if merged:
+        return merged
+    if deterministic:
+        return deterministic
+
+    return all_symbols
 
 
 # Keep backward-compatible alias
