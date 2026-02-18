@@ -96,6 +96,9 @@ class Tracer:
         sp = _Span.create(name, parent=self._root, **kwargs)
         try:
             yield sp
+        except Exception as exc:
+            sp.update(level="ERROR", status_message=str(exc))
+            raise
         finally:
             sp.finish()
 

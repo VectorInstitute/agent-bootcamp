@@ -1,8 +1,9 @@
 """Reviewer Agent – deterministic quality gate for synthesized answers.
 
 Checks:
-  1. Entity coverage: were all requested entities actually researched?
-  2. Score completeness: does each entity have sentiment + performance?
+  1. Entity coverage: were requested entities actually researched?
+     For broad queries (>10 entities), requires ≥80% coverage instead of 100%.
+  2. Score completeness: does each researched entity have sentiment + performance?
   3. Answer quality: is the markdown non-empty and reasonably long?
   4. Confidence threshold: is overall confidence above the minimum?
 
@@ -20,6 +21,10 @@ from ..models.schemas import (
 
 logger = logging.getLogger(__name__)
 
+# When entity count exceeds this, switch from 100% to 80% coverage check
+_BROAD_QUERY_THRESHOLD = 10
+_BROAD_COVERAGE_RATIO = 0.8
+
 
 class ReviewerAgent:
     """Deterministic checks – no LLM calls, fast and predictable."""
@@ -30,8 +35,21 @@ class ReviewerAgent:
 
         # 1. Entity coverage
         researched = {cr.ticker for cr in answer.raw_research}
-        for entity in ctx.entities:
-            if entity.upper() not in researched:
+        total_entities = len(ctx.entities)
+        not_researched = [e for e in ctx.entities if e.upper() not in researched]
+
+        if total_entities > _BROAD_QUERY_THRESHOLD:
+            # Broad query: require ≥80% coverage
+            coverage_ratio = 1.0 - (len(not_researched) / total_entities) if total_entities else 1.0
+            if coverage_ratio < _BROAD_COVERAGE_RATIO:
+                missing.append(
+                    f"Entity coverage {coverage_ratio:.0%} below "
+                    f"{_BROAD_COVERAGE_RATIO:.0%} threshold "
+                    f"({len(not_researched)}/{total_entities} not researched)"
+                )
+        else:
+            # Narrow query: require 100% coverage
+            for entity in not_researched:
                 missing.append(f"Entity {entity} not researched")
 
         # 2. Score completeness

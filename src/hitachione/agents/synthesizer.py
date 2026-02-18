@@ -84,6 +84,9 @@ def _estimate_confidence(research: list[CompanyResearch]) -> float:
 class SynthesizerAgent:
     """Compose a user-facing answer from per-entity research."""
 
+    def __init__(self):
+        self._llm = OpenAI(base_url=OPENAI_BASE_URL, api_key=OPENAI_API_KEY)
+
     def run(
         self,
         ctx: TaskContext,
@@ -113,8 +116,7 @@ class SynthesizerAgent:
         )
 
         try:
-            client = OpenAI(base_url=OPENAI_BASE_URL, api_key=OPENAI_API_KEY)
-            resp = client.chat.completions.create(
+            resp = self._llm.chat.completions.create(
                 model=WORKER_MODEL,
                 messages=[
                     {"role": "system", "content": _SYSTEM},
