@@ -123,17 +123,17 @@ async def get_projection_plot(
     )
 
 
-viewer = gr.Interface(
-    fn=get_projection_plot,
-    inputs=[
-        gr.Textbox(label="Dataset name"),
-        gr.Radio(["tsne", "pca"], label="Dimensionality Reduction Method"),
-        gr.Number(value=18, label="Number of rows to plot", minimum=1),
-    ],
-    outputs=gr.Plot(label="2D Embedding Plot"),
-    title="3.2 Text Embedding Visualizer",
-    description="Select a method to visualize 256-D embeddings of text snippets.",
-)
-
 if __name__ == "__main__":
+    viewer = gr.Interface(
+        fn=get_projection_plot,
+        inputs=[
+            gr.Textbox(label="Dataset name"),
+            gr.Radio(["tsne", "pca"], label="Dimensionality Reduction Method"),
+            gr.Number(value=18, label="Number of rows to plot", minimum=1),
+        ],
+        outputs=gr.Plot(label="2D Embedding Plot"),
+        title="3.2 Text Embedding Visualizer",
+        description="Select a method to visualize 256-D embeddings of text snippets.",
+    )
+
     viewer.launch(share=True)

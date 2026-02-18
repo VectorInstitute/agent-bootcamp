@@ -1,13 +1,18 @@
 """Tools for integrating with the Gradio chatbot UI."""
 
+import base64
+import json
+from io import BytesIO
 from typing import TYPE_CHECKING
 
+import gradio as gr
 from agents import StreamEvent, stream_events
 from agents.items import MessageOutputItem, RunItem, ToolCallItem, ToolCallOutputItem
 from gradio.components.chatbot import ChatMessage, MetadataDict
 from openai.types.responses import ResponseFunctionToolCall, ResponseOutputText
 from openai.types.responses.response_completed_event import ResponseCompletedEvent
 from openai.types.responses.response_output_message import ResponseOutputMessage
+from PIL import Image
 
 
 if TYPE_CHECKING:
@@ -29,6 +34,32 @@ def gradio_messages_to_oai_chat(
         output.append({"role": message.role, "content": message_content})  # type: ignore[arg-type,misc]
 
     return output
+
+
+def _process_tool_output_for_images(output_str: str) -> tuple[str, list[Image.Image]]:
+    """Extract images from tool output JSON if present.
+
+    Returns tuple of (text_content, list_of_images).
+    """
+    images = []
+    try:
+        # Try to parse as JSON to extract images
+        output_data = json.loads(output_str)
+
+        # Check if results contain PNG data
+        if isinstance(output_data, dict) and "results" in output_data:
+            for result in output_data["results"]:
+                if isinstance(result, dict) and "png" in result:
+                    # Decode base64 PNG
+                    png_data = result["png"]
+                    img_bytes = base64.b64decode(png_data)
+                    img = Image.open(BytesIO(img_bytes))
+                    images.append(img)
+
+        return output_str, images
+    except (json.JSONDecodeError, Exception):
+        # If not JSON or error parsing, return as-is
+        return output_str, images
 
 
 def _oai_response_output_item_to_gradio(
@@ -57,16 +88,33 @@ def _oai_response_output_item_to_gradio(
         call_id = item.raw_item.get("call_id", None)
 
         if isinstance(function_output, str):
-            return [
+            text_content, images = _process_tool_output_for_images(function_output)
+            messages = [
                 ChatMessage(
                     role="assistant",
-                    content=f"> {function_output}\n\n`{call_id}`",
+                    content=f"> {text_content}\n\n`{call_id}`",
                     metadata={
                         "title": "*Tool call output*",
                         "status": "done",  # This makes it collapsed by default
                     },
                 )
             ]
+
+            # Add images as separate messages
+            for img in images:
+                messages.append(
+                    ChatMessage(
+                        role="assistant",
+                        content=gr.Image(
+                            img,
+                            format="png",
+                            container=False,
+                            interactive=True,
+                            buttons=["download"],
+                        ),
+                    )
+                )
+            return messages
 
     if isinstance(item, MessageOutputItem):
         message_content = item.raw_item
@@ -121,6 +169,7 @@ def oai_agent_stream_to_gradio_messages(
     if isinstance(stream_event, stream_events.RawResponsesStreamEvent):
         data = stream_event.data
         if isinstance(data, ResponseCompletedEvent):
+            print(stream_event)
             # The completed event may contain multiple output messages,
             # including tool calls and final outputs.
             # If there is at least one tool call, we mark the response as a thought.
@@ -161,15 +210,33 @@ def oai_agent_stream_to_gradio_messages(
         item = stream_event.item
 
         if name == "tool_output" and isinstance(item, ToolCallOutputItem):
+            print(stream_event)
+            text_content, images = _process_tool_output_for_images(item.output)
+
             output.append(
                 ChatMessage(
                     role="assistant",
-                    content=f"```\n{item.output}\n```",
+                    content=f"```\n{text_content}\n```",
                     metadata={
                         "title": "*Tool call output*",
                         "status": "done",  # This makes it collapsed by default
                     },
                 )
             )
+
+            # Add images as separate messages
+            for img in images:
+                output.append(
+                    ChatMessage(
+                        role="assistant",
+                        content=gr.Image(
+                            img,
+                            format="png",
+                            container=False,
+                            interactive=True,
+                            buttons=["download"],
+                        ),
+                    )
+                )
 
     return output

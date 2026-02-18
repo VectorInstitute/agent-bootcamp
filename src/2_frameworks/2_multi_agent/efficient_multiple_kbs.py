@@ -7,6 +7,7 @@ import agents
 import gradio as gr
 from dotenv import load_dotenv
 from gradio.components.chatbot import ChatMessage
+from langfuse import propagate_attributes
 
 from src.utils import (
     oai_agent_stream_to_gradio_messages,
@@ -36,9 +37,14 @@ async def _main(
     session = get_or_create_session(history, session_state)
 
     # Use the main agent as the entry point- not the worker agent.
-    with langfuse_client.start_as_current_span(name="Agents-SDK-Trace") as span:
-        span.update(input=query)
-
+    with (
+        langfuse_client.start_as_current_observation(
+            name="Orchestrator-Worker", as_type="agent", input=query
+        ) as obs,
+        propagate_attributes(
+            session_id=session.session_id  # Propagate session_id to all child observations
+        ),
+    ):
         # Run the agent in streaming mode to get and display intermediate outputs
         result_stream = agents.Runner.run_streamed(
             main_agent,
@@ -52,7 +58,7 @@ async def _main(
             if len(turn_messages) > 0:
                 yield turn_messages
 
-        span.update(output=result_stream.final_output)
+        obs.update(output=result_stream.final_output)
 
 
 if __name__ == "__main__":
@@ -173,6 +179,9 @@ if __name__ == "__main__":
         model=agents.OpenAIChatCompletionsModel(
             model=planner_model, openai_client=client_manager.openai_client
         ),
+        # NOTE: enabling parallel tool calls here can sometimes lead to issues with
+        # with invalid arguments being passed to the search agent.
+        model_settings=agents.ModelSettings(parallel_tool_calls=False),
     )
 
     demo = gr.ChatInterface(
@@ -180,19 +189,13 @@ if __name__ == "__main__":
         **COMMON_GRADIO_CONFIG,
         examples=[
             [
-                "At which university did the SVP Software Engineering"
-                " at Apple (as of June 2025) earn their engineering degree?"
+                "Write a structured report on the history of AI, covering: "
+                "1) the start in the 50s, 2) the first AI winter, 3) the second AI winter, "
+                "4) the modern AI boom, 5) the evolution of AI hardware, and "
+                "6) the societal impacts of modern AI"
             ],
             [
-                "How does the annual growth in the 50th-percentile income "
-                "in the US compare with that in Canada?",
-            ],
-            [
-                "Provide a complete list of all countries that have a population "
-                "over 100 million in 2026, that contain over 500 billion cubic meters "
-                "of internal fresh water for the year 2021, and have a mortality rate "
-                "less than the birth rate for the year 2021. The order of the list "
-                "should be based on the largest population size in 2026."
+                "Compare the box office performance of 'Oppenheimer' with the third Avatar movie"
             ],
         ],
         title="2.2.3: Multi-Agent Orchestrator-worker for Retrieval-Augmented Generation with Multiple Tools",

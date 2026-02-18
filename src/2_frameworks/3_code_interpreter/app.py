@@ -13,17 +13,19 @@ import agents
 import gradio as gr
 from dotenv import load_dotenv
 from gradio.components.chatbot import ChatMessage
+from langfuse import propagate_attributes
 
 from src.utils import (
     CodeInterpreter,
     oai_agent_stream_to_gradio_messages,
-    pretty_print,
     set_up_logging,
 )
 from src.utils.agent_session import get_or_create_session
 from src.utils.client_manager import AsyncClientManager
 from src.utils.gradio import COMMON_GRADIO_CONFIG
+from src.utils.langfuse.oai_sdk_setup import setup_langfuse_tracer
 from src.utils.langfuse.shared_client import langfuse_client
+from src.utils.pretty_printing import pretty_print
 
 
 CODE_INTERPRETER_INSTRUCTIONS = """\
@@ -35,7 +37,10 @@ You can access the local filesystem using this tool. \
 Instead of asking the user for file inputs, you should try to find the file \
 using this tool.
 
-Recommended packages: Pandas, Numpy, SymPy, Scikit-learn.
+Recommended packages: Pandas, Numpy, SymPy, Scikit-learn, Matplotlib, Seaborn.
+
+Use Matplotlib to create visualizations. Make sure to call `plt.show()` so that
+the plot is captured and returned to the user.
 
 You can also run Jupyter-style shell commands (e.g., `!pip freeze`)
 but you won't be able to install packages.
@@ -54,9 +59,14 @@ async def _main(
     # previous turns in the conversation
     session = get_or_create_session(history, session_state)
 
-    with langfuse_client.start_as_current_span(name="Agents-SDK-Trace") as span:
-        span.update(input=query)
-
+    with (
+        langfuse_client.start_as_current_observation(
+            name="Code-Interpreter-Agent", as_type="agent", input=query
+        ) as obs,
+        propagate_attributes(
+            session_id=session.session_id  # Propagate session_id to all child observations
+        ),
+    ):
         # Run the agent in streaming mode to get and display intermediate outputs
         result_stream = agents.Runner.run_streamed(
             main_agent, input=query, session=session
@@ -67,7 +77,7 @@ async def _main(
             if len(turn_messages) > 0:
                 yield turn_messages
 
-        span.update(output=result_stream.final_output)
+        obs.update(output=result_stream.final_output)
 
     pretty_print(turn_messages)
     yield turn_messages
@@ -80,6 +90,7 @@ if __name__ == "__main__":
     load_dotenv(verbose=True)
 
     set_up_logging()
+    setup_langfuse_tracer()
 
     # Initialize client manager
     # This class initializes the OpenAI and Weaviate async clients, as well as the
@@ -100,8 +111,7 @@ if __name__ == "__main__":
         instructions=CODE_INTERPRETER_INSTRUCTIONS,
         tools=[
             agents.function_tool(
-                code_interpreter.run_code,
-                name_override="code_interpreter",
+                code_interpreter.run_code, name_override="code_interpreter"
             )
         ],
         model=agents.OpenAIChatCompletionsModel(

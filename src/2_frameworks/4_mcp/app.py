@@ -12,6 +12,7 @@ import gradio as gr
 from agents.mcp import MCPServerStdio, create_static_tool_filter
 from dotenv import load_dotenv
 from gradio.components.chatbot import ChatMessage
+from langfuse import propagate_attributes
 
 from src.utils import (
     oai_agent_stream_to_gradio_messages,
@@ -21,6 +22,7 @@ from src.utils import (
 from src.utils.agent_session import get_or_create_session
 from src.utils.client_manager import AsyncClientManager
 from src.utils.gradio import COMMON_GRADIO_CONFIG
+from src.utils.langfuse.oai_sdk_setup import setup_langfuse_tracer
 from src.utils.langfuse.shared_client import langfuse_client
 
 
@@ -43,9 +45,14 @@ async def _main(
         ["git", "rev-parse", "--show-toplevel"], text=True
     ).strip()
 
-    with langfuse_client.start_as_current_span(name="Agents-SDK-Trace") as span:
-        span.update(input=query)
-
+    with (
+        langfuse_client.start_as_current_observation(
+            name="Git-Agent", as_type="agent", input=query
+        ) as obs,
+        propagate_attributes(
+            session_id=session.session_id  # Propagate session_id to all child observations
+        ),
+    ):
         async with MCPServerStdio(
             name="Git server",
             params={
@@ -74,7 +81,7 @@ async def _main(
                 if len(turn_messages) > 0:
                     yield turn_messages
 
-        span.update(output=result_stream.final_output)
+        obs.update(output=result_stream.final_output)
 
     pretty_print(turn_messages)
     yield turn_messages
@@ -87,6 +94,7 @@ if __name__ == "__main__":
     load_dotenv(verbose=True)
 
     set_up_logging()
+    setup_langfuse_tracer()
 
     # Initialize client manager
     # This class initializes the OpenAI and Weaviate async clients, as well as the
