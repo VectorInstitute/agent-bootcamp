@@ -66,6 +66,7 @@ class TestReviewerAgent:
         ctx = _make_ctx("AAPL")
         fb = self.reviewer.run(ctx, _make_answer([cr]))
         assert fb.ok is False
+        assert fb.retriable is True
         assert any("sentiment" in m.lower() for m in fb.missing)
 
     def test_missing_performance_score(self):
@@ -74,6 +75,7 @@ class TestReviewerAgent:
         ctx = _make_ctx("AAPL")
         fb = self.reviewer.run(ctx, _make_answer([cr]))
         assert fb.ok is False
+        assert fb.retriable is True
         assert any("performance" in m.lower() for m in fb.missing)
 
     # ── answer quality ──────────────────────────────────────────────────
@@ -141,3 +143,56 @@ class TestReviewerAgent:
         fb = self.reviewer.run(ctx, _make_answer(researched))
         assert fb.ok is False
         assert any("coverage" in m.lower() for m in fb.missing)
+
+    # ── no-KB-data detection (not retriable) ────────────────────────
+
+    def test_no_kb_data_not_retriable(self):
+        """When tools return 'No data found in the knowledge base', issues are not retriable."""
+        cr = CompanyResearch(
+            ticker="XOM",
+            sentiment={
+                "rating": None,
+                "label": "unknown",
+                "rationale": "No data found for ticker XOM in the knowledge base.",
+            },
+            performance={
+                "performance_score": None,
+                "outlook": "Unknown",
+                "justification": "No data found for ticker XOM in the knowledge base.",
+            },
+        )
+        ctx = _make_ctx("XOM")
+        fb = self.reviewer.run(ctx, _make_answer([cr], confidence=0.0))
+        assert fb.ok is False
+        assert fb.retriable is False
+        # Missing items should mention "knowledge base", NOT "missing ... rating"
+        assert all("knowledge base" in m.lower() or "confidence" in m.lower()
+                   for m in fb.missing)
+
+    def test_mixed_kb_data_and_error_is_retriable(self):
+        """If some tickers have no KB data and others have transient errors, retriable=True."""
+        cr_ok = CompanyResearch(
+            ticker="AAPL",
+            sentiment={"rating": 8, "label": "Positive"},
+            performance={"performance_score": 7, "outlook": "Bullish"},
+        )
+        cr_no_kb = CompanyResearch(
+            ticker="XOM",
+            sentiment={
+                "rating": None,
+                "rationale": "No data found for ticker XOM in the knowledge base.",
+            },
+            performance={
+                "performance_score": None,
+                "justification": "No data found for ticker XOM in the knowledge base.",
+            },
+        )
+        cr_error = CompanyResearch(
+            ticker="META",
+            sentiment={},  # transient error – no rationale
+            performance={"performance_score": 7, "outlook": "Bullish"},
+        )
+        ctx = _make_ctx("AAPL", "XOM", "META")
+        fb = self.reviewer.run(ctx, _make_answer([cr_ok, cr_no_kb, cr_error]))
+        assert fb.ok is False
+        assert fb.retriable is True  # META’s missing sentiment IS retriable

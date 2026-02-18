@@ -87,5 +87,6 @@ class ReviewFeedback:
     """Output of the Reviewer agent."""
 
     ok: bool = False
+    retriable: bool = True  # False when issues are unfixable (e.g. no KB data)
     missing: list[str] = field(default_factory=list)
     notes: str = ""

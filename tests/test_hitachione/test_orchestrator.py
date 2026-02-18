@@ -27,9 +27,10 @@ def _ok_feedback():
     return ReviewFeedback(ok=True, missing=[], notes="All checks passed")
 
 
-def _bad_feedback(missing=None):
+def _bad_feedback(missing=None, retriable=True):
     return ReviewFeedback(
         ok=False,
+        retriable=retriable,
         missing=missing or ["AAPL not researched"],
         notes="Entity coverage incomplete",
     )
@@ -186,11 +187,58 @@ class TestReflectionLoop:
         orch.synthesizer.run.return_value = _quick_answer(confidence=0.3, markdown="Meh")
 
         orch.reviewer = MagicMock()
-        orch.reviewer.run.return_value = _bad_feedback()
+        orch.reviewer.run.return_value = _bad_feedback(retriable=True)
 
         answer = orch.run("TSLA outlook")
         assert any("incomplete" in c.lower() or "iteration" in c.lower() for c in answer.caveats)
         assert orch.reviewer.run.call_count == 2
+
+    @patch.object(Orchestrator, "_parse_intent")
+    def test_non_retriable_stops_early(self, mock_parse):
+        """If reviewer says issues are NOT retriable (no KB data), stop on iteration 1."""
+        def parse_side_effect(ctx):
+            ctx.intent = Intent.RANK
+            ctx.entities = ["XOM", "CVX"]
+            ctx.timeframe = ""
+            ctx.sector = "oil"
+
+        mock_parse.side_effect = parse_side_effect
+
+        orch = Orchestrator(max_iterations=3)
+        orch.kb_agent = MagicMock()
+        orch.kb_agent.run.return_value = {
+            "aliases": {}, "entity_hints": [], "summaries": [],
+        }
+
+        cr_xom = CompanyResearch(
+            ticker="XOM",
+            sentiment={"rating": None, "rationale": "No data found for ticker XOM in the knowledge base."},
+            performance={"performance_score": None, "justification": "No data found for ticker XOM in the knowledge base."},
+        )
+        cr_cvx = CompanyResearch(
+            ticker="CVX",
+            sentiment={"rating": None, "rationale": "No data found for ticker CVX in the knowledge base."},
+            performance={"performance_score": None, "justification": "No data found for ticker CVX in the knowledge base."},
+        )
+        orch.researcher = MagicMock()
+        orch.researcher.run.return_value = [cr_xom, cr_cvx]
+
+        ans = _quick_answer(confidence=0.0, markdown="No data available for these tickers.")
+        ans.raw_research = [cr_xom, cr_cvx]
+        orch.synthesizer = MagicMock()
+        orch.synthesizer.run.return_value = ans
+
+        # Don't mock reviewer – let the real reviewer run to verify retriable=False
+        from src.hitachione.agents.reviewer import ReviewerAgent
+        orch.reviewer = ReviewerAgent()
+
+        answer = orch.run("List oil stocks")
+        # Should stop on iteration 1 (no retry loop)
+        assert orch.researcher.run.call_count == 1
+        # Should NOT have "max iterations" caveat
+        assert not any("iteration" in c.lower() for c in answer.caveats)
+        # Should have "knowledge base" caveat
+        assert any("knowledge base" in c.lower() for c in answer.caveats)
 
 
 # ── Company retrieval gating ────────────────────────────────────────────

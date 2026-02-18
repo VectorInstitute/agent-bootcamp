@@ -233,6 +233,20 @@ class Orchestrator:
                 logger.info("Reviewer OK – stopping")
                 break
 
+            # If the issues are not retriable (e.g. data simply does not
+            # exist in the KB), stop immediately – looping won't help.
+            if not feedback.retriable:
+                logger.info(
+                    "Reviewer flagged %d non-retriable issues – stopping",
+                    len(feedback.missing),
+                )
+                if not any("knowledge base" in c.lower() for c in answer.caveats):
+                    answer.caveats.append(
+                        "No data available in the knowledge base for some "
+                        "or all of the requested tickers."
+                    )
+                break
+
             if iteration < self.max_iter:
                 # Reflect: try to address missing items
                 with tracer.span("reflection") as sp:
