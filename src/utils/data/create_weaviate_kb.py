@@ -9,7 +9,7 @@ import click
 import datasets
 import weaviate
 import weaviate.classes.config as wc
-from datasets import Features, Sequence, Value, load_dataset
+from datasets import Features, List, Sequence, Value, load_dataset
 from dotenv import load_dotenv
 from openai import AsyncOpenAI, OpenAIError
 from weaviate.classes.config import DataType as WDataType
@@ -252,6 +252,22 @@ async def main(
             if isinstance(dataset.features[col], dict) or "Unnamed" in col
         ]
     )
+
+    # Remove columns where type is `Value("null")` or `List(Value("null"))`
+    dataset = dataset.remove_columns(
+        [
+            col
+            for col in dataset.column_names
+            if isinstance(dataset.features[col], Value)
+            and dataset.features[col].dtype == "null"
+            or (
+                isinstance(dataset.features[col], List)
+                and isinstance(dataset.features[col].feature, Value)
+                and dataset.features[col].feature.dtype == "null"
+            )
+        ]
+    )
+
     assert "text" in dataset.column_names, "Dataset must contain a 'text' column"
 
     # Create Weaviate Client
