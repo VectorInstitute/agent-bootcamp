@@ -10,7 +10,7 @@ Overview:
 Example:
 ```
 uv run --env-file .env implementations/3_evals/2_synthetic_data/synthesize_data_e2b.py \
---langfuse_dataset_name e2b-synthetic-20251113-1a \
+--langfuse_dataset_name e2b-synthetic \
 --limit 36 \
 --max_concurrency 20
 ```
@@ -37,6 +37,11 @@ from aieng.agents.tools import CodeInterpreter
 from dotenv import load_dotenv
 from rich.progress import track
 
+
+load_dotenv(verbose=True)
+
+# Set logging level and suppress some noisy logs from dependencies
+set_up_logging()
 
 SYSTEM_MESSAGE = """\
 Example questions: \
@@ -99,8 +104,7 @@ async def generate_synthetic_test_cases(
                 input="Generate test question-answer pairs based on files under /data",
             )
             structured_response = await agents.Runner.run(
-                structured_output_agent,
-                input=raw_response.final_output,
+                structured_output_agent, input=raw_response.final_output
             )
 
         return structured_response.final_output_as(list[_SyntheticTestCase])
@@ -115,10 +119,6 @@ if __name__ == "__main__":
     parser.add_argument("--limit", type=int, default=18)
     parser.add_argument("--max_concurrency", type=int, default=3)
     args = parser.parse_args()
-
-    load_dotenv(verbose=True)
-
-    set_up_logging()
 
     client_manager = AsyncClientManager()
     setup_langfuse_tracer()
@@ -172,14 +172,19 @@ if __name__ == "__main__":
     dataset_name_hash = get_dataset_url_hash(args.langfuse_dataset_name)
 
     # Create langfuse dataset and upload.
-    langfuse_client.create_dataset(
-        name=args.langfuse_dataset_name,
-        description=f"[{dataset_name_hash}] Synthetic data",
-        metadata={
-            "name_hash": dataset_name_hash,
-            "type": "synthetic_benchmark",
-        },
-    )
+    try:
+        langfuse_client.create_dataset(
+            name=args.langfuse_dataset_name,
+            description=f"[{dataset_name_hash}] Synthetic data",
+            metadata={"name_hash": dataset_name_hash, "type": "synthetic_benchmark"},
+        )
+    except Exception as exc:
+        # We only continue if the dataset can be retrieved
+        try:
+            langfuse_client.get_dataset(args.langfuse_dataset_name)
+            print(f"Dataset {args.langfuse_dataset_name} already exists; continuing.")
+        except Exception as e:
+            raise exc from e
 
     # Run generation async
     semaphore = asyncio.Semaphore(args.max_concurrency)

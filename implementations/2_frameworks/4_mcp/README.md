@@ -2,8 +2,7 @@
 
 This folder introduces use of Model Context Protocol (MCP) Servers to allow agents to access data and tools. The `mcp-server-git` MCP server is provided to the agent with limited tool use so it can use `git` commands in the repo.
 
-
-# Running
+## Running
 
 ```bash
 uv run --env-file .env gradio implementations/2_frameworks/4_mcp/app.py

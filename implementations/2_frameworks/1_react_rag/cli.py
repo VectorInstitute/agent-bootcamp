@@ -1,7 +1,6 @@
 """Non-Interactive Example of OpenAI Agent SDK for Knowledge Retrieval."""
 
 import asyncio
-import logging
 
 from agents import (
     Agent,
@@ -10,10 +9,16 @@ from agents import (
     Runner,
     function_tool,
 )
-from aieng.agents import pretty_print
+from aieng.agents import pretty_print, set_up_logging
 from aieng.agents.client_manager import AsyncClientManager
 from aieng.agents.prompts import REACT_INSTRUCTIONS
 from dotenv import load_dotenv
+
+
+load_dotenv(verbose=True)
+
+# Set logging level and suppress some noisy logs from dependencies
+set_up_logging()
 
 
 async def _main(query: str) -> None:
@@ -54,10 +59,6 @@ async def _main(query: str) -> None:
 
 
 if __name__ == "__main__":
-    load_dotenv(verbose=True)
-
-    logging.basicConfig(level=logging.INFO)
-
     no_tracing_config = RunConfig(tracing_disabled=True)
 
     # Initialize client manager

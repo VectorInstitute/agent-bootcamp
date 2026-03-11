@@ -48,7 +48,7 @@ In that case you can verify that the API keys work by running integration tests 
 uv run --env-file .env pytest -sv tests/tool_tests/test_integration.py
 ```
 
-## Reference Implementations
+## Running the Reference Implementations
 
 For "Gradio App" reference implementations, running the script would print out a "public URL" ending in `gradio.live` (might take a few seconds to appear.) To access the gradio app with the full streaming capabilities, copy and paste this `gradio.live` URL into a new browser tab.
 

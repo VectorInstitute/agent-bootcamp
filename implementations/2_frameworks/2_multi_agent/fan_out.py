@@ -27,9 +27,13 @@ import datasets
 import openai
 import pydantic
 from aieng.agents import gather_with_progress, rate_limited, set_up_logging
+from aieng.agents.async_utils import register_async_cleanup
 from aieng.agents.client_manager import AsyncClientManager
 from aieng.agents.langfuse import langfuse_client, setup_langfuse_tracer
 
+
+# Set logging level and suppress some noisy logs from dependencies
+set_up_logging()
 
 MAX_CONCURRENCY = {"worker": 50, "reviewer": 50}
 MAX_GENERATED_TOKENS = {"worker": 16384, "reviewer": 32768}
@@ -334,10 +338,16 @@ if __name__ == "__main__":
     parser.add_argument("--output_report", default="report.md")
     args = parser.parse_args()
 
-    set_up_logging()
     setup_langfuse_tracer()
 
+    # Initialize client manager
+    # This class initializes the OpenAI and Weaviate async clients, as well as the
+    # Weaviate knowledge base tool. The initialization is done once when the clients
+    # are first accessed, and the clients are reused for subsequent calls.
     client_manager = AsyncClientManager()
+
+    # Register async cleanup to ensure clients are properly closed on program exit
+    register_async_cleanup(client_manager)
 
     worker_agent = agents.Agent(
         "Conflict-detection Agent",

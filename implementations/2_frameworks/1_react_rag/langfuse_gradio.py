@@ -3,7 +3,6 @@
 Log traces to LangFuse for observability and evaluation.
 """
 
-import asyncio
 from typing import Any, AsyncGenerator
 
 import agents
@@ -12,15 +11,35 @@ from aieng.agents import (
     get_or_create_agent_session,
     oai_agent_stream_to_gradio_messages,
     pretty_print,
+    register_async_cleanup,
     set_up_logging,
 )
 from aieng.agents.client_manager import AsyncClientManager
-from aieng.agents.gradio import COMMON_GRADIO_CONFIG
+from aieng.agents.gradio import get_common_gradio_config
 from aieng.agents.langfuse import langfuse_client, setup_langfuse_tracer
 from aieng.agents.prompts import REACT_INSTRUCTIONS
 from dotenv import load_dotenv
 from gradio.components.chatbot import ChatMessage
 from langfuse import propagate_attributes
+
+
+load_dotenv(verbose=True)
+
+# Set logging level and suppress some noisy logs from dependencies
+set_up_logging()
+
+if gr.NO_RELOAD:
+    # Set up LangFuse for tracing
+    setup_langfuse_tracer()
+
+    # Initialize client manager
+    # This class initializes the OpenAI and Weaviate async clients, as well as the
+    # Weaviate knowledge base tool. The initialization is done once when the clients
+    # are first accessed, and the clients are reused for subsequent calls.
+    client_manager = AsyncClientManager()
+
+    # Register async cleanup to ensure clients are properly closed on program exit
+    register_async_cleanup(client_manager)
 
 
 async def _main(
@@ -74,34 +93,17 @@ async def _main(
     yield turn_messages
 
 
-if __name__ == "__main__":
-    load_dotenv(verbose=True)
-
-    # Set logging level and suppress some noisy logs from dependencies
-    set_up_logging()
-
-    # Set up LangFuse for tracing
-    setup_langfuse_tracer()
-
-    # Initialize client manager
-    # This class initializes the OpenAI and Weaviate async clients, as well as the
-    # Weaviate knowledge base tool. The initialization is done once when the clients
-    # are first accessed, and the clients are reused for subsequent calls.
-    client_manager = AsyncClientManager()
-
-    demo = gr.ChatInterface(
-        _main,
-        **COMMON_GRADIO_CONFIG,
-        examples=[
-            [
-                "At which university did the SVP Software Engineering"
-                " at Apple (as of June 2025) earn their engineering degree?",
-            ],
+demo = gr.ChatInterface(
+    _main,
+    **get_common_gradio_config(),
+    examples=[
+        [
+            "At which university did the SVP Software Engineering"
+            " at Apple (as of June 2025) earn their engineering degree?",
         ],
-        title="2.1: ReAct for Retrieval-Augmented Generation with OpenAI Agent SDK + LangFuse",
-    )
+    ],
+    title="2.1: ReAct for Retrieval-Augmented Generation with OpenAI Agent SDK + LangFuse",
+)
 
-    try:
-        demo.launch(share=True)
-    finally:
-        asyncio.run(client_manager.close())
+if __name__ == "__main__":
+    demo.launch(share=True)

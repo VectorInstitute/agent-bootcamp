@@ -13,6 +13,11 @@ from langfuse._client.datasets import DatasetItemClient
 from rich.progress import track
 
 
+load_dotenv(verbose=True)
+
+# Set logging level and suppress some noisy logs from dependencies
+set_up_logging()
+
 SYSTEM_MESSAGE = """\
 Answer the question using the search tool. \
 EACH TIME before invoking the function, you must explain your reasons for doing so. \
@@ -181,9 +186,6 @@ if __name__ == "__main__":
     parser.add_argument("--run_name", required=True)
     parser.add_argument("--limit", type=int)
     args = parser.parse_args()
-
-    load_dotenv(verbose=True)
-    set_up_logging()
 
     setup_langfuse_tracer()
 

@@ -7,7 +7,6 @@ the additional structures, and you are okay with the additional complexities.
 Log traces to LangFuse for observability and evaluation.
 """
 
-import asyncio
 from typing import Any, AsyncGenerator
 
 import agents
@@ -16,10 +15,11 @@ from aieng.agents import (
     get_or_create_agent_session,
     oai_agent_items_to_gradio_messages,
     pretty_print,
+    register_async_cleanup,
     set_up_logging,
 )
 from aieng.agents.client_manager import AsyncClientManager
-from aieng.agents.gradio import COMMON_GRADIO_CONFIG
+from aieng.agents.gradio import get_common_gradio_config
 from aieng.agents.langfuse import langfuse_client, setup_langfuse_tracer
 from aieng.agents.prompts import (
     KB_RESEARCHER_INSTRUCTIONS,
@@ -30,6 +30,25 @@ from dotenv import load_dotenv
 from gradio.components.chatbot import ChatMessage
 from langfuse import propagate_attributes
 from pydantic import BaseModel
+
+
+load_dotenv(verbose=True)
+
+# Set logging level and suppress some noisy logs from dependencies
+set_up_logging()
+
+if gr.NO_RELOAD:
+    # Set up LangFuse for tracing
+    setup_langfuse_tracer()
+
+    # Initialize client manager
+    # This class initializes the OpenAI and Weaviate async clients, as well as the
+    # Weaviate knowledge base tool. The initialization is done once when the clients
+    # are first accessed, and the clients are reused for subsequent calls.
+    client_manager = AsyncClientManager()
+
+    # Register async cleanup to ensure clients are properly closed on program exit
+    register_async_cleanup(client_manager)
 
 
 class SearchItem(BaseModel):
@@ -63,6 +82,47 @@ class ResearchReport(BaseModel):
 
     # full report text
     full_report: str
+
+
+def _get_agents() -> tuple[agents.Agent, agents.Agent, agents.Agent]:
+    # Use smaller, faster model for focused search tasks
+    worker_model = client_manager.configs.default_worker_model
+    # Use larger, more capable model for complex planning and reasoning
+    planner_model = client_manager.configs.default_planner_model
+
+    planner_agent = agents.Agent(
+        name="Planner Agent",
+        instructions=WIKI_SEARCH_PLANNER_INSTRUCTIONS,
+        model=agents.OpenAIChatCompletionsModel(
+            model=planner_model,
+            openai_client=client_manager.openai_client,
+        ),
+        output_type=SearchPlan,
+    )
+
+    research_agent = agents.Agent(
+        name="Research Agent",
+        instructions=KB_RESEARCHER_INSTRUCTIONS,
+        tools=[agents.function_tool(client_manager.knowledgebase.search_knowledgebase)],
+        model=agents.OpenAIChatCompletionsModel(
+            model=worker_model,
+            openai_client=client_manager.openai_client,
+        ),
+        # Force the agent to use the search tool for every query
+        model_settings=agents.ModelSettings(tool_choice="required"),
+    )
+
+    writer_agent = agents.Agent(
+        name="Writer Agent",
+        instructions=WRITER_INSTRUCTIONS,
+        model=agents.OpenAIChatCompletionsModel(
+            model=planner_model,  # Stronger model for complex synthesis
+            openai_client=client_manager.openai_client,
+        ),
+        output_type=ResearchReport,
+    )
+
+    return planner_agent, research_agent, writer_agent
 
 
 async def _create_search_plan(
@@ -107,6 +167,9 @@ async def _main(
     # This makes it possible to ask follow-up questions that refer to
     # previous turns in the conversation
     session = get_or_create_agent_session(history, session_state)
+
+    # Get the agents
+    planner_agent, research_agent, writer_agent = _get_agents()
 
     with (
         langfuse_client.start_as_current_observation(
@@ -187,76 +250,22 @@ async def _main(
         yield turn_messages
 
 
-if __name__ == "__main__":
-    load_dotenv(verbose=True)
-
-    # Set logging level and suppress some noisy logs from dependencies
-    set_up_logging()
-
-    # Set up LangFuse for tracing
-    setup_langfuse_tracer()
-
-    # Initialize client manager
-    # This class initializes the OpenAI and Weaviate async clients, as well as the
-    # Weaviate knowledge base tool. The initialization is done once when the clients
-    # are first accessed, and the clients are reused for subsequent calls.
-    client_manager = AsyncClientManager()
-
-    # Use smaller, faster model for focused search tasks
-    worker_model = client_manager.configs.default_worker_model
-    # Use larger, more capable model for complex planning and reasoning
-    planner_model = client_manager.configs.default_planner_model
-
-    planner_agent = agents.Agent(
-        name="Planner Agent",
-        instructions=WIKI_SEARCH_PLANNER_INSTRUCTIONS,
-        model=agents.OpenAIChatCompletionsModel(
-            model=planner_model,
-            openai_client=client_manager.openai_client,
-        ),
-        output_type=SearchPlan,
-    )
-
-    research_agent = agents.Agent(
-        name="Research Agent",
-        instructions=KB_RESEARCHER_INSTRUCTIONS,
-        tools=[agents.function_tool(client_manager.knowledgebase.search_knowledgebase)],
-        model=agents.OpenAIChatCompletionsModel(
-            model=worker_model,
-            openai_client=client_manager.openai_client,
-        ),
-        # Force the agent to use the search tool for every query
-        model_settings=agents.ModelSettings(tool_choice="required"),
-    )
-
-    writer_agent = agents.Agent(
-        name="Writer Agent",
-        instructions=WRITER_INSTRUCTIONS,
-        model=agents.OpenAIChatCompletionsModel(
-            model=planner_model,  # Stronger model for complex synthesis
-            openai_client=client_manager.openai_client,
-        ),
-        output_type=ResearchReport,
-    )
-
-    demo = gr.ChatInterface(
-        _main,
-        **COMMON_GRADIO_CONFIG,
-        examples=[
-            [
-                "Write a structured report on the history of AI, covering: "
-                "1) the start in the 50s, 2) the first AI winter, 3) the second AI winter, "
-                "4) the modern AI boom, 5) the evolution of AI hardware, and "
-                "6) the societal impacts of modern AI"
-            ],
-            [
-                "Compare the box office performance of 'Oppenheimer' with the third Avatar movie"
-            ],
+demo = gr.ChatInterface(
+    _main,
+    **get_common_gradio_config(),
+    examples=[
+        [
+            "Write a structured report on the history of AI, covering: "
+            "1) the start in the 50s, 2) the first AI winter, 3) the second AI winter, "
+            "4) the modern AI boom, 5) the evolution of AI hardware, and "
+            "6) the societal impacts of modern AI"
         ],
-        title="2.2.1: Plan-and-Execute Multi-Agent System for Retrieval-Augmented Generation",
-    )
+        [
+            "Compare the box office performance of 'Oppenheimer' with the third Avatar movie"
+        ],
+    ],
+    title="2.2.1: Plan-and-Execute Multi-Agent System for Retrieval-Augmented Generation",
+)
 
-    try:
-        demo.launch(share=True)
-    finally:
-        asyncio.run(client_manager.close())
+if __name__ == "__main__":
+    demo.launch(share=True)

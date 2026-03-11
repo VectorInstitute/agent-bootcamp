@@ -28,6 +28,11 @@ from dotenv import load_dotenv
 from rich.progress import track
 
 
+load_dotenv(verbose=True)
+
+# Set logging level and suppress some noisy logs from dependencies
+set_up_logging()
+
 SYSTEM_MESSAGE = """\
 Example questions: \
 {example_questions}
@@ -112,9 +117,6 @@ if __name__ == "__main__":
     parser.add_argument("--max_concurrency", type=int, default=3)
     args = parser.parse_args()
 
-    load_dotenv(verbose=True)
-    set_up_logging()
-
     setup_langfuse_tracer()
 
     generator = random.Random(0)
@@ -123,15 +125,23 @@ if __name__ == "__main__":
     client_manager = AsyncClientManager()
 
     # Create langfuse dataset and upload.
-    langfuse_client.create_dataset(
-        name=args.langfuse_dataset_name,
-        description=f"[{dataset_name_hash}] Synthetic data based on {args.source_dataset}",
-        metadata={
-            "name_hash": dataset_name_hash,
-            "reference_source": args.source_dataset,
-            "type": "synthetic_benchmark",
-        },
-    )
+    try:
+        langfuse_client.create_dataset(
+            name=args.langfuse_dataset_name,
+            description=f"[{dataset_name_hash}] Synthetic data based on {args.source_dataset}",
+            metadata={
+                "name_hash": dataset_name_hash,
+                "reference_source": args.source_dataset,
+                "type": "synthetic_benchmark",
+            },
+        )
+    except Exception as exc:
+        # We only continue if the dataset can be retrieved
+        try:
+            langfuse_client.get_dataset(args.langfuse_dataset_name)
+            print(f"Dataset {args.langfuse_dataset_name} already exists; continuing.")
+        except Exception as e:
+            raise exc from e
 
     df = get_dataset(args.source_dataset, limit=90)
     rows_news_only = [row.to_dict() for _, row in df.iterrows()]
