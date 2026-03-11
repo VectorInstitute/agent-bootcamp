@@ -9,7 +9,7 @@ TODO:
 - revise error handling- at the moment, if there is an exception,
     the pair would be skipped. You might want to set up e.g., retry.
 
-uv run --env-file .env src/2_frameworks/2_multi_agent/fan_out.py \
+uv run --env-file .env implementations/2_frameworks/2_multi_agent/fan_out.py \
 --source_dataset laliyepeng/test-cra-dataset \
 --num_rows 10 \
 --output_report report.md

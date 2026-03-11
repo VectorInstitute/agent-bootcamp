@@ -4,7 +4,7 @@ Usage:
 
 uv run \
 --env-file .env \
-gradio src/3_evals/2_synthetic_data/gradio_visualize_diversity.py
+gradio implementations/3_evals/2_synthetic_data/gradio_visualize_diversity.py
 """
 
 from typing import List

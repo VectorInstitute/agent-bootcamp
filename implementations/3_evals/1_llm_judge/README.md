@@ -12,7 +12,7 @@ Run in the following steps:
 
 ```bash
 uv run --env-file .env \
--m src.3_evals.1_llm_judge.upload_data \
+-m implementations.3_evals.1_llm_judge.upload_data \
 --source_dataset hf://vector-institute/hotpotqa@d997ecf:train \
 --langfuse_dataset_name search-dataset \
 --limit 18
@@ -35,7 +35,7 @@ Example data:
 
 ```bash
 uv run --env-file .env \
--m src.3_evals.1_llm_judge.run_eval \
+-m implementations.3_evals.1_llm_judge.run_eval \
 --langfuse_dataset_name search-dataset \
 --run_name enwiki_weaviate
 ```

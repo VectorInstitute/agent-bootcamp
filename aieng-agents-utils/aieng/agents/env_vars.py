@@ -67,7 +67,7 @@ class Configs(BaseSettings):
 
     Examples
     --------
-    >>> from src.utils.env_vars import Configs
+    >>> from implementations.utils.env_vars import Configs
     >>> config = Configs()
     >>> print(config.default_planner_model)
     'gemini-2.5-pro'

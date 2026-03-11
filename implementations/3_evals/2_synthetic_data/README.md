@@ -1,7 +1,7 @@
 # Generate synthetic data using Agent Pipeline
 
 ```bash
-uv run --env-file .env -m src.3_evals.2_synthetic_data.synthesize_data \
+uv run --env-file .env -m implementations.3_evals.2_synthetic_data.synthesize_data \
 --source_dataset hf://vector-institute/hotpotqa@d997ecf:train \
 --langfuse_dataset_name search-dataset-synthetic-20250609 \
 --limit 18
@@ -13,14 +13,14 @@ uv run --env-file .env -m src.3_evals.2_synthetic_data.synthesize_data \
 # Baseline: "Real" dataset
 uv run \
 --env-file .env \
--m src.3_evals.2_synthetic_data.annotate_diversity \
+-m implementations.3_evals.2_synthetic_data.annotate_diversity \
 --langfuse_dataset_name search-dataset \
 --run_name cosine_similarity_bge_m3
 
 # Synthetic dataset
 uv run \
 --env-file .env \
--m src.3_evals.2_synthetic_data.annotate_diversity \
+-m implementations.3_evals.2_synthetic_data.annotate_diversity \
 --langfuse_dataset_name search-dataset-synthetic-20250609 \
 --run_name cosine_similarity_bge_m3
 ```
@@ -64,7 +64,7 @@ Uploading scores... ━━━━━━━━━━━━━━━━━━━━
 ```bash
 uv run \
 --env-file .env \
--m src.3_evals.1_llm_judge.run_eval \
+-m implementations.3_evals.1_llm_judge.run_eval \
 --langfuse_dataset_name search-dataset-synthetic-20250609 \
 --run_name enwiki_weaviate \
 --limit 18

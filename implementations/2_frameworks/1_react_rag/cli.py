@@ -40,7 +40,7 @@ async def _main(query: str) -> None:
 
         # Uncomment the following for a basic "streaming" example
 
-        # from src.utils import oai_agent_stream_to_gradio_messages
+        # from implementations.utils import oai_agent_stream_to_gradio_messages
         # result_stream = Runner.run_streamed(
         #     wikipedia_agent, input=query, run_config=no_tracing_config
         # )

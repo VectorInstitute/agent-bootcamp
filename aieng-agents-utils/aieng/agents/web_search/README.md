@@ -129,8 +129,8 @@ Keep `.env.example` up to date so teammates can copy it into their own `.env`.
    from google.auth.credentials import AnonymousCredentials
    from google.cloud import firestore
 
-   from src.utils.web_search.auth import APIKeyAuthenticator
-   from src.utils.web_search.db import APIKeyRepository
+   from aieng.agents.web_search.auth import APIKeyAuthenticator
+   from aieng.agents.web_search.db import APIKeyRepository
 
    async def main():
        client = firestore.AsyncClient(
@@ -255,8 +255,8 @@ production project:
 ```python
 import asyncio
 from google.cloud import firestore
-from utils.web_search.auth import APIKeyAuthenticator
-from utils.web_search.db import APIKeyRepository
+from aieng.agents.web_search.auth import APIKeyAuthenticator
+from aieng.agents.web_search.db import APIKeyRepository
 
 PROJECT = "your-project-id"
 DATABASE = "grounding"

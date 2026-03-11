@@ -4,7 +4,7 @@ Usage:
 
 uv run \
 --env-file .env \
--m src.3_evals.2_synthetic_data.annotate_diversity \
+-m implementations.3_evals.2_synthetic_data.annotate_diversity \
 --langfuse_dataset_name ${DATASET_NAME} \
 --run_name cosine_similarity_bge_m3_20250716 \
 --limit 18

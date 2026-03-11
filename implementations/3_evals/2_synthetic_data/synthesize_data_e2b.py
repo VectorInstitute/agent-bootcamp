@@ -9,7 +9,7 @@ Overview:
 
 Example:
 ```
-uv run --env-file .env src/3_evals/2_synthetic_data/synthesize_data_e2b.py \
+uv run --env-file .env implementations/3_evals/2_synthetic_data/synthesize_data_e2b.py \
 --langfuse_dataset_name e2b-synthetic-20251113-1a \
 --limit 36 \
 --max_concurrency 20
