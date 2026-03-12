@@ -1,4 +1,4 @@
-# aieng-agents-utils
+# aieng-agents
 
 A utility library for building AI agent applications with support for knowledge bases, code interpreter, web search, and observability. Built for the Vector Institute Agents Bootcamp
 by the AI Engineering team.
@@ -32,13 +32,13 @@ by the AI Engineering team.
 ### Using uv (recommended)
 
 ```bash
-uv pip install aieng-agents-utils
+uv pip install aieng-agents
 ```
 
 ### Using pip
 
 ```bash
-pip install aieng-agents-utils
+pip install aieng-agents
 ```
 
 ## Quick Start

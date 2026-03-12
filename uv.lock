@@ -10,7 +10,7 @@ resolution-markers = [
 [manifest]
 members = [
     "agent-bootcamp",
-    "aieng-agents-utils",
+    "aieng-agents",
 ]
 
 [[package]]
@@ -18,7 +18,7 @@ name = "agent-bootcamp"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
-    { name = "aieng-agents-utils" },
+    { name = "aieng-agents" },
     { name = "numpy" },
     { name = "plotly" },
     { name = "scikit-learn" },
@@ -54,7 +54,7 @@ docs = [
 
 [package.metadata]
 requires-dist = [
-    { name = "aieng-agents-utils", editable = "aieng-agents-utils" },
+    { name = "aieng-agents", editable = "aieng-agents" },
     { name = "numpy", specifier = "<2.3.0" },
     { name = "plotly", specifier = ">=6.2.0" },
     { name = "scikit-learn", specifier = ">=1.7.0" },
@@ -89,9 +89,9 @@ docs = [
 ]
 
 [[package]]
-name = "aieng-agents-utils"
+name = "aieng-agents"
 version = "0.1.0"
-source = { editable = "aieng-agents-utils" }
+source = { editable = "aieng-agents" }
 dependencies = [
     { name = "backoff" },
     { name = "beautifulsoup4" },

@@ -1,6 +1,6 @@
 # Gemini Grounding Proxy
 
-This service packages the code in `aieng-agents-utils/aieng/agents/web_search` into a FastAPI
+This service packages the code in `aieng-agents/aieng/agents/web_search` into a FastAPI
 application. It plays a dual role in the Agent Bootcamp project:
 
 - **Agent tooling showcase.** The proxy demonstrates how you can wrap a third-party
@@ -97,10 +97,10 @@ Keep `.env.example` up to date so teammates can copy it into their own `.env`.
    ```bash
    python -m venv .venv
    source .venv/bin/activate
-   pip install -r aieng-agents-utils/aieng/agents/web_search/requirements-app.txt
+   pip install -r aieng-agents/aieng/agents/web_search/requirements-app.txt
    ```
 
-   (Or use `uv pip install -r aieng-agents-utils/aieng/agents/web_search/requirements-app.txt`.)
+   (Or use `uv pip install -r aieng-agents/aieng/agents/web_search/requirements-app.txt`.)
 
 5. **Run unit tests**
 
@@ -113,7 +113,7 @@ Keep `.env.example` up to date so teammates can copy it into their own `.env`.
    ```bash
    uvicorn utils.web_search.app:app \
      --reload \
-     --reload-dir aieng-agents-utils/aieng/agents/web_search \
+     --reload-dir aieng-agents/aieng/agents/web_search \
      --port 8080
    ```
 
@@ -225,7 +225,7 @@ export REGION=us-central1
 export IMAGE_NAME=grounding-proxy
 export TAG=$(date +%Y%m%d%H%M)
 
-gcloud builds submit aieng-agents-utils/aieng/agents/web_search \
+gcloud builds submit aieng-agents/aieng/agents/web_search \
   --tag "$REGION-docker.pkg.dev/$PROJECT/web-search/$IMAGE_NAME:$TAG"
 ```
 

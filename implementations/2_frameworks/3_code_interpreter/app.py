@@ -51,7 +51,7 @@ def _get_main_agent() -> agents.Agent:
     code_interpreter = CodeInterpreter(
         local_files=[
             Path("sandbox_content/"),
-            Path("aieng-agents-utils/tests/example_files/example_a.csv"),
+            Path("aieng-agents/tests/example_files/example_a.csv"),
         ]
     )
 

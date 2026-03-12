@@ -51,7 +51,7 @@ async def test_jupyter_command() -> None:
 @pytest.mark.asyncio
 async def test_code_interpreter_upload_file() -> None:
     """Test running a Python command in the interpreter."""
-    example_paths = [Path("aieng-agents-utils/tests/example_files/example_a.csv")]
+    example_paths = [Path("aieng-agents/tests/example_files/example_a.csv")]
     for _path in example_paths:
         assert _path.exists()
 

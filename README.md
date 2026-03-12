@@ -115,7 +115,7 @@ Synthetic data.
 uv run --env-file .env \
 -m implementations.3_evals.2_synthetic_data.synthesize_data \
 --source_dataset hf://vector-institute/hotpotqa@d997ecf:train \
---langfuse_dataset_name search-dataset-synthetic-20250609 \
+--langfuse_dataset_name search-dataset-synthetic \
 --limit 18
 ```
 
@@ -133,7 +133,7 @@ uv run \
 uv run \
 --env-file .env \
 -m implementations.3_evals.2_synthetic_data.annotate_diversity \
---langfuse_dataset_name search-dataset-synthetic-20250609 \
+--langfuse_dataset_name search-dataset-synthetic \
 --run_name cosine_similarity_bge_m3
 ```
 
@@ -151,7 +151,7 @@ Run LLM-as-a-judge Evaluation on synthetic data
 uv run \
 --env-file .env \
 -m implementations.3_evals.1_llm_judge.run_eval \
---langfuse_dataset_name search-dataset-synthetic-20250609 \
+--langfuse_dataset_name search-dataset-synthetic \
 --run_name enwiki_weaviate \
 --limit 18
 ```

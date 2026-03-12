@@ -127,7 +127,7 @@ if __name__ == "__main__":
         template_name=client_manager.configs.default_code_interpreter_template,
         local_files=[
             Path("sandbox_content/"),
-            Path("aieng-agents-utils/tests/example_files/example_a.csv"),
+            Path("aieng-agents/tests/example_files/example_a.csv"),
         ],
     )
 
