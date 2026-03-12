@@ -4,9 +4,8 @@ permissions:
   pull-requests: write
 
 on:
-  push:
-    tags:
-      - "v*"
+  release:
+    types: [published]
 
 jobs:
   deploy:
