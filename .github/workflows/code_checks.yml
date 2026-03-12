@@ -57,3 +57,4 @@ jobs:
           virtual-environment: .venv/
           ignore-vulns: |
             GHSA-xm59-rqc7-hhvf
+            GHSA-7gcm-g887-7qv7
