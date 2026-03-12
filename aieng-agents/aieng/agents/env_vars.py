@@ -79,7 +79,10 @@ class Configs(BaseSettings):
     """
 
     model_config = SettingsConfigDict(
-        env_file=".env", env_file_encoding="utf-8", env_ignore_empty=True
+        env_file=".env",
+        env_file_encoding="utf-8",
+        env_ignore_empty=True,
+        extra="ignore",
     )
 
     openai_base_url: str = "https://generativelanguage.googleapis.com/v1beta/openai/"
