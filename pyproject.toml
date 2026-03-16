@@ -7,7 +7,7 @@ authors = [ {name = "Vector AI Engineering", email = "ai_engineering@vectorinsti
 license = "MIT"
 requires-python = ">=3.12"
 dependencies = [
-    "aieng-agents>=0.1.0",
+    "aieng-agents>=0.1.1",
     "numpy<2.3.0",
     "plotly>=6.2.0",
     "scikit-learn>=1.7.0",
