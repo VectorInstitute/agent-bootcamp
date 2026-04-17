@@ -1,6 +1,6 @@
 [project]
 name = "agent-bootcamp"
-version = "0.1.0"
+version = "0.1.1"
 description = "Vector Institute Agent Bootcamp"
 readme = "README.md"
 authors = [ {name = "Vector AI Engineering", email = "ai_engineering@vectorinstitute.ai"}]
