@@ -28,7 +28,7 @@ dependencies = [
     "pydantic-ai-slim[logfire]>=0.3.7",
     "pymupdf>=1.26.7",
     "simplejson>=3.20.2",
-    "transformers>=5.0.0",  # Pinning version to address vulnerability GHSA-69w3-r845-3855
+    "transformers>=5.1.0",  # Pinning version to address vulnerability GHSA-69w3-r845-3855
     "weaviate-client>=4.15.4",
 ]
 
