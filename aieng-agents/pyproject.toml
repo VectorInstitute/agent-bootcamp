@@ -30,6 +30,7 @@ dependencies = [
     "pydantic>=2.11.7",
     "pydantic-ai-slim[logfire]>=0.3.7",
     "pymupdf>=1.26.7",
+    "pyasn1>=0.6.3", # Pinning version to address vulnerability GHSA-jr27-m4p2-rc6r
     "python-multipart>=0.0.26", # Pinning version to address vulnerability GHSA-mj87-hwqh-73pj
     "requests>=2.33.0", # Pinning version to address vulnerability GHSA-gc5v-m9x4-r6x2
     "simplejson>=3.20.2",

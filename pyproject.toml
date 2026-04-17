@@ -36,10 +36,11 @@ dev = [
     "pytest-asyncio>=1.2.0",
     "pytest-cov>=7.0.0",
     "pytest-mock>=3.14.0",
-    "ruff>=0.12.2",
+    "ruff>=0.15.11",
 ]
 docs = [
     "jinja2>=3.1.6", # Pinning version to address vulnerability GHSA-cpwx-vrp4-4pq7
+    "pygments>=2.20.0", # GHSA-5239-wwwm-4pmq
     "mkdocs>=1.6.0",
     "mkdocs-material>=9.6.15",
     "mkdocstrings>=0.24.1",
