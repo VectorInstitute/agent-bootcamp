@@ -23,12 +23,12 @@ dependencies = [
     "openai>=2.6.0",
     "openai-agents>=0.4.0",
     "pandas>=2.3.3",
-    "pillow>=12.2.0",
+    "pillow>=12.2.0",  # Pinning version to address vulnerability GHSA-whj4-6x5x-4v2j
     "pydantic>=2.11.7",
     "pydantic-ai-slim[logfire]>=0.3.7",
     "pymupdf>=1.26.7",
     "simplejson>=3.20.2",
-    "transformers>=5.0.0",
+    "transformers>=5.0.0",  # Pinning version to address vulnerability GHSA-69w3-r845-3855
     "weaviate-client>=4.15.4",
 ]
 
@@ -44,7 +44,7 @@ include = ["aieng/"]
 
 [dependency-groups]
 dev = [
-    "pytest>=9.0.3",
+    "pytest>=9.0.3",  # Pinning version to address vulnerability GHSA-6w46-j5rx-g56g
     "pytest-asyncio>=1.2.0",
 ]
 
