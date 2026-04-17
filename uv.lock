@@ -156,7 +156,7 @@ requires-dist = [
     { name = "pydantic-ai-slim", extras = ["logfire"], specifier = ">=0.3.7" },
     { name = "pymupdf", specifier = ">=1.26.7" },
     { name = "simplejson", specifier = ">=3.20.2" },
-    { name = "transformers", specifier = ">=5.0.0" },
+    { name = "transformers", specifier = ">=5.1.0" },
     { name = "weaviate-client", specifier = ">=4.15.4" },
 ]
 
