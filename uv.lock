@@ -87,7 +87,7 @@ dev = [
     { name = "pytest-asyncio", specifier = ">=1.2.0" },
     { name = "pytest-cov", specifier = ">=7.0.0" },
     { name = "pytest-mock", specifier = ">=3.14.0" },
-    { name = "ruff", specifier = ">=0.12.2" },
+    { name = "ruff", specifier = ">=0.15.11" },
 ]
 docs = [
     { name = "ipykernel", specifier = ">=6.29.5" },
