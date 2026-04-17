@@ -23,13 +23,19 @@ dependencies = [
     "openai>=2.6.0",
     "openai-agents>=0.4.0",
     "pandas>=2.3.3",
-    "pillow>=12.1.1",
+    "pillow>=12.2.0",  # Bump to fix GHSA-whj4-6x5x-4v2j
     "pydantic>=2.11.7",
     "pydantic-ai-slim[logfire]>=0.3.7",
     "pymupdf>=1.26.7",
     "simplejson>=3.20.2",
-    "transformers>=4.54.1",
+    "transformers>=5.0.0",  # Bump to fix GHSA-69w3-r845-3855
     "weaviate-client>=4.15.4",
+    # Security: transitive dependency lower bounds
+    "aiohttp>=3.13.4",  # Fix GHSA-p998-jp59-783m et al.
+    "authlib>=1.6.11",  # Fix GHSA-jj8c-mmj3-mmgv
+    "cryptography>=46.0.7",  # Fix GHSA-m959-cc7f-wv43, GHSA-p423-j2cm-9vmq
+    "pyasn1>=0.6.3",  # Fix GHSA-jr27-m4p2-rc6r
+    "requests>=2.33.0",  # Fix GHSA-gc5v-m9x4-r6x2
 ]
 
 [build-system]
@@ -44,7 +50,7 @@ include = ["aieng/"]
 
 [dependency-groups]
 dev = [
-    "pytest>=8.3.4",
+    "pytest>=9.0.3",  # Fix GHSA-6w46-j5rx-g56g
     "pytest-asyncio>=1.2.0",
 ]
 
