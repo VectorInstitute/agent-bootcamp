@@ -43,7 +43,7 @@ docs = [
     "mkdocs>=1.6.0",
     "mkdocs-material>=9.6.15",
     "mkdocstrings>=0.24.1",
-    "mkdocstrings-python>=1.16.12",
+    "mkdocstrings-python>=2.0.3",
     "ipykernel>=6.29.5",
     "ipython>=9.4.0",
 ]
