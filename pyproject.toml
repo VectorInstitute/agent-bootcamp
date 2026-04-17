@@ -32,7 +32,7 @@ dev = [
     "nbqa>=1.9.1",
     "pip-audit>=2.7.3",
     "pre-commit>=4.1.0",
-    "pytest>=8.3.4",
+    "pytest>=9.0.3",  # Pinning version to address vulnerability GHSA-6w46-j5rx-g56g
     "pytest-asyncio>=1.2.0",
     "pytest-cov>=7.0.0",
     "pytest-mock>=3.14.0",
@@ -51,6 +51,14 @@ docs = [
 # Default dependency groups to be installed
 [tool.uv]
 default-groups = ["dev", "docs"]
+constraint-dependencies = [
+    "authlib>=1.6.11",  # GHSA-jj8c-mmj3-mmgv
+    "cryptography>=46.0.7",  # GHSA-m959-cc7f-wv43, GHSA-p423-j2cm-9vmq
+    "pyasn1>=0.6.3",  # GHSA-jr27-m4p2-rc6r
+    "pygments>=2.20.0",  # GHSA-5239-wwwm-4pmq
+    "python-multipart>=0.0.26",  # GHSA-mj87-hwqh-73pj
+    "requests>=2.33.0",  # GHSA-gc5v-m9x4-r6x2
+]
 
 [tool.uv.workspace]
 members = [
