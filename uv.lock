@@ -13,7 +13,7 @@ members = [
     "aieng-agents",
 ]
 constraints = [
-    { name = "aiohttp", specifier = ">=3.13.4" },
+    { name = "aiohttp", specifier = ">=3.13.5" },
     { name = "authlib", specifier = ">=1.6.11" },
     { name = "cryptography", specifier = ">=46.0.7" },
     { name = "pyasn1", specifier = ">=0.6.3" },
