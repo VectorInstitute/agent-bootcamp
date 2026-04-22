@@ -117,7 +117,7 @@ pydantic-core==2.41.4
     # via pydantic
 pygments==2.20.0
     # via rich
-python-dotenv==1.2.1
+python-dotenv==1.2.2
     # via uvicorn
 python-multipart==0.0.26
     # via fastapi
