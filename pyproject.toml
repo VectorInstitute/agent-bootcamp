@@ -60,6 +60,7 @@ constraint-dependencies = [
     "pygments>=2.20.0",     # GHSA-5239-wwwm-4pmq
     "python-multipart>=0.0.26", # GHSA-mj87-hwqh-73pj
     "requests>=2.33.0",     # GHSA-gc5v-m9x4-r6x2
+    "pip>=26.1",            # CVE-2026-3219
 ]
 
 [tool.uv.workspace]
