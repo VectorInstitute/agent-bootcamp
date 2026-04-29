@@ -58,7 +58,14 @@ def get_dataset(dataset_url: str, limit: int | None = None) -> "pd.DataFrame":
     """
     dataset_info = _SourceInfo._from_url(dataset_url)
     if dataset_info.provider == "hf":
-        df: "pd.DataFrame" = _load_hf(dataset_info, limit=limit).to_pandas()
+        try:
+            import pandas as pd  # noqa: PLC0415
+        except ModuleNotFoundError as exc:
+            raise_missing_optional(
+                EXTRA_DATA, missing=getattr(exc, "name", None) or "pandas", from_exc=exc
+            )
+
+        df: pd.DataFrame = _load_hf(dataset_info, limit=limit).to_pandas()
         return df
 
     raise ValueError(
