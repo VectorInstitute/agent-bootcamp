@@ -5,16 +5,24 @@ import json
 from io import BytesIO
 from typing import TYPE_CHECKING
 
-import gradio as gr
-from gradio.components.chatbot import ChatMessage, MetadataDict
 from openai.types.responses import ResponseFunctionToolCall, ResponseOutputText
 from openai.types.responses.response_completed_event import ResponseCompletedEvent
 from openai.types.responses.response_output_message import ResponseOutputMessage
-from PIL import Image
 
 from agents import StreamEvent, stream_events
 from agents.items import MessageOutputItem, RunItem, ToolCallItem, ToolCallOutputItem
 
+
+try:
+    import gradio as gr
+    from gradio.components.chatbot import ChatMessage, MetadataDict
+    from PIL import Image
+except ModuleNotFoundError as exc:
+    from aieng.agents._optional_extras import EXTRA_GRADIO, raise_missing_optional
+
+    raise_missing_optional(
+        EXTRA_GRADIO, missing=getattr(exc, "name", None), from_exc=exc
+    )
 
 if TYPE_CHECKING:
     from openai.types.chat import ChatCompletionMessageParam

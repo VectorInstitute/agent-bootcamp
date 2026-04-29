@@ -1,6 +1,13 @@
 """Utilities for managing Gradio interface."""
 
-import gradio as gr
+try:
+    import gradio as gr
+except ModuleNotFoundError as exc:
+    from aieng.agents._optional_extras import EXTRA_GRADIO, raise_missing_optional
+
+    raise_missing_optional(
+        EXTRA_GRADIO, missing=getattr(exc, "name", None), from_exc=exc
+    )
 
 
 def get_common_gradio_config() -> dict[str, gr.Component]:

@@ -35,12 +35,19 @@ from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
 
-import click
-import datasets
-from dotenv import load_dotenv
 from openai import OpenAI
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
-from transformers import AutoTokenizer
+
+
+try:
+    import click
+    import datasets
+    from dotenv import load_dotenv
+    from transformers import AutoTokenizer
+except ModuleNotFoundError as exc:
+    from aieng.agents._optional_extras import EXTRA_DATA, raise_missing_optional
+
+    raise_missing_optional(EXTRA_DATA, missing=getattr(exc, "name", None), from_exc=exc)
 
 
 DEFAULT_SKIP_PATTERNS = (

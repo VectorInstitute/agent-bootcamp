@@ -3,8 +3,20 @@
 from functools import cached_property
 
 from aieng.agents.env_vars import Configs
-from langfuse import Langfuse
 from rich.progress import Progress, SpinnerColumn, TextColumn
+
+
+try:
+    from langfuse import Langfuse
+except ModuleNotFoundError as exc:
+    from aieng.agents._optional_extras import (
+        EXTRA_OBSERVABILITY,
+        raise_missing_optional,
+    )
+
+    raise_missing_optional(
+        EXTRA_OBSERVABILITY, missing=getattr(exc, "name", None), from_exc=exc
+    )
 
 
 class _LangfuseClientManager:

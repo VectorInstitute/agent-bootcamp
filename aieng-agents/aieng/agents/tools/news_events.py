@@ -9,10 +9,16 @@ from datetime import date, timedelta
 from typing import Any
 
 import httpx
-from bs4 import BeautifulSoup
 from pydantic import BaseModel, RootModel
 from rich.progress import Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
 
+
+try:
+    from bs4 import BeautifulSoup
+except ModuleNotFoundError as exc:
+    from aieng.agents._optional_extras import EXTRA_NEWS, raise_missing_optional
+
+    raise_missing_optional(EXTRA_NEWS, missing=getattr(exc, "name", None), from_exc=exc)
 
 __all__ = ["get_news_events", "NewsEvent", "CurrentEvents"]
 

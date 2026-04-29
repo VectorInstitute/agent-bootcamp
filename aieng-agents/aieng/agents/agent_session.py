@@ -1,15 +1,17 @@
 """Session management utilities for agent conversations."""
 
 import uuid
-from typing import Any
-
-from gradio.components.chatbot import ChatMessage
+from typing import TYPE_CHECKING, Any
 
 import agents
 
 
+if TYPE_CHECKING:
+    from gradio.components.chatbot import ChatMessage
+
+
 def get_or_create_agent_session(
-    history: list[ChatMessage], session_state: dict[str, Any]
+    history: list["ChatMessage"], session_state: dict[str, Any]
 ) -> agents.SQLiteSession:
     """Get existing session or create a new one for conversation persistence."""
     if len(history) == 0:

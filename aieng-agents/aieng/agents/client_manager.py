@@ -5,13 +5,35 @@ like Weaviate and OpenAI to prevent event loop conflicts during Gradio's
 hot-reload process.
 """
 
+from typing import TYPE_CHECKING, Any
+
 from aieng.agents.env_vars import Configs
-from aieng.agents.tools.weaviate_kb import (
-    AsyncWeaviateKnowledgeBase,
-    get_weaviate_async_client,
-)
 from openai import AsyncOpenAI
-from weaviate.client import WeaviateAsyncClient
+
+
+if TYPE_CHECKING:
+    from aieng.agents.tools.weaviate_kb import AsyncWeaviateKnowledgeBase
+    from weaviate.client import WeaviateAsyncClient
+
+
+class MissingOptionalDependencyError(ImportError):
+    """Raised when an optional integration dependency is unavailable."""
+
+
+def _load_weaviate_integrations() -> tuple[type["AsyncWeaviateKnowledgeBase"], Any]:
+    """Load Weaviate integration symbols lazily with clear install guidance."""
+    try:
+        from aieng.agents.tools.weaviate_kb import (  # noqa: PLC0415
+            AsyncWeaviateKnowledgeBase,
+            get_weaviate_async_client,
+        )
+    except ModuleNotFoundError as exc:  # pragma: no cover - import-time branch
+        raise MissingOptionalDependencyError(
+            "Weaviate integration requires optional dependencies. "
+            "Install with `pip install 'aieng-agents[weaviate]'`."
+        ) from exc
+
+    return AsyncWeaviateKnowledgeBase, get_weaviate_async_client
 
 
 class AsyncClientManager:
@@ -39,9 +61,9 @@ class AsyncClientManager:
     def __init__(self, configs: Configs | None = None) -> None:
         """Initialize manager with optional configs."""
         self._configs = configs
-        self._weaviate_client = None
+        self._weaviate_client: WeaviateAsyncClient | None = None
         self._openai_client = None
-        self._knowledgebase = None
+        self._knowledgebase: AsyncWeaviateKnowledgeBase | None = None
         self._initialized = False
 
     @property
@@ -60,18 +82,20 @@ class AsyncClientManager:
         return self._openai_client
 
     @property
-    def weaviate_client(self) -> WeaviateAsyncClient:
+    def weaviate_client(self) -> "WeaviateAsyncClient":
         """Get or create Weaviate client."""
         if self._weaviate_client is None:
+            _, get_weaviate_async_client = _load_weaviate_integrations()
             self._weaviate_client = get_weaviate_async_client(self.configs)
             self._initialized = True
         return self._weaviate_client
 
     @property
-    def knowledgebase(self) -> AsyncWeaviateKnowledgeBase:
+    def knowledgebase(self) -> "AsyncWeaviateKnowledgeBase":
         """Get or create knowledge base instance."""
         if self._knowledgebase is None:
-            self._knowledgebase = AsyncWeaviateKnowledgeBase(
+            async_weaviate_knowledge_base, _ = _load_weaviate_integrations()
+            self._knowledgebase = async_weaviate_knowledge_base(
                 self.weaviate_client,
                 collection_name=self.configs.weaviate_collection_name,
             )

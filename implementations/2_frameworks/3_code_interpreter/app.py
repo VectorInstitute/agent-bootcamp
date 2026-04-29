@@ -12,16 +12,16 @@ import agents
 import gradio as gr
 from aieng.agents import (
     get_or_create_agent_session,
-    oai_agent_stream_to_gradio_messages,
     pretty_print,
     register_async_cleanup,
     set_up_logging,
 )
 from aieng.agents.client_manager import AsyncClientManager
 from aieng.agents.gradio import get_common_gradio_config
+from aieng.agents.gradio.messages import oai_agent_stream_to_gradio_messages
 from aieng.agents.langfuse import langfuse_client, setup_langfuse_tracer
 from aieng.agents.prompts import CODE_INTERPRETER_INSTRUCTIONS
-from aieng.agents.tools import CodeInterpreter
+from aieng.agents.tools.code_interpreter import CodeInterpreter
 from dotenv import load_dotenv
 from gradio.components.chatbot import ChatMessage
 from langfuse import propagate_attributes

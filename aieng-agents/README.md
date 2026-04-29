@@ -29,17 +29,54 @@ by the AI Engineering team.
 
 ## Installation
 
-### Using uv (recommended)
+### Core library only
 
 ```bash
 uv pip install aieng-agents
 ```
 
-### Using pip
+#### What the core package gives you
+
+Installing **`aieng-agents`** with **no extras** still gets you a usable toolkit for agent demos:
+
+- **`Configs`** — typed settings from environment variables (`pydantic-settings`).
+- **`AsyncClientManager`** — shared **`openai_client`**; Weaviate-backed helpers load only if you use them **and** install **`[weaviate]`**.
+- **Async utilities** — **`gather_with_progress`**, **`rate_limited`**, **`register_async_cleanup`** (Rich progress output).
+- **Logging / printing** — **`set_up_logging`**, **`pretty_print`**.
+- **`agent_session`** — SQLite-backed session helpers for the OpenAI Agents SDK (no Gradio import at runtime).
+- **Tools that only need core deps** — e.g. **`GeminiGroundingWithGoogleSearch`** (HTTP client to your grounding proxy).
+
+Imports for heavier integrations live in **subpackages** (for example **`aieng.agents.tools.weaviate_kb`**, **`aieng.agents.langfuse`**) so optional stacks are loaded only when you import them or call into code that needs them.
+
+### Full bootcamp stack
+
+For implementations that use Weaviate, Gradio, Langfuse, Hugging Face datasets, E2B, etc., install everything at once:
 
 ```bash
-pip install aieng-agents
+uv pip install 'aieng-agents[all]'
 ```
+
+### Optional extras (pick what you need)
+
+Pin versions are listed in **`pyproject.toml`**; names below match **`uv pip install 'aieng-agents[<extra>]'`**.
+
+| Extra | Purpose |
+| -------- | --------- |
+| **`data`** | Hugging Face **`datasets`** / **`pandas`** / **`transformers`** / **`click`** / **`python-dotenv`** / **`pymupdf`**. Needed for **`get_dataset()`** when loading HF data, dataset chunking/PDF CLIs, and heavy data scripts. |
+| **`weaviate`** | **`weaviate-client`**. RAG search against a Weaviate collection (**`AsyncWeaviateKnowledgeBase`**, **`get_weaviate_async_client`**). |
+| **`code-interpreter`** | **`e2b-code-interpreter`**. Sandboxed Python execution (**`CodeInterpreter`**). |
+| **`gemini-proxy`** | **FastAPI**, **Google Gen AI**, **Firestore**. Running the **Gemini grounding HTTP proxy** under **`aieng.agents.web_search`** (deployable service), not required for the **`GeminiGroundingWithGoogleSearch`** client tool alone. |
+| **`news`** | **BeautifulSoup** + **lxml**. Wikipedia current-events scraping (**`get_news_events`**). |
+| **`gradio`** | **Gradio** (+ typical image deps). Chat UI helpers under **`aieng.agents.gradio`**. |
+| **`observability`** | **Langfuse**, **Logfire** / OpenTelemetry wiring. Tracing helpers under **`aieng.agents.langfuse`**. |
+
+Compose extras explicitly when you do not want **`all`**:
+
+```bash
+uv pip install 'aieng-agents[weaviate,observability,gradio]'
+```
+
+Examples below call out which extras each snippet assumes.
 
 ## Quick Start
 
@@ -74,13 +111,15 @@ EMBEDDING_BASE_URL=https://your-embedding-service
 
 #### Using Tools with OpenAI Agents SDK
 
+**Requires:** `[weaviate]` (knowledge base) and `[code-interpreter]` (sandbox tool). Install with e.g. `uv pip install 'aieng-agents[weaviate,code-interpreter]'` or `[all]`.
+
 ```python
-from aieng.agents.tools import (
-    CodeInterpreter,
+from aieng.agents import AsyncClientManager
+from aieng.agents.tools.code_interpreter import CodeInterpreter
+from aieng.agents.tools.weaviate_kb import (
     AsyncWeaviateKnowledgeBase,
     get_weaviate_async_client,
 )
-from aieng.agents import AsyncClientManager
 import agents
 
 # Initialize client manager
@@ -112,11 +151,13 @@ await manager.close()
 
 #### Using the Code Interpreter
 
+**Requires:** `[code-interpreter]` (E2B sandbox). Install with `uv pip install 'aieng-agents[code-interpreter]'` or `[all]`.
+
 ```python
-from aieng.agents.tools import CodeInterpreter
+from aieng.agents.tools.code_interpreter import CodeInterpreter
 
 interpreter = CodeInterpreter(
-    template="<your template ID",
+    template="<your template ID>",
     timeout=300,
 )
 
@@ -141,8 +182,10 @@ print(result.results)  # Contains base64 PNG data
 
 #### Fetching News Events
 
+**Requires:** `[news]`. Install with `uv pip install 'aieng-agents[news]'` or `[all]`.
+
 ```python
-from aieng.agents.tools import get_news_events
+from aieng.agents.tools.news_events import get_news_events
 
 news_events = await get_news_events()
 
@@ -155,8 +198,10 @@ for category, events in news_events.root.items():
 
 #### Using Gemini Grounding with Google Search
 
+**Core install is enough** for this client module (HTTP + Pydantic). You still need a running grounding proxy URL unless you mock it; deploying the proxy service uses **`[gemini-proxy]`** (see **`aieng.agents.web_search`**).
+
 ```python
-from aieng.agents.tools import GeminiGroundingWithGoogleSearch
+from aieng.agents.tools.gemini_grounding import GeminiGroundingWithGoogleSearch
 
 search_tool = GeminiGroundingWithGoogleSearch(
     base_url="https://your-search-proxy",
@@ -172,6 +217,8 @@ print(f"Citations: {response.citations}")
 ```
 
 #### Knowledge Base Search
+
+**Requires:** `[weaviate]`. Install with `uv pip install 'aieng-agents[weaviate]'` or `[all]`.
 
 ```python
 from aieng.agents import AsyncClientManager
@@ -193,8 +240,11 @@ await manager.close()
 
 #### Langfuse Tracing
 
+**Requires:** `[observability]`. Install with `uv pip install 'aieng-agents[observability]'` or `[all]`.
+
 ```python
-from aieng.agents import setup_langfuse_tracer, set_up_logging
+from aieng.agents import set_up_logging
+from aieng.agents.langfuse import setup_langfuse_tracer
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -207,6 +257,8 @@ tracer = setup_langfuse_tracer(service_name="my_agent_app")
 ```
 
 #### Async Operations with Progress
+
+**Core install only** — no optional extra required.
 
 ```python
 from aieng.agents import gather_with_progress, rate_limited
@@ -234,7 +286,9 @@ results = await gather_with_progress(
 
 ## Command-Line Tools
 
-The package includes console scripts for data processing:
+The package includes console scripts for data processing. Both entrypoints use a thin CLI so missing extras produce a clear install message.
+
+**Requires:** `[data]` for either script.
 
 ### Convert PDFs to HuggingFace Dataset
 
@@ -259,6 +313,8 @@ Key options:
 
 ### Chunk Existing Dataset
 
+Same **`[data]`** extra as above.
+
 ```bash
 chunk_hf_dataset \
     --hf_dataset_path_or_name my-org/my-dataset \
@@ -271,6 +327,8 @@ chunk_hf_dataset \
 ## Advanced Usage
 
 ### Custom Client Configuration
+
+**Core install** loads **`Configs`** and **`AsyncClientManager`**. Touching **`manager.weaviate_client`** / **`knowledgebase`** still needs **`[weaviate]`**.
 
 ```python
 from aieng.agents import Configs, AsyncClientManager
@@ -287,8 +345,10 @@ manager = AsyncClientManager(configs=configs)
 
 ### Gradio Integration
 
+**Requires:** `[gradio]`. Install with `uv pip install 'aieng-agents[gradio]'` or `[all]`.
+
 ```python
-from aieng.agents import (
+from aieng.agents.gradio.messages import (
     gradio_messages_to_oai_chat,
     oai_agent_stream_to_gradio_messages,
 )
@@ -312,6 +372,8 @@ with gr.Blocks() as demo:
 
 ### Session Persistence
 
+**Core install** for **`get_or_create_agent_session`**. Full Gradio chat flows that pass **`ChatMessage`** history typically use **`[gradio]`** where those types come from the UI.
+
 ```python
 from aieng.agents import get_or_create_agent_session
 
@@ -326,12 +388,11 @@ response = await agents.Runner.run(agent, input=message, session=session)
 
 ### Running Tests
 
-```bash
-# Install with dev dependencies
-uv pip install -e ".[dev]"
+From this directory (`aieng-agents/`), dev dependencies are included via the `dev` dependency group (`uv sync` enables them by default):
 
-# Run tests
-uv run --env-file .env pytest tests/
+```bash
+uv sync
+uv run --env-file .env pytest
 ```
 
 ### Project Layout
