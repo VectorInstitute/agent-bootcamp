@@ -388,10 +388,11 @@ response = await agents.Runner.run(agent, input=message, session=session)
 
 ### Running Tests
 
-From this directory (`aieng-agents/`), dev dependencies are included via the `dev` dependency group (`uv sync` enables them by default):
+From this directory (`aieng-agents/`), dev dependencies are included via the `dev` dependency group (`uv sync` enables them by default),
+but all extras are needed to run the tests:
 
 ```bash
-uv sync
+uv sync --all-extras
 uv run --env-file .env pytest
 ```
 
