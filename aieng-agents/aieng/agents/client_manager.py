@@ -61,9 +61,9 @@ class AsyncClientManager:
     def __init__(self, configs: Configs | None = None) -> None:
         """Initialize manager with optional configs."""
         self._configs = configs
-        self._weaviate_client: WeaviateAsyncClient | None = None
+        self._weaviate_client: "WeaviateAsyncClient" | None = None
         self._openai_client = None
-        self._knowledgebase: AsyncWeaviateKnowledgeBase | None = None
+        self._knowledgebase: "AsyncWeaviateKnowledgeBase" | None = None
         self._initialized = False
 
     @property
