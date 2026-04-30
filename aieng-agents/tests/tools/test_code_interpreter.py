@@ -26,7 +26,7 @@ print(df.sum()["y"])
 @pytest.mark.asyncio
 async def test_code_interpreter() -> None:
     """Test running a Python command in the interpreter."""
-    session = CodeInterpreter(timeout_seconds=15)
+    session = CodeInterpreter(sandbox_timeout_seconds=15)
 
     response = await session.run_code(PANDAS_VERSION_SCRIPT)
     response_typed = CodeInterpreterOutput.model_validate_json(response)
@@ -40,7 +40,7 @@ async def test_code_interpreter() -> None:
 @pytest.mark.asyncio
 async def test_jupyter_command() -> None:
     """Test running a Python command in the interpreter."""
-    session = CodeInterpreter(timeout_seconds=15)
+    session = CodeInterpreter(sandbox_timeout_seconds=15)
 
     response = await session.run_code("!pip freeze")
     response_typed = CodeInterpreterOutput.model_validate_json(response)
@@ -55,7 +55,7 @@ async def test_code_interpreter_upload_file() -> None:
     for _path in example_paths:
         assert _path.exists()
 
-    session = CodeInterpreter(timeout_seconds=15, local_files=example_paths)
+    session = CodeInterpreter(sandbox_timeout_seconds=15, local_files=example_paths)
     response = await session.run_code(PANDAS_READ_FILE_SCRIPT)
     response_typed = CodeInterpreterOutput.model_validate_json(response)
 
