@@ -156,10 +156,7 @@ await manager.close()
 ```python
 from aieng.agents.tools.code_interpreter import CodeInterpreter
 
-interpreter = CodeInterpreter(
-    template="<your template ID>",
-    timeout=300,
-)
+interpreter = CodeInterpreter(template="<your template ID>")
 
 result = await interpreter.run_code(
     code="""

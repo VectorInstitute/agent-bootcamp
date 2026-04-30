@@ -1,10 +1,13 @@
 """Code interpreter tool."""
 
+import contextlib
 import os
 from pathlib import Path
-from typing import Sequence
+from typing import Any, Sequence
 
+import httpx
 from aieng.agents.async_utils import gather_with_progress
+from e2b import TimeoutException
 from pydantic import BaseModel
 
 
@@ -34,152 +37,271 @@ class _CodeInterpreterOutputError(BaseModel):
 
 
 class CodeInterpreterOutput(BaseModel):
-    """Output from code interpreter."""
+    """JSON-serializable result of a sandbox code run."""
 
     stdout: list[str]
     stderr: list[str]
     results: list[dict[str, str]] | None = None
     error: _CodeInterpreterOutputError | None = None
 
-    def __init__(self, stdout: list[str], stderr: list[str], **kwargs) -> None:
-        """Split lines in stdout and stderr."""
-        stdout_processed = []
-        for _line in stdout:
-            stdout_processed.extend(_line.splitlines())
+    def __init__(self, stdout: list[str], stderr: list[str], **kwargs: Any) -> None:
+        """Split stdout/stderr on newlines before validation."""
+        stdout_processed: list[str] = []
+        for line in stdout:
+            stdout_processed.extend(line.splitlines())
 
-        stderr_processed = []
-        for _line in stderr:
-            stderr_processed.extend(_line.splitlines())
+        stderr_processed: list[str] = []
+        for line in stderr:
+            stderr_processed.extend(line.splitlines())
 
         super().__init__(stdout=stdout_processed, stderr=stderr_processed, **kwargs)
 
 
-async def _upload_file(sandbox: "AsyncSandbox", local_path: "str | Path") -> str:
-    """Upload file to sandbox.
+def _failure_json(name: str, message: str) -> str:
+    err = _CodeInterpreterOutputError(name=name, value=message, traceback="")
+    out = CodeInterpreterOutput(
+        stdout=[],
+        stderr=[f"[code tool] {name}: {message}"],
+        error=err,
+    )
+    return out.model_dump_json()
 
-    Returns
-    -------
-        str, denoting the remote path.
-    """
+
+def _validate_str_dict(label: str, d: dict[str, str] | None) -> None:
+    if d is None:
+        return
+    for k, v in d.items():
+        if not isinstance(k, str) or not isinstance(v, str):
+            msg = f"{label} must map str -> str, got key {type(k).__name__!r}, value {type(v).__name__!r}"
+            raise TypeError(msg)
+
+
+async def _upload_file(sandbox: AsyncSandbox, local_path: str | Path) -> str:
+    """Upload a single file into the sandbox cwd; returns remote path."""
     path = Path(local_path)
-    remote_path = f"{path.name}"
-    with open(local_path, "rb") as file:
+    remote_path = path.name
+    with path.open("rb") as file:
         await sandbox.files.write(remote_path, file)
-
     return remote_path
 
 
 async def _upload_files(
-    sandbox: "AsyncSandbox", paths: Sequence[Path | str]
+    sandbox: AsyncSandbox, paths: Sequence[Path | str]
 ) -> list[str]:
-    """Upload files to the sandbox.
-
-    Parameters
-    ----------
-        paths: Sequence[pathlib.Path | str]
-            Files to upload to the sandbox.
-
-    Returns
-    -------
-        list[str]
-        List of remote paths, one per file.
-    """
+    """Upload many paths (files or flattened directory trees)."""
     if not paths:
         return []
 
-    file_upload_coros = [_upload_file(sandbox, _path) for _path in paths]
-    remote_paths = await gather_with_progress(
-        file_upload_coros, description=f"Uploading {len(paths)} to sandbox"
+    coros = [_upload_file(sandbox, p) for p in paths]
+    return list(
+        await gather_with_progress(
+            coros, description=f"Uploading {len(paths)} to sandbox"
+        )
     )
-    return list(remote_paths)
 
 
 def _enumerate_files(base_path: str | Path) -> list[Path]:
-    """
-    Recursively enumerate all files under a directory.
-
-    Args
-    ----
-        base_path: Path to the starting directory.
-            If input is a file, that file alone will be returned.
-
-    Returns
-    -------
-        list[str]: List of file paths.
-    """
+    """Return all files under ``base_path``; a file path yields itself."""
     if os.path.isfile(base_path):
         return [Path(base_path)]
 
-    file_list = []
+    out: list[Path] = []
     for root, _, files in os.walk(base_path):
         for name in files:
-            file_list.append(Path(root) / name)
-    return file_list
+            out.append(Path(root) / name)
+    return out
 
 
 class CodeInterpreter:
-    """Code Interpreter tool for the agent."""
+    """Run Python in an ephemeral E2B code-interpreter sandbox and return output.
+
+    Parameters
+    ----------
+    local_files : Sequence[Path | str] | None, default=None
+        Paths to upload after the sandbox is created (directories are flattened).
+    sandbox_timeout_seconds : int, default=300
+        Maximum lifetime of the sandbox VM, forwarded to
+        ``AsyncSandbox.create(timeout=...)``. Per E2B, this is a wall-clock cap on
+        how long the sandbox may exist (e.g. 300 s default; up to 24 h on Pro plans).
+    code_execution_timeout_seconds : float | None, default=None
+        HTTP read timeout for a single ``run_code`` / Jupyter ``execute`` stream,
+        forwarded to ``AsyncSandbox.run_code(timeout=...)``. If ``None``, defaults
+        to ``max(5, sandbox_timeout_seconds - 15)`` so the client tends to raise
+        ``TimeoutException`` before the host SIGKILLs the VM.
+    request_timeout_seconds : float | None, default=None
+        Overall httpx timeout tuple budget for the execute request; if ``None``,
+        uses ``float(sandbox_timeout_seconds) + 120.0``.
+    template_name : str | None, default=None
+        E2B template id for ``AsyncSandbox.create(template=...)``.
+    envs : dict[str, str] | None, default=None
+        Environment variables set **at sandbox creation** (visible to all code in
+        that VM). Same lifetime as ``sandbox_timeout_seconds``.
+    metadata : dict[str, str] | None, default=None
+        Optional string tags for E2B observability (not shown to the model unless
+        you log them yourself).
+    allow_internet_access : bool, default=True
+        Forwarded to ``AsyncSandbox.create(allow_internet_access=...)``.
+    return_errors_as_json : bool, default=True
+        When ``True``, transport and execution timeouts are returned as
+        :class:`CodeInterpreterOutput` JSON with ``error.name`` in
+        ``{"ExecutionTimeout", "HttpTimeout", "StreamClosed"}`` instead of raising.
+        When ``False``, those errors propagate to the host (e.g. ADK tool failure).
+
+    Notes
+    -----
+    Each :meth:`run_code` creates a **new** sandbox; ``envs`` / ``metadata`` apply
+    only to that sandbox instance.
+    """
 
     def __init__(
         self,
-        local_files: "Sequence[Path | str]| None" = None,
-        timeout_seconds: int = 30,
+        local_files: Sequence[Path | str] | None = None,
+        *,
+        sandbox_timeout_seconds: int = 300,
+        code_execution_timeout_seconds: float | None = None,
+        request_timeout_seconds: float | None = None,
         template_name: str | None = None,
+        envs: dict[str, str] | None = None,
+        metadata: dict[str, str] | None = None,
+        allow_internet_access: bool = True,
+        return_errors_as_json: bool = True,
     ) -> None:
-        """Configure your Code Interpreter session.
+        """Configure sandbox creation defaults used for every :meth:`run_code` call."""
+        if sandbox_timeout_seconds < 1:
+            msg = "sandbox_timeout_seconds must be >= 1"
+            raise ValueError(msg)
+        if sandbox_timeout_seconds > 86_400:
+            msg = "sandbox_timeout_seconds exceeds 24h cap; pass a lower value per E2B plan limits"
+            raise ValueError(msg)
 
-        Note that the sandbox is not persistent, and each run_code will
-        execute in a fresh sandbox! (e.g., variables need to be re-declared each time.)
+        _validate_str_dict("envs", envs)
+        _validate_str_dict("metadata", metadata)
 
-        Parameters
-        ----------
-            local_files : list[pathlib.Path | str] | None
-                Optionally, specify a list of local files (as paths)
-                to upload to sandbox working directory. Folders will be flattened.
-            timeout_seconds : int
-                Limit executions to this duration.
-            template_name : str | None
-                Optionally, override the default e2b template name.
-                See e2b_template.md for details.
-        """
-        self.timeout_seconds = timeout_seconds
-        self.local_files = []
+        if code_execution_timeout_seconds is not None:
+            if code_execution_timeout_seconds <= 0:
+                msg = "code_execution_timeout_seconds must be positive when set"
+                raise ValueError(msg)
+            if code_execution_timeout_seconds > float(sandbox_timeout_seconds):
+                msg = (
+                    "code_execution_timeout_seconds should not exceed sandbox_timeout_seconds "
+                    "(the HTTP read cannot outlive the VM)"
+                )
+                raise ValueError(msg)
+
+        if request_timeout_seconds is not None and request_timeout_seconds <= 0:
+            msg = "request_timeout_seconds must be positive when set"
+            raise ValueError(msg)
+
+        self.sandbox_timeout_seconds = sandbox_timeout_seconds
+        if code_execution_timeout_seconds is None:
+            self._code_execution_timeout_seconds = float(
+                max(5, sandbox_timeout_seconds - 15)
+            )
+        else:
+            self._code_execution_timeout_seconds = float(code_execution_timeout_seconds)
+
+        if request_timeout_seconds is None:
+            self._request_timeout_seconds = float(sandbox_timeout_seconds) + 120.0
+        else:
+            self._request_timeout_seconds = float(request_timeout_seconds)
+
         self.template_name = template_name
+        self.envs = envs
+        self.metadata = metadata
+        self.allow_internet_access = allow_internet_access
+        self.return_errors_as_json = return_errors_as_json
 
-        # Recursively find files if the given path is a folder.
+        self.local_files: list[Path] = []
         if local_files:
-            for _path in local_files:
-                self.local_files.extend(_enumerate_files(_path))
-        self.template_name = template_name
+            for path in local_files:
+                self.local_files.extend(_enumerate_files(path))
 
     async def run_code(self, code: str) -> str:
-        """Run the given Python code in a sandbox environment.
+        """Execute Python code in a fresh sandbox and return output of execution.
 
         Parameters
         ----------
-            code : str
-                Python logic to execute.
-        """
-        sbx = await AsyncSandbox.create(
-            timeout=self.timeout_seconds, template=self.template_name
-        )
-        await _upload_files(sbx, self.local_files)
+        code
+            Complete Python source for one Jupyter-style execution.
 
+        Returns
+        -------
+        str
+            Serialized :class:`CodeInterpreterOutput` JSON with the following
+            fields:
+            - stdout: list of strings, each representing a line of stdout.
+            - stderr: list of strings, each representing a line of stderr.
+            - results: list of dictionaries, each representing a result.
+            - error: dictionary representing the error, if any.
+
+        Raises
+        ------
+        TimeoutException
+            If the code execution timeout is exceeded.
+        httpx.TimeoutException
+            If the request timeout is exceeded.
+        httpx.RemoteProtocolError
+            If the HTTP response stream ended early.
+
+        Notes
+        -----
+        Sandboxes are **not** reused: variables and downloaded files do not exist on the
+        next call.
+        """
+        sbx: AsyncSandbox | None = None
         try:
+            sbx = await AsyncSandbox.create(
+                timeout=self.sandbox_timeout_seconds,
+                template=self.template_name,
+                metadata=self.metadata,
+                envs=self.envs,
+                allow_internet_access=self.allow_internet_access,
+            )
+            await _upload_files(sbx, self.local_files)
+
             result = await sbx.run_code(
-                code, on_error=lambda error: print(error.traceback)
+                code,
+                on_error=lambda error: print(error.traceback),
+                timeout=self._code_execution_timeout_seconds,
+                request_timeout=self._request_timeout_seconds,
             )
             response = CodeInterpreterOutput.model_validate_json(result.logs.to_json())
-
-            error = result.error
-            if error is not None:
+            if result.error is not None:
                 response.error = _CodeInterpreterOutputError.model_validate_json(
-                    error.to_json()
+                    result.error.to_json()
                 )
-
             if result.results:
                 response.results = serialize_results(result.results)
-
             return response.model_dump_json()
+        except TimeoutException as exc:
+            if self.return_errors_as_json:
+                return _failure_json(
+                    "ExecutionTimeout",
+                    f"{exc} (code read budget ~{self._code_execution_timeout_seconds:g}s; "
+                    f"sandbox VM up to ~{self.sandbox_timeout_seconds}s). Retry with less work "
+                    "per run—e.g. fewer downloads or model fits, smaller loops, or split logic "
+                    "across multiple tool calls (each run starts from a fresh sandbox).",
+                )
+            raise
+        except httpx.TimeoutException as exc:
+            if self.return_errors_as_json:
+                return _failure_json(
+                    "HttpTimeout",
+                    f"{type(exc).__name__}: {exc} — the HTTP client timed out waiting for the "
+                    "sandbox. Retry with less work per run or split across multiple tool calls.",
+                )
+            raise
+        except httpx.RemoteProtocolError as exc:
+            if self.return_errors_as_json:
+                return _failure_json(
+                    "StreamClosed",
+                    "HTTP response stream ended early — often the sandbox hit its "
+                    f"wall-clock limit (~{self.sandbox_timeout_seconds}s) during a long "
+                    "download or compute step, or the network dropped. Retry with a smaller "
+                    f"per-run workload. Detail: {exc}",
+                )
+            raise
         finally:
-            await sbx.kill()
+            if sbx is not None:
+                with contextlib.suppress(Exception):
+                    await sbx.kill()
