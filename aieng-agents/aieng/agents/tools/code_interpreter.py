@@ -195,7 +195,7 @@ class CodeInterpreter:
         self.sandbox_timeout_seconds = sandbox_timeout_seconds
         if code_execution_timeout_seconds is None:
             self._code_execution_timeout_seconds = float(
-                max(5, sandbox_timeout_seconds - 15)
+                min(max(5, sandbox_timeout_seconds - 15), sandbox_timeout_seconds)
             )
         else:
             self._code_execution_timeout_seconds = float(code_execution_timeout_seconds)
@@ -237,11 +237,17 @@ class CodeInterpreter:
         Raises
         ------
         TimeoutException
-            If the code execution timeout is exceeded.
+            If the code execution timeout is exceeded and
+            ``self.return_errors_as_json`` is ``False``. Otherwise, this is
+            returned as serialized JSON error output.
         httpx.TimeoutException
-            If the request timeout is exceeded.
+            If the request timeout is exceeded and
+            ``self.return_errors_as_json`` is ``False``. Otherwise, this is
+            returned as serialized JSON error output.
         httpx.RemoteProtocolError
-            If the HTTP response stream ended early.
+            If the HTTP response stream ended early and
+            ``self.return_errors_as_json`` is ``False``. Otherwise, this is
+            returned as serialized JSON error output.
 
         Notes
         -----
