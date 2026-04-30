@@ -156,7 +156,7 @@ await manager.close()
 ```python
 from aieng.agents.tools.code_interpreter import CodeInterpreter
 
-interpreter = CodeInterpreter(template="<your template ID>")
+interpreter = CodeInterpreter(template_name="<your template ID>")
 
 result = await interpreter.run_code(
     code="""
@@ -169,8 +169,7 @@ y = np.sin(x)
 plt.plot(x, y)
 plt.title("Sine Wave")
 plt.savefig("sine_wave.png")
-""",
-    files=[]
+"""
 )
 
 print(result.stdout)
