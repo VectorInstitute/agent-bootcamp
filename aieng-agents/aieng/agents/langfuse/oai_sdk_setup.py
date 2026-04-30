@@ -4,13 +4,24 @@ Full documentation:
 langfuse.com/docs/integrations/openaiagentssdk/openai-agents
 """
 
-import logfire
-import nest_asyncio
+try:
+    import logfire
+    import nest_asyncio
+    from opentelemetry import trace
+    from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
+    from opentelemetry.sdk.trace import TracerProvider
+    from opentelemetry.sdk.trace.export import SimpleSpanProcessor
+except ModuleNotFoundError as exc:
+    from aieng.agents._optional_extras import (
+        EXTRA_OBSERVABILITY,
+        raise_missing_optional,
+    )
+
+    raise_missing_optional(
+        EXTRA_OBSERVABILITY, missing=getattr(exc, "name", None), from_exc=exc
+    )
+
 from aieng.agents.langfuse.otlp_env_setup import set_up_langfuse_otlp_env_vars
-from opentelemetry import trace
-from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 
 
 def configure_oai_agents_sdk(service_name: str) -> None:

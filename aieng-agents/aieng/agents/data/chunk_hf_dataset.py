@@ -4,9 +4,15 @@ import os
 from collections import defaultdict
 from functools import partial
 
-import click
-from datasets import load_dataset
-from transformers import AutoTokenizer
+
+try:
+    import click
+    from datasets import load_dataset
+    from transformers import AutoTokenizer
+except ModuleNotFoundError as exc:
+    from aieng.agents._optional_extras import EXTRA_DATA, raise_missing_optional
+
+    raise_missing_optional(EXTRA_DATA, missing=getattr(exc, "name", None), from_exc=exc)
 
 
 def chunk_texts(

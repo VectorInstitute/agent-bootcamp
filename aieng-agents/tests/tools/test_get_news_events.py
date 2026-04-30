@@ -1,7 +1,7 @@
 """Test the tool for getting news events."""
 
 import pytest
-from aieng.agents.tools import get_news_events
+from aieng.agents.tools.news_events import get_news_events
 
 
 @pytest.mark.asyncio

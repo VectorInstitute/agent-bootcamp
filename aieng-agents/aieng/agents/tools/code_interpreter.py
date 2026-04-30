@@ -5,9 +5,21 @@ from pathlib import Path
 from typing import Sequence
 
 from aieng.agents.async_utils import gather_with_progress
-from e2b_code_interpreter import AsyncSandbox
-from e2b_code_interpreter.models import serialize_results
 from pydantic import BaseModel
+
+
+try:
+    from e2b_code_interpreter import AsyncSandbox
+    from e2b_code_interpreter.models import serialize_results
+except ModuleNotFoundError as exc:
+    from aieng.agents._optional_extras import (
+        EXTRA_CODE_INTERPRETER,
+        raise_missing_optional,
+    )
+
+    raise_missing_optional(
+        EXTRA_CODE_INTERPRETER, missing=getattr(exc, "name", None), from_exc=exc
+    )
 
 
 __all__ = ["CodeInterpreter", "CodeInterpreterOutput"]

@@ -33,7 +33,7 @@ from aieng.agents import (
 from aieng.agents.client_manager import AsyncClientManager
 from aieng.agents.data import get_dataset_url_hash
 from aieng.agents.langfuse import langfuse_client, setup_langfuse_tracer
-from aieng.agents.tools import CodeInterpreter
+from aieng.agents.tools.code_interpreter import CodeInterpreter
 from dotenv import load_dotenv
 from rich.progress import track
 

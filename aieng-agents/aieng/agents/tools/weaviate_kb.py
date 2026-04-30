@@ -3,15 +3,17 @@
 import asyncio
 import logging
 import os
+from typing import TYPE_CHECKING
 
 import backoff
 import openai
 import pydantic
-import weaviate
 from aieng.agents.async_utils import rate_limited
 from aieng.agents.env_vars import Configs
-from weaviate import WeaviateAsyncClient
 
+
+if TYPE_CHECKING:
+    from weaviate.client import WeaviateAsyncClient
 
 __all__ = ["AsyncWeaviateKnowledgeBase", "get_weaviate_async_client"]
 
@@ -47,7 +49,7 @@ class AsyncWeaviateKnowledgeBase:
 
     def __init__(
         self,
-        async_client: WeaviateAsyncClient,
+        async_client: "WeaviateAsyncClient",
         collection_name: str,
         num_results: int = 5,
         snippet_length: int = 1000,
@@ -143,7 +145,7 @@ class AsyncWeaviateKnowledgeBase:
         return response.data[0].embedding
 
 
-def get_weaviate_async_client(configs: Configs) -> WeaviateAsyncClient:
+def get_weaviate_async_client(configs: Configs) -> "WeaviateAsyncClient":
     """Get an async Weaviate client.
 
     If no parameters are provided, the function will attempt to connect to a local
@@ -189,6 +191,18 @@ def get_weaviate_async_client(configs: Configs) -> WeaviateAsyncClient:
     WeaviateAsyncClient
         An asynchronous Weaviate client configured with the provided parameters.
     """
+    try:
+        import weaviate  # noqa: PLC0415
+    except ModuleNotFoundError as exc:
+        from aieng.agents._optional_extras import (  # noqa: PLC0415
+            EXTRA_WEAVIATE,
+            raise_missing_optional,
+        )
+
+        raise_missing_optional(
+            EXTRA_WEAVIATE, missing=getattr(exc, "name", None), from_exc=exc
+        )
+
     return weaviate.use_async_with_custom(
         http_host=configs.weaviate_http_host or "localhost",
         http_port=configs.weaviate_http_port or 8080,

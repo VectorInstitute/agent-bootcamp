@@ -3,10 +3,15 @@
 import hashlib
 import os.path
 import re
+from typing import TYPE_CHECKING
 
-import datasets
-import pandas as pd
 import pydantic
+from aieng.agents._optional_extras import EXTRA_DATA, raise_missing_optional
+
+
+if TYPE_CHECKING:
+    import pandas as pd
+    from datasets import Dataset
 
 
 PATTERN = re.compile(
@@ -38,7 +43,7 @@ class _SourceInfo(pydantic.BaseModel):
         return dataset_info
 
 
-def get_dataset(dataset_url: str, limit: int | None = None) -> pd.DataFrame:
+def get_dataset(dataset_url: str, limit: int | None = None) -> "pd.DataFrame":
     """Load dataset from the given URL.
 
     Params
@@ -53,7 +58,15 @@ def get_dataset(dataset_url: str, limit: int | None = None) -> pd.DataFrame:
     """
     dataset_info = _SourceInfo._from_url(dataset_url)
     if dataset_info.provider == "hf":
-        return _load_hf(dataset_info, limit=limit).to_pandas()  # type: ignore
+        try:
+            import pandas as pd  # noqa: PLC0415
+        except ModuleNotFoundError as exc:
+            raise_missing_optional(
+                EXTRA_DATA, missing=getattr(exc, "name", None) or "pandas", from_exc=exc
+            )
+
+        df: pd.DataFrame = _load_hf(dataset_info, limit=limit).to_pandas()
+        return df
 
     raise ValueError(
         f"Dataset provider not supported: {dataset_info.provider}. Available options: hf"
@@ -65,17 +78,24 @@ def get_dataset_url_hash(dataset_url: str) -> str:
     return hashlib.sha256(dataset_url.encode()).hexdigest()[:6]
 
 
-def _load_hf(dataset_info: _SourceInfo, limit: int | None = None) -> datasets.Dataset:
+def _load_hf(dataset_info: _SourceInfo, limit: int | None = None) -> "Dataset":
     """Load HF dataset."""
+    try:
+        import datasets  # noqa: PLC0415
+    except ModuleNotFoundError as exc:
+        raise_missing_optional(
+            EXTRA_DATA, missing=getattr(exc, "name", None), from_exc=exc
+        )
+
     # Prefer load_from_disk locally.
     # If not possible, load from Hub or local snapshot using load_dataset.
     if (dataset_info.version is None) and (os.path.exists(dataset_info.repo)):
         try:
             dataset_or_dict = datasets.load_from_disk(dataset_info.repo)
             if dataset_info.split is not None:
-                return dataset_or_dict[dataset_info.split]  # type: ignore
+                return dataset_or_dict[dataset_info.split]  # type: ignore[no-any-return]
 
-            return dataset_or_dict  # type: ignore
+            return dataset_or_dict  # type: ignore[no-any-return]
 
         except FileNotFoundError:
             pass  # type: ignore
@@ -86,4 +106,4 @@ def _load_hf(dataset_info: _SourceInfo, limit: int | None = None) -> datasets.Da
 
     return datasets.load_dataset(
         dataset_info.repo, name=dataset_info.subset, split=split_name
-    )  # type: ignore
+    )  # type: ignore[no-any-return]

@@ -18,12 +18,11 @@ from aieng.agents import (
     pretty_print,
     rate_limited,
     set_up_logging,
-    setup_langfuse_tracer,
 )
 from aieng.agents.client_manager import AsyncClientManager
 from aieng.agents.data import get_dataset, get_dataset_url_hash
-from aieng.agents.langfuse import langfuse_client
-from aieng.agents.tools import NewsEvent, get_news_events
+from aieng.agents.langfuse import langfuse_client, setup_langfuse_tracer
+from aieng.agents.tools.news_events import NewsEvent, get_news_events
 from dotenv import load_dotenv
 from rich.progress import track
 

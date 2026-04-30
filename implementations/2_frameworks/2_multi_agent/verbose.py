@@ -13,13 +13,13 @@ import agents
 import gradio as gr
 from aieng.agents import (
     get_or_create_agent_session,
-    oai_agent_items_to_gradio_messages,
     pretty_print,
     register_async_cleanup,
     set_up_logging,
 )
 from aieng.agents.client_manager import AsyncClientManager
 from aieng.agents.gradio import get_common_gradio_config
+from aieng.agents.gradio.messages import oai_agent_items_to_gradio_messages
 from aieng.agents.langfuse import langfuse_client, setup_langfuse_tracer
 from aieng.agents.prompts import (
     KB_RESEARCHER_INSTRUCTIONS,

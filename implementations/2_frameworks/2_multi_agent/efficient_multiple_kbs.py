@@ -6,12 +6,12 @@ import agents
 import gradio as gr
 from aieng.agents import (
     get_or_create_agent_session,
-    oai_agent_stream_to_gradio_messages,
     register_async_cleanup,
     set_up_logging,
 )
 from aieng.agents.client_manager import AsyncClientManager
 from aieng.agents.gradio import get_common_gradio_config
+from aieng.agents.gradio.messages import oai_agent_stream_to_gradio_messages
 from aieng.agents.langfuse import langfuse_client, setup_langfuse_tracer
 from aieng.agents.prompts import WIKI_AND_WEB_ORCHESTRATOR_INSTRUCTIONS
 from aieng.agents.tools.gemini_grounding import (
