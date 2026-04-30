@@ -93,7 +93,7 @@ docs = [
 
 [[package]]
 name = "aieng-agents"
-version = "0.2.0"
+version = "0.3.0"
 source = { editable = "aieng-agents" }
 dependencies = [
     { name = "backoff" },
