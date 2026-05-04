@@ -48,6 +48,9 @@ packages = ["implementations"]
 # Default dependency groups to be installed
 [tool.uv]
 default-groups = ["dev", "docs"]
+override-dependencies = [
+    "authlib>=1.6.11", # Override aieng-platform-onboard's exact pin to fix GHSA-jj8c-mmj3-mmgv
+]
 
 [tool.uv.workspace]
 members = [
