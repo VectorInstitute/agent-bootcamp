@@ -46,7 +46,7 @@ gradio = [
 ]
 observability = [
     "langfuse>=4.3.1",
-    "pydantic-ai-slim[logfire]>=1.84.1",
+    "pydantic-ai-slim[logfire]>=1.90.0",
 ]
 all = [
     "aieng-agents[data,weaviate,code-interpreter,gemini-proxy,news,gradio,observability]",
