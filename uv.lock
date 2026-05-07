@@ -21,7 +21,10 @@ members = [
     "agent-bootcamp",
     "aieng-agents",
 ]
-overrides = [{ name = "authlib", specifier = ">=1.6.11" }]
+overrides = [
+    { name = "authlib", specifier = ">=1.6.11" },
+    { name = "python-multipart", specifier = ">=0.0.27" },
+]
 
 [[package]]
 name = "agent-bootcamp"
