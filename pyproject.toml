@@ -51,6 +51,7 @@ default-groups = ["dev", "docs"]
 override-dependencies = [
     "authlib>=1.6.11", # Override aieng-platform-onboard's exact pin to fix GHSA-jj8c-mmj3-mmgv
     "python-multipart>=0.0.27", # Fix CVE-2026-42561 (DoS in multipart header parsing)
+    "urllib3>=2.7.0", # Fix CVE-2026-44431, CVE-2026-44432
 ]
 
 [tool.uv.workspace]
