@@ -184,10 +184,10 @@ requires-dist = [
     { name = "lxml", marker = "extra == 'news'", specifier = ">=6.1.0" },
     { name = "nest-asyncio", specifier = ">=1.6.0" },
     { name = "openai", specifier = ">=2.6.0" },
-    { name = "openai-agents", specifier = ">=0.4.0" },
-    { name = "pandas", marker = "extra == 'data'", specifier = ">=3.0.3" },
+    { name = "openai-agents", specifier = ">=0.17.2" },
+    { name = "pandas", marker = "extra == 'data'", specifier = ">=3.0.2" },
     { name = "pydantic", specifier = ">=2.11.7" },
-    { name = "pydantic-ai-slim", extras = ["logfire"], marker = "extra == 'observability'", specifier = ">=1.94.0" },
+    { name = "pydantic-ai-slim", extras = ["logfire"], marker = "extra == 'observability'", specifier = ">=1.90.0" },
     { name = "pydantic-settings", specifier = ">=2.13.1" },
     { name = "pymupdf", marker = "extra == 'data'", specifier = ">=1.27.2.2" },
     { name = "python-dotenv", marker = "extra == 'data'", specifier = ">=1.2.2" },
@@ -2997,7 +2997,7 @@ wheels = [
 
 [[package]]
 name = "openai-agents"
-version = "0.17.0"
+version = "0.17.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "griffelib" },
@@ -3009,9 +3009,9 @@ dependencies = [
     { name = "typing-extensions" },
     { name = "websockets" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/bf/e7/5824fb73ec81c4e0aa8d1d3156619d7becaf771f6eb1b8a33cec3f5c1b48/openai_agents-0.17.0.tar.gz", hash = "sha256:547030857e207a2a02d35ac75c41f38e8cd1640e99c4e89eb323ecd0167511ae", size = 5354199, upload-time = "2026-05-08T08:10:20.538Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/11/cd/14acaf94c6a438cfe72c5ea043bfbc77d7fbb9514ab7796d82f2180d1518/openai_agents-0.17.2.tar.gz", hash = "sha256:5e11414bdd8c20c8e9192d21f78265d30e65992f4537f940309eca9255804449", size = 5403689, upload-time = "2026-05-12T03:14:57.433Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/20/80/1a271be40c5d219825c2362d3fb4663199706485bf79c511d448665681f8/openai_agents-0.17.0-py3-none-any.whl", hash = "sha256:58bde1ee2859889db11f87a3ae64a0f61e9d070567e3a17341c1566d40d051c8", size = 827010, upload-time = "2026-05-08T08:10:18.394Z" },
+    { url = "https://files.pythonhosted.org/packages/a3/71/5ba9afa4b6a0d250bfdbdd1cf9a5255ae131a7f82915c634ac50c0633c3a/openai_agents-0.17.2-py3-none-any.whl", hash = "sha256:1b3560c1690bcee635a487f77ebfb8b4fb2dd52a653e045a86e51974ab87faf3", size = 838225, upload-time = "2026-05-12T03:14:55.149Z" },
 ]
 
 [[package]]
