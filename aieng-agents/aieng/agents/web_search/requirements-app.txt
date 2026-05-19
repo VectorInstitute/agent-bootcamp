@@ -76,7 +76,7 @@ httpx==0.28.1
     #   fastapi
     #   fastapi-cloud-cli
     #   google-genai
-idna==3.11
+idna==3.15
     # via
     #   anyio
     #   email-validator
