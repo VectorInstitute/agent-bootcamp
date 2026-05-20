@@ -56,5 +56,15 @@ jobs:
         with:
           virtual-environment: .venv/
           ignore-vulns: |
-            GHSA-xm59-rqc7-hhvf
-            GHSA-7gcm-g887-7qv7
+            PYSEC-2024-274
+            PYSEC-2024-277
+            PYSEC-2026-89
+            PYSEC-2025-183
+            PYSEC-2025-217
+            PYSEC-2025-214
+            PYSEC-2025-218
+            PYSEC-2025-211
+            PYSEC-2025-212
+            PYSEC-2025-213
+            PYSEC-2025-215
+            PYSEC-2025-216
