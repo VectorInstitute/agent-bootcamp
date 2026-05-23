@@ -24,6 +24,7 @@ members = [
 overrides = [
     { name = "authlib", specifier = ">=1.6.11" },
     { name = "python-multipart", specifier = ">=0.0.27" },
+    { name = "starlette", specifier = ">=1.0.1" },
     { name = "urllib3", specifier = ">=2.7.0" },
 ]
 
