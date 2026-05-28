@@ -180,7 +180,7 @@ requires-dist = [
     { name = "fastapi", extras = ["standard"], marker = "extra == 'gemini-proxy'", specifier = ">=0.136.0" },
     { name = "google-cloud-firestore", marker = "extra == 'gemini-proxy'", specifier = ">=2.27.0" },
     { name = "google-genai", marker = "extra == 'gemini-proxy'", specifier = ">=1.73.1" },
-    { name = "gradio", marker = "extra == 'gradio'", specifier = ">=6.15.0" },
+    { name = "gradio", marker = "extra == 'gradio'", specifier = ">=6.12.0" },
     { name = "httpx", specifier = ">=0.28.1" },
     { name = "langfuse", marker = "extra == 'observability'", specifier = ">=4.3.1" },
     { name = "lxml", marker = "extra == 'news'", specifier = ">=6.1.0" },
