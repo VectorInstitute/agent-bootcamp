@@ -196,7 +196,7 @@ requires-dist = [
     { name = "python-dotenv", marker = "extra == 'data'", specifier = ">=1.2.2" },
     { name = "rich", specifier = ">=15.0.0" },
     { name = "transformers", marker = "extra == 'data'", specifier = ">=5.5.4" },
-    { name = "weaviate-client", marker = "extra == 'weaviate'", specifier = ">=4.20.5" },
+    { name = "weaviate-client", marker = "extra == 'weaviate'", specifier = ">=4.21.3" },
 ]
 provides-extras = ["data", "weaviate", "code-interpreter", "gemini-proxy", "news", "gradio", "observability", "all"]
 
@@ -4860,7 +4860,7 @@ wheels = [
 
 [[package]]
 name = "weaviate-client"
-version = "4.21.2"
+version = "4.21.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "authlib" },
@@ -4871,9 +4871,9 @@ dependencies = [
     { name = "pydantic" },
     { name = "validators" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/52/d6/4d49c033b2efec753555292c07eafaadef2235a98b0cf4558bc7700c6b81/weaviate_client-4.21.2.tar.gz", hash = "sha256:812dfe20bf8f15113578479985ef8fc19213df00cfe1c55f4766520f11543486", size = 847373, upload-time = "2026-05-29T08:57:44.639Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/2b/b8/103f3aaa246d4e932f4cfeb846e51436966f2aeedf60c2665a3fc51a975a/weaviate_client-4.21.3.tar.gz", hash = "sha256:d7b1f2b0cecbc747e9427f4e3b9463cdfee090746bfbbd40e59cfa25ea2afd4a", size = 847895, upload-time = "2026-06-02T13:03:51.598Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/5f/4c/5b55b7d6c8fc9fcc8eddf0e1a9b07e756779f232190e659a7ad03d7b44c8/weaviate_client-4.21.2-py3-none-any.whl", hash = "sha256:0c2586f4999282bde08eddda709e5fc8f0fce901b6bf3ce0d2d9a1bd0ca687db", size = 643202, upload-time = "2026-05-29T08:57:43.013Z" },
+    { url = "https://files.pythonhosted.org/packages/69/d6/ec1267a2a90fcbe1bb4b75cd6b946039ff8f282cac98d11d03ec08fc4732/weaviate_client-4.21.3-py3-none-any.whl", hash = "sha256:3be9be261e01c9e64d84d0deee1a94e86fa25c41bdc8cdef509923fca30ded53", size = 643197, upload-time = "2026-06-02T13:03:49.281Z" },
 ]
 
 [[package]]
