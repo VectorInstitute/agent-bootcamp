@@ -22,6 +22,7 @@ members = [
     "aieng-agents",
 ]
 overrides = [
+    { name = "aiohttp", specifier = ">=3.14.0" },
     { name = "authlib", specifier = ">=1.6.11" },
     { name = "fastapi", specifier = "!=0.136.3" },
     { name = "python-multipart", specifier = ">=0.0.27" },
