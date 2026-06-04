@@ -196,7 +196,7 @@ requires-dist = [
     { name = "python-dotenv", marker = "extra == 'data'", specifier = ">=1.2.2" },
     { name = "rich", specifier = ">=15.0.0" },
     { name = "transformers", marker = "extra == 'data'", specifier = ">=5.5.4" },
-    { name = "weaviate-client", marker = "extra == 'weaviate'", specifier = ">=4.21.3" },
+    { name = "weaviate-client", marker = "extra == 'weaviate'", specifier = ">=4.20.5" },
 ]
 provides-extras = ["data", "weaviate", "code-interpreter", "gemini-proxy", "news", "gradio", "observability", "all"]
 
