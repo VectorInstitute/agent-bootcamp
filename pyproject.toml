@@ -52,6 +52,7 @@ override-dependencies = [
     "aiohttp>=3.14.0", # Fix CVE-2026-34993 (CookieJar.load arbitrary code execution), CVE-2026-47265
     "authlib>=1.6.11", # Override aieng-platform-onboard's exact pin to fix GHSA-jj8c-mmj3-mmgv
     "fastapi!=0.136.3", # MAL-2026-4750: malicious undocumented dependency added in 0.136.3
+    "pip>=26.1.2", # Fix PYSEC-2026-196 (console_scripts path sanitization vulnerability)
     "python-multipart>=0.0.27", # Fix CVE-2026-42561 (DoS in multipart header parsing)
     "starlette>=1.0.1", # Fix PYSEC-2026-161 (Host header path injection / auth bypass)
     "pip>=26.1.2", # Fix PYSEC-2026-196 (console_scripts path traversal)
