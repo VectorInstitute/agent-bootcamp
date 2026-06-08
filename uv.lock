@@ -178,7 +178,7 @@ requires-dist = [
     { name = "beautifulsoup4", marker = "extra == 'news'", specifier = ">=4.15.0" },
     { name = "click", marker = "extra == 'data'", specifier = ">=8.3.2" },
     { name = "datasets", marker = "extra == 'data'", specifier = ">=4.8.4" },
-    { name = "e2b-code-interpreter", marker = "extra == 'code-interpreter'", specifier = ">=2.6.0" },
+    { name = "e2b-code-interpreter", marker = "extra == 'code-interpreter'", specifier = ">=2.8.0" },
     { name = "fastapi", extras = ["standard"], marker = "extra == 'gemini-proxy'", specifier = ">=0.135.0,<0.136.0" },
     { name = "google-cloud-firestore", marker = "extra == 'gemini-proxy'", specifier = ">=2.27.0" },
     { name = "google-genai", marker = "extra == 'gemini-proxy'", specifier = ">=1.73.1" },
@@ -1101,7 +1101,7 @@ wheels = [
 
 [[package]]
 name = "e2b"
-version = "2.25.1"
+version = "2.26.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "attrs" },
@@ -1116,23 +1116,23 @@ dependencies = [
     { name = "typing-extensions" },
     { name = "wcmatch" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/a2/07/97604da2a7b7db68b970bab60d1bbffa436e73492c000d1889daf6283cf6/e2b-2.25.1.tar.gz", hash = "sha256:b87f8da3bbcce613e1bef9a90c46ef042a053f3f311b5ab45fcff5bdf1b1b425", size = 163032, upload-time = "2026-05-29T23:45:55.756Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/fe/e5/3bea1524a51f569844965ceb3f9672dd4aaae2c6bbfa3011692aab6b0250/e2b-2.26.0.tar.gz", hash = "sha256:e140aec56c29a34706cdaf1bbe4dc1858ac38c7bed87145795019cf321866a2f", size = 163073, upload-time = "2026-06-06T06:43:58.729Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/fb/d5/d04b038ffb56ff6ba76cf6c2438908336aa58a5eb405b2fa191d398106c5/e2b-2.25.1-py3-none-any.whl", hash = "sha256:5ea5d1766082c1db504f86ebe17abe8b6a07f33d8addfb1a7778fae4a9549891", size = 309607, upload-time = "2026-05-29T23:45:54.327Z" },
+    { url = "https://files.pythonhosted.org/packages/d6/9e/5b4edc5ed8b0e84147291087fbd2e0762e9188c121637fb43b5f839d40ab/e2b-2.26.0-py3-none-any.whl", hash = "sha256:55cdb88b30d3026084fff862275815d88ffd37665814f73f09beea9c057de5bc", size = 309648, upload-time = "2026-06-06T06:43:57.583Z" },
 ]
 
 [[package]]
 name = "e2b-code-interpreter"
-version = "2.7.0"
+version = "2.8.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "attrs" },
     { name = "e2b" },
     { name = "httpx" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/d7/8a/24cc33a44fe1b5266362e947ade46a5be9721bf9fe2e8becfea021c34863/e2b_code_interpreter-2.7.0.tar.gz", hash = "sha256:8c591cc12ad2542e44228de51596e24032c5368d2d01c445182adf78037d31e2", size = 11048, upload-time = "2026-05-22T20:07:19.081Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/d3/90/04f77f592e54e908217ba0866c1784b5be5a4735562f447a7529bc496929/e2b_code_interpreter-2.8.0.tar.gz", hash = "sha256:5b9b39b17a82e7c257917e61a3c7df905c69660b6e543b7c0980ec7f5103da4e", size = 11038, upload-time = "2026-06-06T07:01:13.757Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/6e/1b/53d20a6b71bae02e498c5df31d2cba12b0838f47f0dfd2b5ea6fb5a466dd/e2b_code_interpreter-2.7.0-py3-none-any.whl", hash = "sha256:b6b9ac43371b36c4bafa28890e41acd0f2c0148931cbef07f42a6a3e52a03b60", size = 14468, upload-time = "2026-05-22T20:07:17.415Z" },
+    { url = "https://files.pythonhosted.org/packages/58/42/ce598954990c6d2b8ce3fefaaa8c5e11908ed0e704ab7b330399f8e08f1e/e2b_code_interpreter-2.8.0-py3-none-any.whl", hash = "sha256:683737d6e086eb0fa3a416a5c9b6d61afc294be61a97066e788debbece592df5", size = 14467, upload-time = "2026-06-06T07:01:12.245Z" },
 ]
 
 [[package]]
