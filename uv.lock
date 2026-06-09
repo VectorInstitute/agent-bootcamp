@@ -175,14 +175,14 @@ dev = [
 requires-dist = [
     { name = "aieng-agents", extras = ["data", "weaviate", "code-interpreter", "gemini-proxy", "news", "gradio", "observability"], marker = "extra == 'all'", editable = "aieng-agents" },
     { name = "backoff", specifier = ">=2.2.1" },
-    { name = "beautifulsoup4", marker = "extra == 'news'", specifier = ">=4.15.0" },
+    { name = "beautifulsoup4", marker = "extra == 'news'", specifier = ">=4.14.3" },
     { name = "click", marker = "extra == 'data'", specifier = ">=8.3.2" },
     { name = "datasets", marker = "extra == 'data'", specifier = ">=4.8.4" },
-    { name = "e2b-code-interpreter", marker = "extra == 'code-interpreter'", specifier = ">=2.8.0" },
+    { name = "e2b-code-interpreter", marker = "extra == 'code-interpreter'", specifier = ">=2.6.0" },
     { name = "fastapi", extras = ["standard"], marker = "extra == 'gemini-proxy'", specifier = ">=0.135.0,<0.136.0" },
     { name = "google-cloud-firestore", marker = "extra == 'gemini-proxy'", specifier = ">=2.27.0" },
     { name = "google-genai", marker = "extra == 'gemini-proxy'", specifier = ">=1.73.1" },
-    { name = "gradio", marker = "extra == 'gradio'", specifier = ">=6.12.0" },
+    { name = "gradio", marker = "extra == 'gradio'", specifier = ">=6.17.3" },
     { name = "httpx", specifier = ">=0.28.1" },
     { name = "langfuse", marker = "extra == 'observability'", specifier = ">=4.3.1" },
     { name = "lxml", marker = "extra == 'news'", specifier = ">=6.1.0" },
@@ -196,7 +196,7 @@ requires-dist = [
     { name = "pymupdf", marker = "extra == 'data'", specifier = ">=1.27.2.2" },
     { name = "python-dotenv", marker = "extra == 'data'", specifier = ">=1.2.2" },
     { name = "rich", specifier = ">=15.0.0" },
-    { name = "transformers", marker = "extra == 'data'", specifier = ">=5.10.2" },
+    { name = "transformers", marker = "extra == 'data'", specifier = ">=5.5.4" },
     { name = "weaviate-client", marker = "extra == 'weaviate'", specifier = ">=4.20.5" },
 ]
 provides-extras = ["data", "weaviate", "code-interpreter", "gemini-proxy", "news", "gradio", "observability", "all"]
@@ -1493,7 +1493,7 @@ grpc = [
 
 [[package]]
 name = "gradio"
-version = "6.16.0"
+version = "6.17.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "anyio" },
@@ -1525,9 +1525,9 @@ dependencies = [
     { name = "typing-extensions" },
     { name = "uvicorn" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/a3/26/44044687cdd16d0d9d9137c8f9d445eb68391b14583c82a6c2d528da952c/gradio-6.16.0.tar.gz", hash = "sha256:a48d03ffb436644265e4386388ad8a50ec183c8e1fdd3bae0548f7f229c474da", size = 36441812, upload-time = "2026-06-03T19:07:12.973Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/27/c1/40e4fffb75a558481ed975c6a9571464403ed61af5c8af0329e5469fcfe0/gradio-6.17.3.tar.gz", hash = "sha256:3822c3ac3e2a5fcbde7821cf6437a01c88592e484efd5f4cd369581b0ce258fb", size = 48557999, upload-time = "2026-06-07T22:05:25.645Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/2a/12/ac98683fa45d84c2c96c14acdb040aa746209089ea045c766f380549ecec/gradio-6.16.0-py3-none-any.whl", hash = "sha256:a5de01bf17336bf421d52af4b5dbd9fdbd530762c485067748456ccb797700bb", size = 20097732, upload-time = "2026-06-03T19:07:09.904Z" },
+    { url = "https://files.pythonhosted.org/packages/28/c9/e179c9b3211b34e139e0998e835dd15fd2fcdd4a18cd99449e3c4600e260/gradio-6.17.3-py3-none-any.whl", hash = "sha256:7e52c65bfbb7bd75ac1c28cb38f93b01e5f6a2ff013224e6213533451bfee517", size = 32329363, upload-time = "2026-06-07T22:05:21.759Z" },
 ]
 
 [[package]]
