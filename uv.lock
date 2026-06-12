@@ -196,7 +196,7 @@ requires-dist = [
     { name = "pymupdf", marker = "extra == 'data'", specifier = ">=1.27.2.2" },
     { name = "python-dotenv", marker = "extra == 'data'", specifier = ">=1.2.2" },
     { name = "rich", specifier = ">=15.0.0" },
-    { name = "transformers", marker = "extra == 'data'", specifier = ">=5.5.4" },
+    { name = "transformers", marker = "extra == 'data'", specifier = ">=5.11.0" },
     { name = "weaviate-client", marker = "extra == 'weaviate'", specifier = ">=4.20.5" },
 ]
 provides-extras = ["data", "weaviate", "code-interpreter", "gemini-proxy", "news", "gradio", "observability", "all"]
@@ -4689,7 +4689,7 @@ wheels = [
 
 [[package]]
 name = "transformers"
-version = "5.10.2"
+version = "5.11.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "huggingface-hub" },
@@ -4702,9 +4702,9 @@ dependencies = [
     { name = "tqdm" },
     { name = "typer" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/8d/38/d5f978bd5091019e89aef29b9a831f5cd70f2598963a3ead8b9570cab592/transformers-5.10.2.tar.gz", hash = "sha256:f9a44b9c8ca9ab1156b467f574d832ea066284299c2fd0ed84641ccb592751fc", size = 8799687, upload-time = "2026-06-04T18:43:49.119Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/7d/4a/2ee05f9a06bb2dd34cac951548553738a826762fb7adfa7ce256daeaeac8/transformers-5.11.0.tar.gz", hash = "sha256:1dbecade5b8a09bdf3e9e8fdfc9d312cb9eccf5a201080dc894b373f0f3eb5f4", size = 8874363, upload-time = "2026-06-10T16:31:52.441Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/73/6f/e1564b0cc182afa05e219a8e09a8e770ffaab879b6b824b56c819bd221da/transformers-5.10.2-py3-none-any.whl", hash = "sha256:8a669db546f82c7c3618cb46ceb0f0afd89292bc70f319c058f8332ec63e268d", size = 11003830, upload-time = "2026-06-04T18:43:45.303Z" },
+    { url = "https://files.pythonhosted.org/packages/9b/40/30fdefda9b8aff8d36054dbb37d8e1464cc1130c29623403c3c2147bdee1/transformers-5.11.0-py3-none-any.whl", hash = "sha256:06d0a34eab529955f8e704b530663c7d6bd6f9c7a9e47a05cddb4a44e7b6566b", size = 11094597, upload-time = "2026-06-10T16:31:49.08Z" },
 ]
 
 [[package]]
