@@ -179,7 +179,7 @@ requires-dist = [
     { name = "click", marker = "extra == 'data'", specifier = ">=8.3.2" },
     { name = "datasets", marker = "extra == 'data'", specifier = ">=4.8.4" },
     { name = "e2b-code-interpreter", marker = "extra == 'code-interpreter'", specifier = ">=2.6.0" },
-    { name = "fastapi", extras = ["standard"], marker = "extra == 'gemini-proxy'", specifier = ">=0.137.0,<0.138.0" },
+    { name = "fastapi", extras = ["standard"], marker = "extra == 'gemini-proxy'", specifier = ">=0.135.0,<0.136.0" },
     { name = "google-cloud-firestore", marker = "extra == 'gemini-proxy'", specifier = ">=2.27.0" },
     { name = "google-genai", marker = "extra == 'gemini-proxy'", specifier = ">=1.73.1" },
     { name = "gradio", marker = "extra == 'gradio'", specifier = ">=6.12.0" },
@@ -191,7 +191,7 @@ requires-dist = [
     { name = "openai-agents", specifier = ">=0.4.0" },
     { name = "pandas", marker = "extra == 'data'", specifier = ">=3.0.2" },
     { name = "pydantic", specifier = ">=2.11.7" },
-    { name = "pydantic-ai-slim", extras = ["logfire"], marker = "extra == 'observability'", specifier = ">=1.106.0" },
+    { name = "pydantic-ai-slim", extras = ["logfire"], marker = "extra == 'observability'", specifier = ">=1.107.0" },
     { name = "pydantic-settings", specifier = ">=2.13.1" },
     { name = "pymupdf", marker = "extra == 'data'", specifier = ">=1.27.2.2" },
     { name = "python-dotenv", marker = "extra == 'data'", specifier = ">=1.2.2" },
@@ -203,7 +203,7 @@ provides-extras = ["data", "weaviate", "code-interpreter", "gemini-proxy", "news
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "pytest", specifier = ">=9.1.0" },
+    { name = "pytest", specifier = ">=9.0.3" },
     { name = "pytest-asyncio", specifier = ">=1.3.0" },
 ]
 
