@@ -57,6 +57,8 @@ override-dependencies = [
     "starlette>=1.0.1", # Fix PYSEC-2026-161 (Host header path injection / auth bypass)
     "pip>=26.1.2", # Fix PYSEC-2026-196 (console_scripts path traversal)
     "urllib3>=2.7.0", # Fix CVE-2026-44431, CVE-2026-44432
+    "msgpack>=1.2.1", # Fix GHSA-6v7p-g79w-8964 (Unpacker SEGV / DoS after error)
+    "pydantic-settings>=2.14.2", # Fix GHSA-4xgf-cpjx-pc3j (NestedSecretsSettingsSource symlink traversal)
 ]
 
 [tool.uv.workspace]
