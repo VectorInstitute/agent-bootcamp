@@ -25,7 +25,7 @@ dev = [
     "pytest-asyncio>=1.4.0",
     "pytest-cov>=7.1.0",
     "pytest-mock>=3.15.1",
-    "ruff>=0.15.17",
+    "ruff>=0.15.18",
 ]
 docs = [
     "jinja2>=3.1.6", # Pinning version to address vulnerability GHSA-cpwx-vrp4-4pq7
@@ -57,6 +57,8 @@ override-dependencies = [
     "starlette>=1.0.1", # Fix PYSEC-2026-161 (Host header path injection / auth bypass)
     "pip>=26.1.2", # Fix PYSEC-2026-196 (console_scripts path traversal)
     "urllib3>=2.7.0", # Fix CVE-2026-44431, CVE-2026-44432
+    "msgpack>=1.2.1", # Fix GHSA-6v7p-g79w-8964 (Unpacker SEGV / DoS after error)
+    "pydantic-settings>=2.14.2", # Fix GHSA-4xgf-cpjx-pc3j (NestedSecretsSettingsSource symlink traversal)
 ]
 
 [tool.uv.workspace]
