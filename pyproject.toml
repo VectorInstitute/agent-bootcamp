@@ -8,9 +8,9 @@ license = "MIT"
 requires-python = ">=3.12"
 dependencies = [
     "aieng-agents[all]>=0.3.0",
-    "numpy<2.5.0",
-    "plotly>=6.2.0",
-    "scikit-learn>=1.7.0",
+    "numpy<2.6.0",
+    "plotly>=6.8.0",
+    "scikit-learn>=1.9.0",
 ]
 
 [dependency-groups]
@@ -19,13 +19,13 @@ dev = [
     "codecov>=2.1.13",
     "mypy>=2.1.0",
     "nbqa>=1.9.1",
-    "pip-audit>=2.10.0",
+    "pip-audit>=2.10.1",
     "pre-commit>=4.6.0",
-    "pytest>=9.0.3",
-    "pytest-asyncio>=1.3.0",
+    "pytest>=9.1.0",
+    "pytest-asyncio>=1.4.0",
     "pytest-cov>=7.1.0",
     "pytest-mock>=3.15.1",
-    "ruff>=0.15.13",
+    "ruff>=0.15.18",
 ]
 docs = [
     "jinja2>=3.1.6", # Pinning version to address vulnerability GHSA-cpwx-vrp4-4pq7
@@ -33,9 +33,9 @@ docs = [
     "mkdocs>=1.6.0",
     "mkdocs-material>=9.6.15",
     "mkdocstrings>=0.24.1",
-    "mkdocstrings-python>=2.0.3",
-    "ipykernel>=6.29.5",
-    "ipython>=9.13.0",
+    "mkdocstrings-python>=2.0.4",
+    "ipykernel>=7.3.0",
+    "ipython>=9.14.1",
 ]
 
 [build-system]
@@ -49,9 +49,16 @@ packages = ["implementations"]
 [tool.uv]
 default-groups = ["dev", "docs"]
 override-dependencies = [
+    "aiohttp>=3.14.0", # Fix CVE-2026-34993 (CookieJar.load arbitrary code execution), CVE-2026-47265
     "authlib>=1.6.11", # Override aieng-platform-onboard's exact pin to fix GHSA-jj8c-mmj3-mmgv
+    "fastapi!=0.136.3", # MAL-2026-4750: malicious undocumented dependency added in 0.136.3
+    "pip>=26.1.2", # Fix PYSEC-2026-196 (console_scripts path sanitization vulnerability)
     "python-multipart>=0.0.27", # Fix CVE-2026-42561 (DoS in multipart header parsing)
+    "starlette>=1.0.1", # Fix PYSEC-2026-161 (Host header path injection / auth bypass)
+    "pip>=26.1.2", # Fix PYSEC-2026-196 (console_scripts path traversal)
     "urllib3>=2.7.0", # Fix CVE-2026-44431, CVE-2026-44432
+    "msgpack>=1.2.1", # Fix GHSA-6v7p-g79w-8964 (Unpacker SEGV / DoS after error)
+    "pydantic-settings>=2.14.2", # Fix GHSA-4xgf-cpjx-pc3j (NestedSecretsSettingsSource symlink traversal)
 ]
 
 [tool.uv.workspace]

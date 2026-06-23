@@ -13,7 +13,7 @@ dependencies = [
     "openai>=2.6.0",
     "openai-agents>=0.4.0",
     "pydantic>=2.11.7",
-    "pydantic-settings>=2.13.1",
+    "pydantic-settings>=2.14.2",
     "rich>=15.0.0",
 ]
 
@@ -33,7 +33,7 @@ code-interpreter = [
     "e2b-code-interpreter>=2.6.0",
 ]
 gemini-proxy = [
-    "fastapi[standard]>=0.136.0",
+    "fastapi[standard]>=0.135.0,<0.136.0",
     "google-cloud-firestore>=2.27.0",
     "google-genai>=1.73.1",
 ]
@@ -46,7 +46,7 @@ gradio = [
 ]
 observability = [
     "langfuse>=4.3.1",
-    "pydantic-ai-slim[logfire]>=1.90.0",
+    "pydantic-ai-slim[logfire]>=1.106.0",
 ]
 all = [
     "aieng-agents[data,weaviate,code-interpreter,gemini-proxy,news,gradio,observability]",
