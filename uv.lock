@@ -79,7 +79,7 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "aieng-platform-onboard", specifier = ">=0.6.5" },
+    { name = "aieng-platform-onboard", specifier = ">=0.7.0" },
     { name = "codecov", specifier = ">=2.1.13" },
     { name = "mypy", specifier = ">=2.1.0" },
     { name = "nbqa", specifier = ">=1.9.1" },
@@ -211,7 +211,7 @@ dev = [
 
 [[package]]
 name = "aieng-platform-onboard"
-version = "0.6.5"
+version = "0.7.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "authlib" },
@@ -222,6 +222,8 @@ dependencies = [
     { name = "google-cloud-firestore" },
     { name = "google-cloud-secret-manager" },
     { name = "google-cloud-storage" },
+    { name = "idna" },
+    { name = "msgpack" },
     { name = "openai" },
     { name = "pandas" },
     { name = "pygments" },
@@ -233,9 +235,9 @@ dependencies = [
     { name = "virtualenv" },
     { name = "weaviate-client" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/c0/5c/22390ef203e1b4ca2a06f1aa1aa5ff1c89484b882e82b217b70869b3e814/aieng_platform_onboard-0.6.5.tar.gz", hash = "sha256:fbe0661f5bd0edbe7cd7d7417754f796f5f8dc6578b7d184b42b5ee659340491", size = 38516, upload-time = "2026-04-17T14:32:11.257Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/8f/d2/ae14a21cb7b0449244dde0ed8a6b39da6c5e615d88b31c6180477c76477e/aieng_platform_onboard-0.7.0.tar.gz", hash = "sha256:1f73754a99497dda44d7612c8acd9fd75cabd42acdcc97cdc28de34b8e6d85af", size = 37347, upload-time = "2026-06-22T14:06:04.019Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/7f/a2/3f5f391c500281f287720647c6937a4dd285583540ea5ca8e510c51c0195/aieng_platform_onboard-0.6.5-py3-none-any.whl", hash = "sha256:d276dc8034cf3145a08fb92c064900190bcbc8fe73ab83e4f719fe8630938a97", size = 47735, upload-time = "2026-04-17T14:32:09.892Z" },
+    { url = "https://files.pythonhosted.org/packages/77/32/457a50f39f373de9182c52189e732919d533dd761410b1f4562550b1b332/aieng_platform_onboard-0.7.0-py3-none-any.whl", hash = "sha256:f1e29c2b60a5c0d1b1ef6bebb25899c950c4c495d0ab6106b3c40ba020558cc3", size = 47379, upload-time = "2026-06-22T14:06:02.864Z" },
 ]
 
 [[package]]
