@@ -79,7 +79,7 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "aieng-platform-onboard", specifier = ">=0.7.0" },
+    { name = "aieng-platform-onboard", specifier = ">=0.7.2" },
     { name = "codecov", specifier = ">=2.1.13" },
     { name = "mypy", specifier = ">=2.1.0" },
     { name = "nbqa", specifier = ">=1.9.1" },
@@ -211,7 +211,7 @@ dev = [
 
 [[package]]
 name = "aieng-platform-onboard"
-version = "0.7.0"
+version = "0.7.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "authlib" },
@@ -235,9 +235,9 @@ dependencies = [
     { name = "virtualenv" },
     { name = "weaviate-client" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/8f/d2/ae14a21cb7b0449244dde0ed8a6b39da6c5e615d88b31c6180477c76477e/aieng_platform_onboard-0.7.0.tar.gz", hash = "sha256:1f73754a99497dda44d7612c8acd9fd75cabd42acdcc97cdc28de34b8e6d85af", size = 37347, upload-time = "2026-06-22T14:06:04.019Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/e1/62/08fb2983c41b4ae5b3ef287195b38db43a21b1fd7ad8c72d49b6946d9ddb/aieng_platform_onboard-0.7.2.tar.gz", hash = "sha256:aff9aa75cb247373bcb6b19fe07a4b6fbc7bab5cd766c0c346149e713ea3a8bf", size = 37217, upload-time = "2026-06-24T14:31:57.957Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/77/32/457a50f39f373de9182c52189e732919d533dd761410b1f4562550b1b332/aieng_platform_onboard-0.7.0-py3-none-any.whl", hash = "sha256:f1e29c2b60a5c0d1b1ef6bebb25899c950c4c495d0ab6106b3c40ba020558cc3", size = 47379, upload-time = "2026-06-22T14:06:02.864Z" },
+    { url = "https://files.pythonhosted.org/packages/e3/24/3e6423e0a317a5cf811c9733616f2c4eb5465da35f865a3ec10fca6ec4aa/aieng_platform_onboard-0.7.2-py3-none-any.whl", hash = "sha256:b651c4083989dd55f7227d92524e187f716379a62a716f6b30d8061b383fcebd", size = 47317, upload-time = "2026-06-24T14:31:56.76Z" },
 ]
 
 [[package]]
