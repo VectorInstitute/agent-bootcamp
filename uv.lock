@@ -79,7 +79,7 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "aieng-platform-onboard", specifier = ">=0.7.0" },
+    { name = "aieng-platform-onboard", specifier = ">=0.7.2" },
     { name = "codecov", specifier = ">=2.1.13" },
     { name = "mypy", specifier = ">=2.1.0" },
     { name = "nbqa", specifier = ">=1.9.1" },
