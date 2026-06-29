@@ -35,7 +35,7 @@ docs = [
     "mkdocstrings>=0.24.1",
     "mkdocstrings-python>=2.0.4",
     "ipykernel>=7.3.0",
-    "ipython>=9.14.1",
+    "ipython>=9.15.0",
 ]
 
 [build-system]
