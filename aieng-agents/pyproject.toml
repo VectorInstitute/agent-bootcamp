@@ -22,7 +22,7 @@ data = [
     "click>=8.3.2",
     "datasets>=4.8.4",
     "pandas>=3.0.2",
-    "pymupdf>=1.27.2.2",
+    "pymupdf>=1.28.0",
     "python-dotenv>=1.2.2",
     "transformers>=5.5.4",
 ]
