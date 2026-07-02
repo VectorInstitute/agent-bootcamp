@@ -33,7 +33,7 @@ code-interpreter = [
     "e2b-code-interpreter>=2.6.0",
 ]
 gemini-proxy = [
-    "fastapi[standard]>=0.138.2,<0.139.0",
+    "fastapi[standard]>=0.139.0,<0.140.0",
     "google-cloud-firestore>=2.27.0",
     "google-genai>=1.73.1",
 ]
