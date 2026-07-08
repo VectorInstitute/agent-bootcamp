@@ -190,7 +190,7 @@ requires-dist = [
     { name = "lxml", marker = "extra == 'news'", specifier = ">=6.1.0" },
     { name = "nest-asyncio", specifier = ">=1.6.0" },
     { name = "openai", specifier = ">=2.6.0" },
-    { name = "openai-agents", specifier = ">=0.4.0" },
+    { name = "openai-agents", specifier = ">=0.17.8" },
     { name = "pandas", marker = "extra == 'data'", specifier = ">=3.0.2" },
     { name = "pydantic", specifier = ">=2.11.7" },
     { name = "pydantic-ai-slim", extras = ["logfire"], marker = "extra == 'observability'", specifier = ">=2.5.0" },
@@ -2853,7 +2853,7 @@ wheels = [
 
 [[package]]
 name = "openai-agents"
-version = "0.17.7"
+version = "0.17.8"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "griffelib" },
@@ -2864,9 +2864,9 @@ dependencies = [
     { name = "typing-extensions" },
     { name = "websockets" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/d4/b2/235cbfdefe86623fc77f65fc1d016686372f61d4a1bf3fc66151de2eb847/openai_agents-0.17.7.tar.gz", hash = "sha256:ca76e7f882c9d8f06e3dfb8064cc33bcb5a5f34a29816cb9af863f395964ff0c", size = 5485068, upload-time = "2026-06-24T05:15:33.705Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/03/4a/ed4237dfad0feb5903532f18264a9f9bc5f578e478a6302645abad9fa98a/openai_agents-0.17.8.tar.gz", hash = "sha256:0ce1aa77cbfdc388c18a87d83eba27928f2a055a4368030bf362eeefb1584a3b", size = 5507219, upload-time = "2026-07-06T23:37:12.606Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/1e/2e/2e96ca6928951fe1d16744c22dc1355eda1dd5b0dd920ca1d3ab602929f8/openai_agents-0.17.7-py3-none-any.whl", hash = "sha256:51b5ae43756eea37032e430f95979ba3999af6b1ade397df6c0ffeaf1939646a", size = 856074, upload-time = "2026-06-24T05:15:31.741Z" },
+    { url = "https://files.pythonhosted.org/packages/3f/b7/c86caec47d7e1ddff375de2dde0148164bf7d0b1e5e188301cbaba426d56/openai_agents-0.17.8-py3-none-any.whl", hash = "sha256:5e08c58588d0b1a401eb9565e22bf4fe23169f27e2de9fb3ac2e337140e532eb", size = 859601, upload-time = "2026-07-06T23:37:10.456Z" },
 ]
 
 [[package]]
