@@ -45,7 +45,7 @@ gradio = [
     "gradio>=6.20.0",
 ]
 observability = [
-    "langfuse>=4.13.2",
+    "langfuse>=4.14.0",
     "pydantic-ai-slim[logfire]>=2.9.1",
 ]
 all = [
