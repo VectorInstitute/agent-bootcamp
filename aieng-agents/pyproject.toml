@@ -24,7 +24,7 @@ data = [
     "pandas>=3.0.2",
     "pymupdf>=1.28.0",
     "python-dotenv>=1.2.2",
-    "transformers>=5.5.4",
+    "transformers>=5.13.1",
 ]
 weaviate = [
     "weaviate-client>=4.20.5",
