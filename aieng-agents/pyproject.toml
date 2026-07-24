@@ -30,7 +30,7 @@ weaviate = [
     "weaviate-client>=4.20.5",
 ]
 code-interpreter = [
-    "e2b-code-interpreter>=2.6.0",
+    "e2b-code-interpreter>=2.9.0",
 ]
 gemini-proxy = [
     "fastapi[standard]>=0.139.2,<0.140.0",
