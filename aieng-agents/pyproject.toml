@@ -35,7 +35,7 @@ code-interpreter = [
 gemini-proxy = [
     "fastapi[standard]>=0.140.13,<0.141.0",
     "google-cloud-firestore>=2.27.0",
-    "google-genai>=2.14.0",
+    "google-genai>=2.15.0",
 ]
 news = [
     "beautifulsoup4>=4.14.3",
