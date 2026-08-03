@@ -184,7 +184,7 @@ requires-dist = [
     { name = "fastapi", extras = ["standard"], marker = "extra == 'gemini-proxy'", specifier = ">=0.141.1,<0.142.0" },
     { name = "google-cloud-firestore", marker = "extra == 'gemini-proxy'", specifier = ">=2.27.0" },
     { name = "google-genai", marker = "extra == 'gemini-proxy'", specifier = ">=2.15.0" },
-    { name = "gradio", marker = "extra == 'gradio'", specifier = ">=6.21.0" },
+    { name = "gradio", marker = "extra == 'gradio'", specifier = ">=6.22.0" },
     { name = "httpx", specifier = ">=0.28.1" },
     { name = "langfuse", marker = "extra == 'observability'", specifier = ">=4.14.1" },
     { name = "lxml", marker = "extra == 'news'", specifier = ">=6.1.0" },
@@ -1510,7 +1510,7 @@ grpc = [
 
 [[package]]
 name = "gradio"
-version = "6.21.0"
+version = "6.22.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "anyio" },
@@ -1542,9 +1542,9 @@ dependencies = [
     { name = "typing-extensions" },
     { name = "uvicorn" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/d1/26/d3c9f9e5e7b0bdca8c9ef30cd29e7d2e070d4416518dd17698bfba25fd50/gradio-6.21.0.tar.gz", hash = "sha256:a27fe156ce971469b5104e8d8878f1cb136ae022b18abb1d99bce41f882e4e4a", size = 44534521, upload-time = "2026-07-29T19:39:40.589Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/f6/ca/ef9c8ace3917963f0cd503a959b44e2d7f84e032c67f65846c4eee9a637c/gradio-6.22.0.tar.gz", hash = "sha256:81c58b4ff3e6bd2c01c51767a9f5288126bcadbeda9512c8158fb7f7dcac0f63", size = 44543579, upload-time = "2026-07-31T03:03:31.396Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/47/8f/13d40a099606f843c47d874586f50b28eabb3ee9b64c07105491cc57d05f/gradio-6.21.0-py3-none-any.whl", hash = "sha256:2342e186dc7c28c2681a4c84c386c88cf907894a77966511cc3d8f05363ca8f2", size = 30699108, upload-time = "2026-07-29T19:39:37.602Z" },
+    { url = "https://files.pythonhosted.org/packages/c9/f0/ea1aba81d6a853aa90225934583efce03d8fc14b12cf9d9726ba1ad6ecbf/gradio-6.22.0-py3-none-any.whl", hash = "sha256:9bed11d8f410d5e47529060c3c09da0bc83caa960eb7458cc8fbac7d45e5c2a6", size = 30709716, upload-time = "2026-07-31T03:03:27.273Z" },
 ]
 
 [[package]]
@@ -3162,7 +3162,7 @@ name = "pexpect"
 version = "4.9.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "ptyprocess" },
+    { name = "ptyprocess", marker = "sys_platform != 'emscripten' and sys_platform != 'win32'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/42/92/cc564bf6381ff43ce1f4d06852fc19a2f11d180f23dc32d9588bee2f149d/pexpect-4.9.0.tar.gz", hash = "sha256:ee7d41123f3c9911050ea2c2dac107568dc43b2d3b0c7557a33212c398ead30f", size = 166450, upload-time = "2023-11-25T09:07:26.339Z" }
 wheels = [
