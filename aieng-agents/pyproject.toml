@@ -42,7 +42,7 @@ news = [
     "lxml>=6.1.0",
 ]
 gradio = [
-    "gradio>=6.21.0",
+    "gradio>=6.22.0",
 ]
 observability = [
     "langfuse>=4.14.1",
