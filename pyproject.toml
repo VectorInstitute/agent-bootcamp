@@ -59,6 +59,7 @@ override-dependencies = [
     "urllib3>=2.7.0", # Fix CVE-2026-44431, CVE-2026-44432
     "msgpack>=1.2.1", # Fix GHSA-6v7p-g79w-8964 (Unpacker SEGV / DoS after error)
     "pydantic-settings>=2.14.2", # Fix GHSA-4xgf-cpjx-pc3j (NestedSecretsSettingsSource symlink traversal)
+    "cryptography>=50.0.0", # Fix CVE-2026-69247 (PKCS#7 Bleichenbacher oracle / RSA padding side-channel)
 ]
 
 [tool.uv.workspace]
