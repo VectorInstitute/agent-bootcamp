@@ -194,7 +194,7 @@ requires-dist = [
     { name = "openai-agents", specifier = ">=0.19.4" },
     { name = "pandas", marker = "extra == 'data'", specifier = ">=3.0.5" },
     { name = "pydantic", specifier = ">=2.11.7" },
-    { name = "pydantic-ai-slim", extras = ["logfire"], marker = "extra == 'observability'", specifier = ">=2.26.0" },
+    { name = "pydantic-ai-slim", extras = ["logfire"], marker = "extra == 'observability'", specifier = ">=2.27.0" },
     { name = "pydantic-settings", specifier = ">=2.15.0" },
     { name = "pymupdf", marker = "extra == 'data'", specifier = ">=1.28.2" },
     { name = "python-dotenv", marker = "extra == 'data'", specifier = ">=1.2.2" },
