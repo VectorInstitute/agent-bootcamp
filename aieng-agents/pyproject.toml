@@ -27,7 +27,7 @@ data = [
     "transformers>=5.14.1",
 ]
 weaviate = [
-    "weaviate-client>=4.20.5",
+    "weaviate-client>=4.23.0",
 ]
 code-interpreter = [
     "e2b-code-interpreter>=2.9.0",
