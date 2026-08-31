@@ -2191,7 +2191,7 @@ wheels = [
 
 [[package]]
 name = "langfuse"
-version = "4.14.5"
+version = "4.15.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "backoff" },
@@ -2201,11 +2201,12 @@ dependencies = [
     { name = "opentelemetry-sdk" },
     { name = "packaging" },
     { name = "pydantic" },
+    { name = "typing-extensions" },
     { name = "wrapt" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/d3/5c/f316b31abda2aab6ebadf69de99ea39df8d22ca743ac429284c0c1e12921/langfuse-4.14.5.tar.gz", hash = "sha256:75ccf86523ee87945bf9a853d4de65195376f9be5bda7178dd3d138b66fc670f", size = 391893, upload-time = "2026-08-24T13:01:08.496Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/b2/f0/e05ee31998ad89a408da256e0aea589e60c4b84192ab94344ba08f304700/langfuse-4.15.0.tar.gz", hash = "sha256:cc2491fa34421d7424cba9c3e579811cf5d0e1d0730840f67d23190874eca8ee", size = 431955, upload-time = "2026-08-27T15:37:02.168Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/94/d4/914a654c3af7792f02394d93e0cbb052927b3e1e727416c62740cc49490d/langfuse-4.14.5-py3-none-any.whl", hash = "sha256:29e710b9b06adb30094e69af0034d10a47193bfb9c233296fe96b235cf1a377c", size = 695395, upload-time = "2026-08-24T13:01:09.62Z" },
+    { url = "https://files.pythonhosted.org/packages/d4/00/4ab00ff8ed9020aa87151539a7a4d224ccc81048255e9363292f145654c8/langfuse-4.15.0-py3-none-any.whl", hash = "sha256:3612197b162838a90f3e6f9d994758d1388db2664c5a5d0a4411da5988f823eb", size = 789633, upload-time = "2026-08-27T15:37:03.574Z" },
 ]
 
 [[package]]
