@@ -2188,7 +2188,7 @@ wheels = [
 
 [[package]]
 name = "langfuse"
-version = "4.15.0"
+version = "4.15.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "backoff" },
@@ -2201,9 +2201,9 @@ dependencies = [
     { name = "typing-extensions" },
     { name = "wrapt" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/b2/f0/e05ee31998ad89a408da256e0aea589e60c4b84192ab94344ba08f304700/langfuse-4.15.0.tar.gz", hash = "sha256:cc2491fa34421d7424cba9c3e579811cf5d0e1d0730840f67d23190874eca8ee", size = 431955, upload-time = "2026-08-27T15:37:02.168Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/c2/51/ed5569bc2dcc8fe767e3b315207a7511ad23d00d811f02bbf0d6f80bf906/langfuse-4.15.1.tar.gz", hash = "sha256:70cb47529a6ba78383c4f2a197eb3d3ab9d39529c9e6b568d392150c1f40dbb9", size = 432353, upload-time = "2026-08-28T07:55:15.894Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/d4/00/4ab00ff8ed9020aa87151539a7a4d224ccc81048255e9363292f145654c8/langfuse-4.15.0-py3-none-any.whl", hash = "sha256:3612197b162838a90f3e6f9d994758d1388db2664c5a5d0a4411da5988f823eb", size = 789633, upload-time = "2026-08-27T15:37:03.574Z" },
+    { url = "https://files.pythonhosted.org/packages/2a/f9/7160bafcfe9797575359a9e77f810cf26f57f55a7c5ceda602fd9e353ddf/langfuse-4.15.1-py3-none-any.whl", hash = "sha256:795760693a62895157b6f5d6c80f1ad524fd12380995f06f82fc3a627b88c8d4", size = 789929, upload-time = "2026-08-28T07:55:14.034Z" },
 ]
 
 [[package]]
