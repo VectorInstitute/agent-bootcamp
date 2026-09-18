@@ -212,7 +212,7 @@ dev = [
 
 [[package]]
 name = "aieng-platform-onboard"
-version = "0.7.4"
+version = "0.7.5"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "authlib" },
@@ -236,9 +236,9 @@ dependencies = [
     { name = "virtualenv" },
     { name = "weaviate-client" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/54/94/9e27ccc9d8f801013c777455dc04261601e52b44ba7ee0765fa8f3253c7d/aieng_platform_onboard-0.7.4.tar.gz", hash = "sha256:0ed298144e6968573654ae317d4f77613c014169d0ee9115e867a8a7be767834", size = 38389, upload-time = "2026-08-10T15:28:12.017Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/84/11/04b1dc271700b6deb381f11c42b6b4ac5fa1a89d2a27a33a2e4aa5aef330/aieng_platform_onboard-0.7.5.tar.gz", hash = "sha256:8599442c2ef6a797cd91b4354c64e862d1efa665fbf56280199849520bb7ddc2", size = 41620, upload-time = "2026-09-14T18:26:06.544Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/60/a1/e25cd68a482cd08a112af218f3906820e03e3c074bf454bf4d11032b8154/aieng_platform_onboard-0.7.4-py3-none-any.whl", hash = "sha256:6adaed0616dc1e684a9ef82f380736c51577a5686fc000263ef9625ab49a5177", size = 48508, upload-time = "2026-08-10T15:28:10.67Z" },
+    { url = "https://files.pythonhosted.org/packages/e6/0f/ebc59e4e7ff0f9d9bf7299029acddf3daecd15df7f8ef64e17f0e97ea64b/aieng_platform_onboard-0.7.5-py3-none-any.whl", hash = "sha256:5b79a6a4e0f4a76c555ede2bdf23f0041fbe27447f9d52ce75bb5e9dddae0ac6", size = 51610, upload-time = "2026-09-14T18:26:05.195Z" },
 ]
 
 [[package]]
