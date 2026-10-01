@@ -56,10 +56,14 @@ override-dependencies = [
     "python-multipart>=0.0.27", # Fix CVE-2026-42561 (DoS in multipart header parsing)
     "starlette>=1.0.1", # Fix PYSEC-2026-161 (Host header path injection / auth bypass)
     "pip>=26.1.2", # Fix PYSEC-2026-196 (console_scripts path traversal)
-    "urllib3>=2.7.0", # Fix CVE-2026-44431, CVE-2026-44432
+    "urllib3>=2.8.0", # Fix CVE-2026-44431, CVE-2026-44432, CVE-2026-97687, CVE-2026-97688, CVE-2026-97689
     "cryptography>=50.0.0", # Fix CVE-2026-69247 (Bleichenbacher oracle in PKCS#7 decryption)
     "msgpack>=1.2.1", # Fix GHSA-6v7p-g79w-8964 (Unpacker SEGV / DoS after error)
     "pydantic-settings>=2.14.2", # Fix GHSA-4xgf-cpjx-pc3j (NestedSecretsSettingsSource symlink traversal)
+    "filelock>=3.24.2", # Required by virtualenv>=21.7.13; override aieng-platform-onboard's exact pin
+    "pyjwt>=2.15.0", # Fix CVE-2026-101918 (RecursionError DoS in payload parser)
+    "tornado>=6.5.9", # Fix GHSA-chx6-46f5-w4vp, GHSA-c2m8-h5v5-343r, GHSA-3hv7-mjh2-fv65
+    "virtualenv>=21.7.13", # Fix PYSEC-2026-4011, PYSEC-2026-4012, PYSEC-2026-4013, PYSEC-2026-4014
 ]
 
 [tool.uv.workspace]
