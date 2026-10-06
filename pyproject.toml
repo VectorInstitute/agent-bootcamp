@@ -64,6 +64,7 @@ override-dependencies = [
     "pyjwt>=2.15.0", # Fix CVE-2026-101918 (RecursionError DoS in payload parser)
     "tornado>=6.5.9", # Fix GHSA-chx6-46f5-w4vp, GHSA-c2m8-h5v5-343r, GHSA-3hv7-mjh2-fv65
     "virtualenv>=21.7.13", # Fix PYSEC-2026-4011, PYSEC-2026-4012, PYSEC-2026-4013, PYSEC-2026-4014
+    "multidict>=6.9.1", # Fix CVE-2026-104874 (reference leak in items-view union/subtraction)
 ]
 
 [tool.uv.workspace]
