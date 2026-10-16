@@ -65,6 +65,7 @@ override-dependencies = [
     "tornado>=6.5.9", # Fix GHSA-chx6-46f5-w4vp, GHSA-c2m8-h5v5-343r, GHSA-3hv7-mjh2-fv65
     "virtualenv>=21.7.13", # Fix PYSEC-2026-4011, PYSEC-2026-4012, PYSEC-2026-4013, PYSEC-2026-4014
     "multidict>=6.9.1", # Fix CVE-2026-104874 (reference leak in items-view union/subtraction)
+    "mcp>=2.2.0", # Fix CVE-2026-59951 (unbounded session memory growth in Streamable HTTP)
 ]
 
 [tool.uv.workspace]
