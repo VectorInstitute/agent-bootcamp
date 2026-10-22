@@ -1,6 +1,6 @@
 [project]
 name = "aieng-agents"
-version = "0.3.1"
+version = "0.3.2"
 description = "Helper modules for Vector Institute AI Engineering Agents Bootcamp implementations"
 authors = [{name = "Vector AI Engineering", email = "ai_engineering@vectorinstitute.ai"}]
 requires-python = ">=3.12"
@@ -19,18 +19,18 @@ dependencies = [
 
 [project.optional-dependencies]
 data = [
-    "click>=8.3.2",
-    "datasets>=4.8.4",
-    "pandas>=3.0.5",
+    "click>=8.5.0",
+    "datasets>=4.8.5",
+    "pandas>=3.1.0",
     "pymupdf>=1.28.2",
-    "python-dotenv>=1.2.2",
-    "transformers>=5.14.1",
+    "python-dotenv>=1.2.4",
+    "transformers>=5.20.2",
 ]
 weaviate = [
-    "weaviate-client>=4.23.0",
+    "weaviate-client>=4.24.0",
 ]
 code-interpreter = [
-    "e2b-code-interpreter>=2.9.0",
+    "e2b-code-interpreter>=2.11.2",
 ]
 gemini-proxy = [
     "fastapi[standard]>=0.141.1,<0.144.0",
@@ -38,15 +38,15 @@ gemini-proxy = [
     "google-genai>=2.18.1",
 ]
 news = [
-    "beautifulsoup4>=4.14.3",
+    "beautifulsoup4>=4.15.0",
     "lxml>=6.1.0",
 ]
 gradio = [
-    "gradio>=6.24.0",
+    "gradio>=6.30.0",
 ]
 observability = [
-    "langfuse>=4.14.4",
-    "pydantic-ai-slim[logfire]>=2.31.0",
+    "langfuse>=4.18.0",
+    "pydantic-ai-slim[logfire]>=2.59.0",
 ]
 all = [
     "aieng-agents[data,weaviate,code-interpreter,gemini-proxy,news,gradio,observability]",
@@ -54,8 +54,8 @@ all = [
 
 [dependency-groups]
 dev = [
-    "pytest>=9.0.3",
-    "pytest-asyncio>=1.3.0",
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
 ]
 
 # Default dependency groups to be installed
