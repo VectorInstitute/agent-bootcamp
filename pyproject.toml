@@ -49,7 +49,7 @@ packages = ["implementations"]
 [tool.uv]
 default-groups = ["dev", "docs"]
 override-dependencies = [
-    "authlib>=1.6.11", # Override aieng-platform-onboard's exact pin to fix GHSA-jj8c-mmj3-mmgv
+    "authlib>=1.9.1", # Override aieng-platform-onboard's exact pin; fixes GHSA-jj8c-mmj3-mmgv and later CVEs
     "urllib3>=2.8.0", # Fix CVE-2026-44431, CVE-2026-44432, CVE-2026-97687, CVE-2026-97688, CVE-2026-97689
     "filelock>=3.24.2", # Required by virtualenv>=21.7.13; override aieng-platform-onboard's exact pin
     "virtualenv>=21.14.9", # Fix CVE-2026-113722
