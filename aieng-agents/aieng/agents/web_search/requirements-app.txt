@@ -25,7 +25,7 @@ click==8.3.0
     #   rich-toolkit
     #   typer
     #   uvicorn
-dnspython==2.8.0
+dnspython==2.9.2
     # via email-validator
 email-validator==2.3.0
     # via
